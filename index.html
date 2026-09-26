@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pharma MVP</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; }
+        .tab { overflow: hidden; border-bottom: 1px solid #ccc; }
+        .tab button { background-color: inherit; float: left; border: none; outline: none; cursor: pointer; padding: 14px 16px; font-size: 16px; }
+        .tab button.active { background-color: #ddd; }
+        .tabcontent { display: none; padding: 20px 0; }
+        input, select, button { padding: 8px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .status-approved { color: green; font-weight: bold; }
+        .status-declined { color: red; font-weight: bold; }
+        .status-pending { color: orange; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>Pharma Delivery MVP</h1>
+
+    <!-- Tabs -->
+    <div class="tab">
+        <button class="tablinks active" onclick="openTab(event, 'UserTab')">User Portal</button>
+        <button class="tablinks" onclick="openTab(event, 'AdminTab')">Admin Portal</button>
+    </div>
+
+    <!-- USER TAB -->
+    <div id="UserTab" class="tabcontent" style="display:block;">
+        <h2>Register / Login</h2>
+        <input type="email" id="uEmail" placeholder="Email">
+        <input type="text" id="uPhone" placeholder="Phone">
+        <input type="password" id="uPass" placeholder="Password">
+        <button onclick="registerUser()">Register</button>
+        <p id="userIdDisplay"></p>
+
+        <hr>
+        <h2>Upload Prescription</h2>
+        <input type="file" id="rxFile" accept=".pdf,.jpg,.png">
+        <button onclick="uploadRx()">Upload</button>
+
+        <hr>
+        <h2>My Prescription History</h2>
+        <button onclick="getMyHistory()">Refresh History</button>
+        <div id="historyList"></div>
+    </div>
+
+    <!-- ADMIN TAB -->
+    <div id="AdminTab" class="tabcontent">
+        <h2>Admin: Pending Prescriptions</h2>
+        <button onclick="getPendingRx()">Load Pending</button>
+        <div id="pendingList"></div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
+        const API_URL = "https://script.google.com/macros/s/AKfycbwEcJiZpX29IFGWZPnB9HbGOnSeSd4jRKtZ6pbAOPayyJbqKYw3Mw-omQ2NdtaIWGYt3w/exec"; 
+        let currentUserId = ""; // In a real app, store this in localStorage/session
+
+        // --- UI LOGIC ---
+        function openTab(evt, tabName) {
+            document.querySelectorAll(".tabcontent").forEach(el => el.style.display = "none");
+            document.querySelectorAll(".tablinks").forEach(el => el.classList.remove("active"));
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.classList.add("active");
+        }
+
+        // --- API CALLS ---
+        async function callAPI(payload) {
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+            return await res.json();
+        }
+
+        // 1. Register User
+        async function registerUser() {
+            const email = document.getElementById('uEmail').value;
+            const phone = document.getElementById('uPhone').value;
+            const pass = document.getElementById('uPass').value;
+            
+            const res = await callAPI({ action: 'register', email, phone, password: pass });
+            if (res.success) {
+                currentUserId = res.data.userId;
+                document.getElementById('userIdDisplay').innerText = `Registered! Your ID: ${currentUserId}`;
+            } else {
+                alert(res.message);
+            }
+        }
+
+        // 2. Upload Prescription
+        async function uploadRx() {
+            if (!currentUserId) return alert("Please register first!");
+            const fileInput = document.getElementById('rxFile');
+            if (!fileInput.files[0]) return alert("Select a file!");
+
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = async function(e) {
+                const base64 = e.target.result.split(',')[1]; // Get pure base64
+                const res = await callAPI({
+                    action: 'upload_rx',
+                    userId: currentUserId,
+                    fileName: file.name,
+                    fileType: file.type,
+                    fileBase64: base64
+                });
+                alert(res.message);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 3. Get User History
+        async function getMyHistory() {
+            if (!currentUserId) return alert("Please register first!");
+            const res = await callAPI({ action: 'get_data', sheetName: 'Prescriptions', userId: currentUserId });
+            const list = document.getElementById('historyList');
+            list.innerHTML = '';
+            
+            res.data.forEach(rx => {
+                const statusClass = `status-${rx.Status.toLowerCase()}`;
+                list.innerHTML += `<p><strong>${rx.FileName}</strong> - <span class="${statusClass}">${rx.Status}</span> (${rx.Timestamp})</p>`;
+            });
+        }
+
+        // 4. Admin: Get Pending & Approve/Decline
+        async function getPendingRx() {
+            const res = await callAPI({ action: 'get_data', sheetName: 'Prescriptions' });
+            const list = document.getElementById('pendingList');
+            list.innerHTML = '';
+            
+            res.data.forEach(rx => {
+                if (rx.Status === 'PENDING') {
+                    list.innerHTML += `
+                        <div style="border:1px solid #ccc; padding:10px; margin:10px 0;">
+                            <p><strong>User:</strong> ${rx.UserID} | <strong>File:</strong> ${rx.FileName}</p>
+                            <button onclick="updateStatus('${rx.RxID}', 'APPROVED')" style="background:green;">Approve</button>
+                            <button onclick="updateStatus('${rx.RxID}', 'DECLINED')" style="background:red;">Decline</button>
+                        </div>
+                    `;
+                }
+            });
+        }
+
+        async function updateStatus(rxId, status) {
+            const res = await callAPI({ action: 'update_status', rxId, status });
+            alert(res.message);
+            getPendingRx(); // Refresh list
+        }
+    </script>
+</body>
+</html>
