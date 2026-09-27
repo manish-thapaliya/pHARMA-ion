@@ -470,6 +470,45 @@
   }
   .countdown { margin-top:8px; font:500 12px/1.4 var(--mono); color:var(--muted); }
 
+  /* ---------- sign-in card (password, social, one-time code) ---------- */
+  .auth-meta {
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    flex-wrap:wrap; margin-top:12px;
+  }
+  .auth-meta .check {
+    display:flex; align-items:center; gap:7px; margin:0; cursor:pointer;
+    font-size:12.5px; font-weight:600; color:var(--ink-2);
+  }
+  .auth-meta input[type="checkbox"] {
+    width:16px; height:16px; margin:0; padding:0; accent-color:var(--brand);
+    box-shadow:none; cursor:pointer;
+  }
+  .auth-link {
+    color:var(--brand); font:600 12.5px/1.4 var(--font); text-decoration:none;
+    background:none; border:0; padding:0; cursor:pointer;
+  }
+  .auth-link:hover, .auth-link:focus-visible { text-decoration:underline; }
+  .auth-link.strong { font-size:13px; font-weight:700; }
+  .social-divider {
+    display:flex; align-items:center; gap:12px; margin:18px 0 6px;
+    color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.12em;
+  }
+  .social-divider::before, .social-divider::after {
+    content:''; flex:1; height:1px; background:var(--line);
+  }
+  .btn.social {
+    width:100%; justify-content:center; margin-top:8px; min-height:42px;
+  }
+  .btn.social svg { width:17px; height:17px; flex:none; }
+  .btn.fb { background:#1877f2; border-color:#1877f2; box-shadow:0 1px 2px rgba(24,119,242,.35); }
+  .btn.fb:hover { background:#145dbf; border-color:#145dbf; }
+  .btn.google {
+    background:#fff; color:#2d3440; border-color:#d5dcea; box-shadow:var(--shadow-sm);
+  }
+  .btn.google:hover { background:#f6f9fd; border-color:#c2ccdd; color:var(--ink); }
+  .auth-switch { margin:16px 0 0; font-size:12.5px; color:var(--ink-2); }
+  #viewCode { max-width:520px; }
+
   /* ---------- prescription viewer (modal) ---------- */
   .rx-viewer { position:fixed; inset:0; z-index:90; display:grid; place-items:center; padding:18px; }
   .rx-viewer-backdrop { position:absolute; inset:0; background:rgba(9,20,36,.62); backdrop-filter:blur(6px); animation:fade .22s ease; }
@@ -793,13 +832,27 @@
   <div id="viewLogin">
     <div class="grid2 auth-grid">
       <div>
-        <span class="kicker">Sign in</span>
+        <span class="kicker">Returning customer</span>
         <h2>Welcome back</h2>
-        <p class="hint">Use your user ID or the email you registered with.</p>
-        <label for="lId">ID or Email</label><input id="lId" autocomplete="username" placeholder="U-2026-0010 or you@example.com">
+        <p class="hint">Sign in with your email or user ID — or get a one-time code by email.</p>
+        <label for="lId">Email / Mobile</label><input id="lId" autocomplete="username" placeholder="U-2026-0010 or you@example.com">
         <label for="lPass">Password</label><input id="lPass" type="password" autocomplete="current-password" placeholder="••••••••">
-        <button class="btn" onclick="doLogin()">Sign in</button>
-        <button class="btn link" onclick="showView('forgot')">Forgot password? Set it through email →</button>
+        <div class="auth-meta">
+          <label class="check" for="lRemember"><input type="checkbox" id="lRemember" checked> Remember me?</label>
+          <a class="auth-link" href="#" onclick="showView('forgot');return false">Forgot password?</a>
+        </div>
+        <button class="btn" onclick="doLogin()">Log in</button>
+        <div class="social-divider" role="separator" aria-label="or"><span>- or -</span></div>
+        <button class="btn social fb" type="button" onclick="socialLogin('facebook')">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06C2 17.08 5.66 21.24 10.44 22v-7.03H7.9v-2.91h2.54V9.85c0-2.52 1.49-3.91 3.77-3.91 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.78-1.63 1.57v1.89h2.78l-.44 2.91h-2.34V22C18.34 21.24 22 17.08 22 12.06Z"/></svg>
+          Login with Facebook
+        </button>
+        <button class="btn social google" type="button" onclick="socialLogin('google')">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.5 12.27c0-.85-.08-1.66-.22-2.45H12v4.64h6.45a5.52 5.52 0 0 1-2.39 3.62v3h3.87c2.26-2.09 3.57-5.17 3.57-8.81Z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.08 7.94-2.91l-3.87-3c-1.07.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.72-4.96H1.29v3.09A12 12 0 0 0 12 24Z"/><path fill="#FBBC05" d="M5.28 14.28a7.2 7.2 0 0 1 0-4.56V6.63H1.29a12 12 0 0 0 0 10.74l3.99-3.09Z"/><path fill="#EA4335" d="M12 4.76c1.77 0 3.35.61 4.6 1.8l3.43-3.43C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.29 6.63l3.99 3.09C6.22 6.87 8.87 4.76 12 4.76Z"/></svg>
+          Login with Google
+        </button>
+        <button class="btn link" onclick="startCodeLogin()">Email me a one-time code instead →</button>
+        <p class="auth-switch">Not a member? <a class="auth-link strong" href="#" onclick="focusRegister();return false">Sign Up Now</a></p>
       </div>
       <div>
         <span class="kicker">New patient</span>
@@ -815,6 +868,27 @@
         <button class="btn" onclick="doRegister()">Register → Get Email Code</button>
       </div>
     </div>
+  </div>
+
+  <!-- STEP: passwordless sign-in with a one-time email code -->
+  <div id="viewCode" style="display:none">
+    <div class="stepper"><span class="dot on"></span> Your email → <span class="dot" id="codeStepDot"></span> Enter the code</div>
+    <h2>Sign in with a one-time code</h2>
+    <p class="hint">We'll email a 6-digit code to your registered address. It works once, expires in 10 minutes, and no password is needed.</p>
+    <label for="cId">Email or User ID</label>
+    <input id="cId" autocomplete="username" placeholder="U-2026-0010 or you@example.com">
+    <div id="codeEntry" hidden>
+      <p class="hint">Code sent to <strong id="cEmailShow"></strong>. Enter it below.</p>
+      <div class="otp-row">
+        <input maxlength="1" class="cotp" inputmode="numeric" aria-label="Digit 1"><input maxlength="1" class="cotp" inputmode="numeric" aria-label="Digit 2"><input maxlength="1" class="cotp" inputmode="numeric" aria-label="Digit 3"><input maxlength="1" class="cotp" inputmode="numeric" aria-label="Digit 4"><input maxlength="1" class="cotp" inputmode="numeric" aria-label="Digit 5"><input maxlength="1" class="cotp" inputmode="numeric" aria-label="Digit 6">
+      </div>
+      <div class="countdown" id="cotpCountdown"></div>
+    </div>
+    <button class="btn" id="codeSendBtn" onclick="doCodeRequest()">Email me a sign-in code</button>
+    <button class="btn green" id="codeVerifyBtn" onclick="doCodeVerify()" hidden>Verify &amp; sign in</button>
+    <button class="btn gray" id="codeResendBtn" onclick="doCodeResend()" hidden>Resend code</button>
+    <button class="btn link" onclick="showView('login')">← Back to login</button>
+    <div id="codeMsg" class="msg"></div>
   </div>
 
   <!-- STEP: OTP verification -->
@@ -1165,7 +1239,14 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwEcJiZpX29IFGWZPnB9HbG
 const API_ENDPOINT = document.querySelector('meta[name="pharmago-demo"]') ? '/api' : API_URL;
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // keep in sync with MAX_UPLOAD_BYTES in code.gs
 
-let session = JSON.parse(localStorage.getItem('pharmago_session') || 'null'); // {userId, role, name}
+// Social sign-in (optional). Paste the Google OAuth client ID (Web application)
+// and the Facebook App ID to enable the two social buttons on the login card.
+// Leave blank and the buttons explain how to configure them. The Google client
+// ID is checked against the token audience in code.gs as well.
+const GOOGLE_CLIENT_ID = "";
+const FACEBOOK_APP_ID = "";
+
+let session = JSON.parse(localStorage.getItem('pharmago_session') || sessionStorage.getItem('pharmago_session') || 'null'); // {userId, role, name}
 let adminKey = sessionStorage.getItem('pharmago_adminkey') || '';
 let pendingVerify = null;   // { userId, email, purpose:'VERIFY' }
 let pendingMerchant = null; // { merchantId, email, purpose:'MVERIFY' }
@@ -1184,7 +1265,7 @@ window.addEventListener('online', updateNetworkState); window.addEventListener('
 
 // Workspace header copy — purely cosmetic, the tabs stay the source of truth.
 const TOPBAR_TITLES = {
-  login: 'Sign in, register or reset a password',
+  login: 'Sign in with a password, one-time code, Google or Facebook',
   user: 'Upload a prescription and track its review',
   shop: 'Search the catalogue of verified pharmacies',
   merchant: 'Register a pharmacy and manage your listings',
@@ -1314,7 +1395,7 @@ function renderSession() {
   applyAuthUI();
 }
 function showView(v) {
-  ['login','verify','forgot','reset'].forEach(x => {
+  ['login','verify','forgot','reset','code'].forEach(x => {
     const cap = x[0].toUpperCase() + x.slice(1);
     const el = document.getElementById('view' + cap);
     if (el) el.style.display = (x === v ? '' : 'none');
@@ -1458,19 +1539,189 @@ async function doLogin() {
   const res = await callAPI({ action:'login', loginId:document.getElementById('lId').value.trim(), password:document.getElementById('lPass').value.trim() });
   show('loginMsg', res.success, res.message);
   if (res.success) {
-    session = res.data;
-    localStorage.setItem('pharmago_session', JSON.stringify(session));
-    renderSession();
-    activateTab(session.role === 'MERCHANT' ? 'Merchant' : 'User');
+    finishLogin(res.data);
   } else if (/verify your email first/i.test(res.message) && pendingVerify) {
     enterVerifyView();
   }
+}
+
+// Store the session and land on the right workspace. "Remember me?" off keeps
+// the token in sessionStorage only (it disappears when the tab closes).
+function finishLogin(data) {
+  if (!data) return;
+  const remember = document.getElementById('lRemember');
+  session = data;
+  localStorage.removeItem('pharmago_session');
+  sessionStorage.removeItem('pharmago_session');
+  (remember && !remember.checked ? sessionStorage : localStorage)
+    .setItem('pharmago_session', JSON.stringify(session));
+  renderSession();
+  activateTab(session.role === 'MERCHANT' ? 'Merchant' : 'User');
+}
+
+// ===== ONE-TIME EMAIL SIGN-IN CODE =====
+let pendingCodeLogin = null; // { loginId }
+function startCodeLogin(back) {
+  if (back) { resetCodeLogin(); showView('login'); return; }
+  document.getElementById('cId').value = document.getElementById('lId').value.trim();
+  resetCodeLogin();
+  showView('code');
+  document.getElementById('cId').focus();
+}
+function resetCodeLogin() {
+  pendingCodeLogin = null;
+  document.getElementById('codeEntry').hidden = true;
+  document.getElementById('codeSendBtn').hidden = false;
+  document.getElementById('codeVerifyBtn').hidden = true;
+  document.getElementById('codeResendBtn').hidden = true;
+  document.getElementById('cId').disabled = false;
+  document.getElementById('codeStepDot').classList.remove('on');
+  document.querySelectorAll('.cotp').forEach(b => b.value = '');
+  stopCountdown('cotpCountdown');
+}
+async function doCodeRequest() {
+  const loginId = document.getElementById('cId').value.trim();
+  if (!loginId) return show('codeMsg', false, 'Enter your email or user ID.');
+  show('codeMsg', true, 'Sending your one-time code…');
+  const res = await callAPI({ action:'login_code', loginId });
+  show('codeMsg', res.success, res.message);
+  if (!res.success) return;
+  pendingCodeLogin = { loginId };
+  document.getElementById('codeEntry').hidden = false;
+  document.getElementById('codeSendBtn').hidden = true;
+  document.getElementById('codeVerifyBtn').hidden = false;
+  document.getElementById('codeResendBtn').hidden = false;
+  document.getElementById('cId').disabled = true;
+  document.getElementById('codeStepDot').classList.add('on');
+  document.getElementById('cEmailShow').textContent = loginId;
+  document.querySelectorAll('.cotp').forEach(b => b.value = '');
+  const first = document.querySelector('.cotp'); if (first) first.focus();
+  startOtpCountdown(600, 'cotpCountdown');
+  if (res.data && res.data.demoOtp) show('codeMsg', true, 'Demo sign-in code: ' + res.data.demoOtp);
+}
+async function doCodeResend() {
+  await doCodeRequest();
+}
+async function doCodeVerify() {
+  if (!pendingCodeLogin) return show('codeMsg', false, 'Request a sign-in code first.');
+  const otp = readOtp('.cotp');
+  if (otp.length !== 6) return show('codeMsg', false, 'Enter all 6 digits.');
+  const res = await callAPI({ action:'login_code_verify', loginId: pendingCodeLogin.loginId, otp });
+  show('codeMsg', res.success, res.message);
+  if (res.success) {
+    stopCountdown('cotpCountdown');
+    finishLogin(res.data);
+    if (res.data && res.data.passwordSet === false)
+      toast('Tip: set a password any time via “Forgot password?” for faster sign-in.');
+  }
+}
+
+// ===== SOCIAL LOGIN (Google / Facebook) =====
+let socialBusy = false;
+let facebookReady = false;
+function socialLogin(provider) {
+  if (socialBusy) return;
+  const label = provider === 'google' ? 'Google' : 'Facebook';
+  const configured = provider === 'google' ? GOOGLE_CLIENT_ID : FACEBOOK_APP_ID;
+  const isDemo = !!document.querySelector('meta[name="pharmago-demo"]');
+  if (!configured && isDemo) return demoSocialLogin(provider);
+  if (!configured) {
+    return show('loginMsg', false, label + ' sign-in is not configured yet. Paste your ' +
+      (provider === 'google'
+        ? 'Google OAuth client ID into GOOGLE_CLIENT_ID at the top of the <script> in index.html (and the same value into code.gs / its Script Properties)'
+        : 'Facebook App ID into FACEBOOK_APP_ID at the top of the <script> in index.html (and into code.gs / its Script Properties)') +
+      '. You can still sign in with your password or a one-time email code.');
+  }
+  if (provider === 'google') googleSocialLogin();
+  else facebookSocialLogin();
+}
+function demoSocialLogin(provider) {
+  show('loginMsg', true, 'Demo ' + (provider === 'google' ? 'Google' : 'Facebook') + ' sign-in…');
+  finishSocialRequest(provider, provider === 'google' ? 'demo-google-token' : 'demo-facebook-token');
+}
+async function finishSocialRequest(provider, token) {
+  socialBusy = true;
+  try {
+    const res = await callAPI({ action:'social_login', provider, accessToken: token });
+    show('loginMsg', res.success, res.message);
+    if (res.success) finishLogin(res.data);
+  } finally {
+    socialBusy = false;
+  }
+}
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector('script[src="' + src + '"]');
+    if (existing) {
+      if (existing.dataset.loaded === 'yes') return resolve();
+      existing.addEventListener('load', resolve);
+      existing.addEventListener('error', () => reject(new Error('Could not load ' + src)));
+      return;
+    }
+    const s = document.createElement('script');
+    s.src = src;
+    s.async = true;
+    s.onload = () => { s.dataset.loaded = 'yes'; resolve(); };
+    s.onerror = () => reject(new Error('Could not load ' + src));
+    document.head.appendChild(s);
+  });
+}
+async function googleSocialLogin() {
+  try {
+    show('loginMsg', true, 'Opening Google sign-in…');
+    await loadScript('https://accounts.google.com/gsi/client');
+    const g = window.google;
+    if (!g || !g.accounts || !g.accounts.oauth2)
+      throw new Error('Google Identity Services is unavailable');
+    const client = g.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: 'openid email profile',
+      callback: resp => {
+        if (!resp || resp.error || !resp.access_token)
+          return show('loginMsg', false, 'Google sign-in was cancelled or failed' +
+            (resp && resp.error ? ' (' + resp.error + ')' : '') + '.');
+        show('loginMsg', true, 'Finishing Google sign-in…');
+        finishSocialRequest('google', resp.access_token);
+      },
+    });
+    client.requestAccessToken();
+  } catch (err) {
+    show('loginMsg', false, err.message + '. You can still sign in with your password or a one-time email code.');
+  }
+}
+async function facebookSocialLogin() {
+  try {
+    show('loginMsg', true, 'Opening Facebook sign-in…');
+    await loadScript('https://connect.facebook.net/en_US/sdk.js');
+    if (!window.FB) throw new Error('Facebook SDK is unavailable');
+    if (!facebookReady) {
+      window.FB.init({ appId: FACEBOOK_APP_ID, cookie: true, xfbml: false, version: 'v19.0' });
+      facebookReady = true;
+    }
+    window.FB.login(resp => {
+      if (!resp || !resp.authResponse)
+        return show('loginMsg', false, 'Facebook sign-in was cancelled.');
+      show('loginMsg', true, 'Finishing Facebook sign-in…');
+      finishSocialRequest('facebook', resp.authResponse.accessToken);
+    }, { scope: 'email' });
+  } catch (err) {
+    show('loginMsg', false, err.message + '. You can still sign in with your password or a one-time email code.');
+  }
+}
+
+function focusRegister() {
+  const name = document.getElementById('rName');
+  if (!name) return;
+  try { name.scrollIntoView({ block:'center', behavior:'smooth' }); } catch (err) { /* jsdom */ }
+  name.focus();
 }
 function logout() {
   document.getElementById('rxDeliveryForm').reset();
   const token = session && session.sessionToken;
   localStorage.removeItem('pharmago_session');
+  sessionStorage.removeItem('pharmago_session');
   session = null;
+  resetCodeLogin();
   renderSession();
   showView('login');
   activateTab('Login');
@@ -2217,6 +2468,7 @@ async function loadAdminMedicines() {
 (function init() {
   wireOtpBoxes('.otp');
   wireOtpBoxes('.motp');
+  wireOtpBoxes('.cotp');
   wireRxDrop();
   document.addEventListener('keydown', event => {
     const overlay = document.getElementById('rxViewer');

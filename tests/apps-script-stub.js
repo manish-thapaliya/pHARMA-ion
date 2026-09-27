@@ -20,6 +20,8 @@ function createStub() {
     folders: new Map(),  // folderId  -> Folder
     mailbox: [],         // {to, subject, body}
     props: {},           // script properties
+    fetches: [],         // {url, options} — outbound UrlFetchApp traffic
+    fetchResponder: null, // (url, options) => object|null — mocked JSON responses
     seq: 0,
   };
 
@@ -280,6 +282,25 @@ function createStub() {
 
   const Logger = { log: () => {}, clear: () => {} };
 
+  // ------------------------------------------------------------- UrlFetchApp
+  // Social sign-in verification (Google tokeninfo / Facebook Graph) happens
+  // server-side in code.gs. Tests and the demo install state.fetchResponder to
+  // answer those calls; without a responder every request 404s.
+  const UrlFetchApp = {
+    fetch(url, options) {
+      const record = { url: String(url), options: options || {} };
+      state.fetches.push(record);
+      let body = null;
+      if (state.fetchResponder) {
+        try { body = state.fetchResponder(record.url, record.options); } catch (err) { body = null; }
+      }
+      return {
+        getResponseCode: () => (body ? 200 : 404),
+        getContentText: () => (body ? JSON.stringify(body) : '{}'),
+      };
+    },
+  };
+
   // ------------------------------------------------------------- test helpers
   const helpers = {
     /** base64 of a string, so specs do not need Buffer inside the vm. */
@@ -345,12 +366,18 @@ function createStub() {
     },
     fileById: (id) => state.files.get(id),
     folder: (name) => [...state.folders.values()].find((f) => f.name === name),
+    /** Mock outbound HTTP (social token verification). Return an object for a
+     *  JSON 200 response, or null for a 404. */
+    setFetchResponder(fn) { state.fetchResponder = fn; },
+    fetches: state.fetches,
     reset() {
       state.sheets.clear();
       state.files.clear();
       state.folders.clear();
       state.mailbox.length = 0;
       state.props = {};
+      state.fetches.length = 0;
+      state.fetchResponder = null;
       state.seq = 0;
       // re-register the default folders
       [ROOT, PENDING, APPROVED, DECLINED].forEach((f) => state.folders.set(f.id, f));
@@ -362,7 +389,7 @@ function createStub() {
   return {
     state, helpers,
     SpreadsheetApp, DriveApp, MailApp, Utilities, PropertiesService,
-    ScriptApp, HtmlService, ContentService, Session, LockService, Logger,
+    ScriptApp, HtmlService, ContentService, Session, LockService, Logger, UrlFetchApp,
   };
 }
 

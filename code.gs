@@ -21,8 +21,15 @@ const DECLINED_FOLDER_ID = '1A028GXtnT_nH0dXDwJS4NWmQNnQcoQ3X'; // declined Rx m
 const MERCHANT_DOCS_FOLDER_ID = '';
 const MERCHANT_DOCS_FOLDER_NAME = 'PharmaGo — Merchant KYC Docs';
 
-// Simple shared secret for admin actions (change it! Script Property wins)
+// Simple shared secret for admin actions (change this! Script Property wins)
 const ADMIN_KEY = 'changeme-admin-key';
+
+// Social sign-in (optional). GOOGLE_CLIENT_ID is the OAuth client ID (Web) whose
+// audience is checked against Google tokens; FACEBOOK_APP_ID is the Facebook app
+// the access token must belong to. Mirror the Google client ID in index.html.
+// Both can be set as Script Properties instead of editing this file.
+const GOOGLE_CLIENT_ID = '';
+const FACEBOOK_APP_ID = '';
 
 // Your GitHub Pages URL — emailed "set password" links redirect here.
 // Leave blank to serve the set-password form straight from Apps Script
@@ -94,6 +101,9 @@ function handleRequest_(data) {
     if (action === 'verify_merchant')   return verifyMerchantEmail(data); // vendor OTP step
     if (action === 'resend_otp')        return resendOtp(data);           // new OTP to email
     if (action === 'login')             return loginUser(data);
+    if (action === 'login_code')        return requestLoginCode(data);   // 6-digit sign-in code to email
+    if (action === 'login_code_verify') return verifyLoginCode(data);    // code -> session
+    if (action === 'social_login')      return socialLogin(data);        // Google / Facebook
     if (action === 'logout')            return logoutSession(data);
     if (action === 'forgot_password')   return sendPasswordResetEmail(data); // emailed token link
     if (action === 'reset_password')    return resetPasswordWithToken(data); // set new password via token
@@ -301,6 +311,181 @@ function loginUser(data) {
     }
   }
   return fail_('Invalid ID/email or password.');
+}
+
+// ------------------------------------------------------------
+// PASSWORDLESS SIGN-IN WITH A ONE-TIME EMAIL CODE
+//   login_code        → emails a 6-digit code (neutral reply, like forgot-password)
+//   login_code_verify → the code is single-use; signing in also proves the
+//                       address, so an UNVERIFIED customer is activated.
+// ------------------------------------------------------------
+function requestLoginCode(data) {
+  const loginId = String(data.loginId || '').trim();
+  if (!loginId) return fail_('Enter your email or user ID.');
+
+  // Same answer whether or not the account exists — never confirm existence.
+  const neutral = 'If that account exists and can sign in, a 6-digit code has been emailed to it. ' +
+                  'The code works once and expires in ' + OTP_TTL_MINUTES + ' minutes.';
+  const user = findUserByLoginId_(loginId);
+  if (!user) return ok_(neutral);
+
+  const status = String(user[6]);
+  const role = String(user[4]);
+  // Customers prove the address by receiving the code, so UNVERIFIED USERs may
+  // sign in this way too (verifyLoginCode activates them). Anything else must
+  // finish the normal flow first — and gets the same neutral reply.
+  if (status !== 'ACTIVE' && !(status === 'UNVERIFIED' && role === 'USER')) return ok_(neutral);
+
+  const r = issueOtpAndEmail_(String(user[1]), String(user[0]), 'LOGIN');
+  return r.ok ? ok_(neutral) : fail_(r.message);
+}
+
+function verifyLoginCode(data) {
+  const loginId = String(data.loginId || '').trim();
+  if (!loginId) return fail_('Enter your email or user ID.');
+
+  const user = findUserByLoginId_(loginId);
+  if (!user) return fail_('No active code found — request a new one.');
+
+  const userId = String(user[0]);
+  const check = consumeOtp_('LOGIN:' + userId, data.otp);
+  if (!check.ok) return fail_(check.message);
+
+  // Re-check the account state now that the code is spent.
+  const status = String(user[6]);
+  if (status === 'PENDING')  return fail_('Account awaiting admin approval.');
+  if (status === 'DECLINED') return fail_('Account was declined by admin.');
+
+  let promoted = false;
+  if (status === 'UNVERIFIED') {
+    if (String(user[4]) !== 'USER') return fail_('Please verify your email first (enter the OTP we sent you).');
+    // Receiving the emailed code proves ownership of the address.
+    const sheet = getSheet_(SHEETS.USERS);
+    const idx = indexOfUser_(sheet, userId);
+    if (idx >= 0) { sheet.getRange(idx + 1, 7).setValue('ACTIVE'); promoted = true; }
+  }
+
+  return ok_(promoted ? 'Email verified — you are signed in.' : 'Login successful', {
+    userId: userId,
+    role: String(user[4]),
+    name: String(user[5]),
+    sessionToken: issueSession_(userId),
+    passwordSet: !!String(user[3])
+  });
+}
+
+// ------------------------------------------------------------
+// SOCIAL SIGN-IN (Google / Facebook)
+//   The browser only forwards the provider token; the profile is fetched
+//   server-side here, so a forged email claim from the page is ignored.
+//   First sign-in creates an ACTIVE customer (the provider verified the
+//   email); later sign-ins reuse the account with that email.
+// ------------------------------------------------------------
+function socialLogin(data) {
+  const provider = String(data.provider || '').toLowerCase();
+  const token = String(data.idToken || data.accessToken || '').trim();
+  if (provider !== 'google' && provider !== 'facebook') return fail_('Unknown sign-in provider.');
+  if (!token) return fail_('Missing ' + provider + ' sign-in token.');
+
+  const profile = verifySocialToken_(provider, token);
+  if (!profile.ok) return fail_(profile.message);
+  return socialSignIn_(provider, profile);
+}
+
+function verifySocialToken_(provider, token) {
+  if (typeof UrlFetchApp === 'undefined')
+    return { ok: false, message: 'Social sign-in is not available on this server.' };
+  try {
+    if (provider === 'google') {
+      const res = UrlFetchApp.fetch(
+        'https://oauth2.googleapis.com/tokeninfo?access_token=' + encodeURIComponent(token),
+        { muteHttpExceptions: true });
+      if (res.getResponseCode() !== 200)
+        return { ok: false, message: 'Google sign-in could not be verified — please try again.' };
+      const info = JSON.parse(res.getContentText());
+      const audience = cfg_('GOOGLE_CLIENT_ID', GOOGLE_CLIENT_ID);
+      if (audience && String(info.aud || '') !== audience)
+        return { ok: false, message: 'That Google sign-in token was issued for a different app.' };
+      if (!info.email || info.email_verified === false || info.email_verified === 'false')
+        return { ok: false, message: 'Your Google account email address is not verified.' };
+      let name = '';
+      try { // optional pretty name; the token check above is the source of truth
+        const ures = UrlFetchApp.fetch('https://www.googleapis.com/oauth2/v3/userinfo',
+          { headers: { Authorization: 'Bearer ' + token }, muteHttpExceptions: true });
+        if (ures.getResponseCode() === 200) name = String(JSON.parse(ures.getContentText()).name || '');
+      } catch (nameErr) { /* keep going without a name */ }
+      return { ok: true, email: String(info.email), name: name,
+               providerId: String(info.sub || info.user_id || '') };
+    }
+
+    // Facebook: /me returns the profile the token belongs to; /app binds the
+    // token to our app ID so tokens from other apps cannot be replayed.
+    const res = UrlFetchApp.fetch(
+      'https://graph.facebook.com/me?fields=id,name,email&access_token=' + encodeURIComponent(token),
+      { muteHttpExceptions: true });
+    if (res.getResponseCode() !== 200)
+      return { ok: false, message: 'Facebook sign-in could not be verified — please try again.' };
+    const info = JSON.parse(res.getContentText());
+    if (!info.email)
+      return { ok: false, message: 'Your Facebook account has no confirmed email address.' };
+    const appId = cfg_('FACEBOOK_APP_ID', FACEBOOK_APP_ID);
+    if (appId) {
+      const appRes = UrlFetchApp.fetch(
+        'https://graph.facebook.com/app?access_token=' + encodeURIComponent(token),
+        { muteHttpExceptions: true });
+      const app = appRes.getResponseCode() === 200 ? JSON.parse(appRes.getContentText()) : {};
+      if (String(app.id || '') !== appId)
+        return { ok: false, message: 'That Facebook sign-in token was issued for a different app.' };
+    }
+    return { ok: true, email: String(info.email), name: String(info.name || ''),
+             providerId: String(info.id || '') };
+  } catch (err) {
+    return { ok: false, message: 'Could not reach ' + provider + ' to verify sign-in: ' + err.message };
+  }
+}
+
+function socialSignIn_(provider, profile) {
+  const email = String(profile.email || '').trim().toLowerCase();
+  const label = provider === 'google' ? 'Google' : 'Facebook';
+
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) return fail_('Sign-in is busy. Please try again.');
+  try {
+    const sheet = getSheet_(SHEETS.USERS);
+    const rows = sheet.getDataRange().getValues();
+
+    let row = null;
+    for (let i = 1; i < rows.length; i++) {
+      if (String(rows[i][1]).toLowerCase() === email) { row = rows[i]; break; }
+    }
+
+    if (!row) {
+      // First social sign-in: the provider already proved the email address,
+      // so the customer account starts ACTIVE (no OTP round-trip needed).
+      const userId = nextCustomerId_(rows);
+      const name = String(profile.name || '').trim();
+      sheet.appendRow([userId, email, '', '', 'USER', name, 'ACTIVE', nowIso_()]);
+      return ok_('Signed in with ' + label + '. Welcome to PharmaGo!',
+        { userId: userId, role: 'USER', name: name, sessionToken: issueSession_(userId),
+          isNew: true, passwordSet: false });
+    }
+
+    const status = String(row[6]);
+    if (status === 'PENDING')  return fail_('Account awaiting admin approval.');
+    if (status === 'DECLINED') return fail_('Account was declined by admin.');
+    if (status === 'UNVERIFIED') {
+      if (String(row[4]) !== 'USER')
+        return fail_('Please verify your email first (enter the OTP we sent you).');
+      sheet.getRange(indexOfUser_(sheet, String(row[0])) + 1, 7).setValue('ACTIVE');
+    }
+
+    return ok_('Signed in with ' + label + '.',
+      { userId: String(row[0]), role: String(row[4]), name: String(row[5]),
+        sessionToken: issueSession_(String(row[0])), isNew: false,
+        passwordSet: !!String(row[3]) });
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 // ------------------------------------------------------------
@@ -1283,7 +1468,11 @@ function issueOtpRawCode_(identifier, purpose, rawCode, ttlMinutes) {
 function issueOtpAndEmail_(email, identifier, purpose) {
   const otp = String(Math.floor(100000 + Math.random() * 900000)); // 6 digits
   issueOtpRawCode_(identifier, purpose, otp, OTP_TTL_MINUTES);
-  const what = purpose === 'MVERIFY' ? 'PharmaGo vendor verification' : 'PharmaGo account verification';
+  const what = purpose === 'MVERIFY' ? 'PharmaGo vendor verification'
+    : purpose === 'LOGIN' ? 'PharmaGo sign-in' : 'PharmaGo account verification';
+  const subject = purpose === 'LOGIN'
+    ? otp + ' is your PharmaGo sign-in code'
+    : otp + ' is your PharmaGo verification code';
   const body =
     'Your one-time ' + what + ' code is:\n\n        ' + otp + '\n\n' +
     'It expires in ' + OTP_TTL_MINUTES + ' minutes and works once.\n' +
@@ -1291,12 +1480,12 @@ function issueOtpAndEmail_(email, identifier, purpose) {
   try {
     MailApp.sendEmail({
       to: email,
-      subject: otp + ' is your PharmaGo verification code',
+      subject: subject,
       body: body,
       htmlBody: emailHtml_({
         heading: what,
         highlight: otp,
-        highlightLabel: 'Verification code',
+        highlightLabel: purpose === 'LOGIN' ? 'Sign-in code' : 'Verification code',
         text: 'Enter this code in the app to continue. It expires in ' + OTP_TTL_MINUTES +
           ' minutes and works once.\n' + "Didn't request this? Ignore this email."
       })
