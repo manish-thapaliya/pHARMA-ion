@@ -46,6 +46,10 @@ function createStub() {
     getLastRow() { return this.rows.length; }
     getLastColumn() { return this.rows.reduce((m, r) => Math.max(m, r.length), 0); }
     appendRow(arr) { this.rows.push(arr.slice()); }
+    deleteRow(row) {
+      if (row >= 1 && row <= this.rows.length) this.rows.splice(row - 1, 1);
+      return this;
+    }
     clear() { this.rows = []; return this; }
     setFrozenRows(n) { this.frozen = n; return this; }
     getDataRange() {

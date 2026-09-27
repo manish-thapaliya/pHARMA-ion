@@ -53,7 +53,8 @@ which overrides the constant in `code.gs` — handy for keeping secrets out of G
 ## Flows at a glance
 
 * **Customer** — register → 6-digit email code → (set password now, or by emailed link) → log in →
-  upload prescription → preview the file and track status.
+  upload prescription → preview the file and track status. An approved prescription can place an
+  order for a catalogue medicine; the pharmacy accepts or declines it and is emailed either way.
 * **Vendor** — register with GST + Drug License + Shop ID + PAN → email code → admin reviews the
   documents → approved vendor logs in and lists medicines (own listings only).
 * **Admin** — unlock with the admin key → open each prescription in the same viewer the patient uses,
@@ -70,7 +71,7 @@ Install the UI test dependency first. The backend runs against a mocked Apps Scr
 ```bash
 npm install
 npm test              # backend end-to-end + frontend wiring + 64 browser-like UI-state checks
-npm run test:api      # 19 scenarios / 184 checks against code.gs
+npm run test:api      # 22 scenarios / 221 checks against code.gs
 npm run test:frontend # index.html wiring + UI-state checks
 ```
 
@@ -150,9 +151,12 @@ Run against the previous revision — the first four made the app unusable end t
 
 ## Still to do before real use
 
-* `ADMIN_KEY` is typed into the browser and kept in `localStorage` — fine for an MVP, but move admin
+* `ADMIN_KEY` is typed into the browser and kept in `sessionStorage` — fine for an MVP, but move admin
   actions behind a real Google sign-in (`Session.getActiveUser()`) before going live.
-* Passwords are unsalted SHA-256 (`hashPassword_`). Swap in a salted KDF and/or rely on Google sign-in.
-* Prescription files are shared “anyone with the link” so the admin panel can open them. Use signed
-  URLs or Drive-scoped access if real patient data is involved.
-* Add pagination / pruning — the `Otps` sheet grows forever today.
+* Customer and pharmacy actions now require a 7-day session token from `login`. Passwords are stored
+  as `s1$salt$hash`; older unsalted hashes still log in and are upgraded. The token lives in
+  `localStorage`, which a stolen browser profile can read — httpOnly cookies need a different host.
+* New prescription files are private. `view_rx` reads them as the script owner. Reviewing an older
+  link-shared file locks it down. Redeploy the Apps Script web app or the live page cannot issue tokens.
+* Orders connect an approved prescription to one catalogue medicine. There is no delivery tracking,
+  payment, or multi-item basket yet.

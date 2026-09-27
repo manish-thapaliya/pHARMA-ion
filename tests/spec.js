@@ -53,6 +53,11 @@ globalThis.runTests = function runTests() {
     const v = call({ action: 'verify_email', userId: u.userId, otp: u.otp, password });
     ok(v.success, 'verify_email succeeds for ' + email, v.message);
     ok(H.findRow('Users', 0, u.userId)[6] === 'ACTIVE', 'user status is ACTIVE after OTP');
+    if (password) {
+      const login = call({ action: 'login', loginId: email, password: password });
+      ok(login.success, 'session issued for ' + email, login.message);
+      u.sessionToken = login.data.sessionToken;
+    }
     return u;
   }
 
@@ -193,7 +198,7 @@ globalThis.runTests = function runTests() {
     const content = H.b64('%PDF-1.4 fake prescription');
 
     const up = call({
-      action: 'upload_rx', userId: u.userId, fileName: 'my Rx scan.pdf',
+      action: 'upload_rx', userId: u.userId, sessionToken: u.sessionToken, fileName: 'my Rx scan.pdf',
       fileType: 'application/pdf', fileBase64: content,
     });
     ok(up.success, 'upload_rx succeeds', up.message);
@@ -208,8 +213,8 @@ globalThis.runTests = function runTests() {
     ok(pending.fileNames().indexOf(rx[2]) !== -1, 'file lands in the Pending folder',
       pending.fileNames().join(','));
     const file = pending.fileIds.map((id) => H.fileById(id)).find((f) => f.name === rx[2]);
-    ok(file.sharing && file.sharing.access === 'ANYONE_WITH_LINK',
-      'prescription is viewable by link (admin/user can open it)');
+    ok(file.sharing && file.sharing.access === 'PRIVATE',
+      'prescription is private; owner and admin open it through view_rx');
 
     // unauthorised review
     const denied = call({ action: 'update_status', adminKey: 'nope', rxId: up.data.rxId, status: 'APPROVED' });
@@ -220,6 +225,9 @@ globalThis.runTests = function runTests() {
       status: 'APPROVED', note: 'looks valid',
     });
     ok(approved.success, 'admin can approve', approved.message);
+    const mailed = H.lastMail('rx@example.com');
+    ok(mailed && /approved/i.test(mailed.subject + mailed.body), 'patient is emailed on approval',
+      mailed && mailed.subject);
 
     const row = H.findRow('Prescriptions', 0, up.data.rxId);
     eq(row[4], 'APPROVED', 'status becomes APPROVED');
@@ -239,7 +247,7 @@ globalThis.runTests = function runTests() {
 
     // decline path
     const up2 = call({
-      action: 'upload_rx', userId: u.userId, fileName: 'second.pdf',
+      action: 'upload_rx', userId: u.userId, sessionToken: u.sessionToken, fileName: 'second.pdf',
       fileType: 'application/pdf', fileBase64: content,
     });
     ok(call({
@@ -257,15 +265,15 @@ globalThis.runTests = function runTests() {
     const b = verifiedCustomer('h2@example.com', '9800000007', 'secret123');
     const content = H.b64('rx');
     [[a, 'a1.pdf'], [a, 'a2.pdf'], [b, 'b1.pdf']].forEach(([u, f]) => {
-      call({ action: 'upload_rx', userId: u.userId, fileName: f, fileType: 'application/pdf', fileBase64: content });
+      call({ action: 'upload_rx', userId: u.userId, sessionToken: u.sessionToken, fileName: f, fileType: 'application/pdf', fileBase64: content });
     });
 
-    const ra = call({ action: 'get_data', sheetName: 'Prescriptions', userId: a.userId });
+    const ra = call({ action: 'get_data', sheetName: 'Prescriptions', userId: a.userId, sessionToken: a.sessionToken });
     ok(ra.success, 'get_data for own history works', ra.message);
     eq(ra.data.length, 2, 'user A sees only their 2 prescriptions');
     ok(ra.data.every((r) => r.UserID === a.userId), 'no other user rows leak');
 
-    const rb = call({ action: 'get_data', sheetName: 'Prescriptions', userId: b.userId });
+    const rb = call({ action: 'get_data', sheetName: 'Prescriptions', userId: b.userId, sessionToken: b.sessionToken });
     eq(rb.data.length, 1, 'user B sees only their 1 prescription');
 
     const adminAll = call({ action: 'get_data', sheetName: 'Prescriptions', adminKey: 'changeme-admin-key' });
@@ -280,19 +288,19 @@ globalThis.runTests = function runTests() {
     const other = verifiedCustomer('other@example.com', '9800000042', 'secret123');
     const content = H.b64('%PDF-1.4 fictional prescription');
     const up = call({
-      action: 'upload_rx', userId: owner.userId, fileName: 'scan.pdf',
+      action: 'upload_rx', userId: owner.userId, sessionToken: owner.sessionToken, fileName: 'scan.pdf',
       fileType: 'application/pdf', fileBase64: content,
     });
     ok(up.success, 'upload for view test succeeds', up.message);
 
-    const own = call({ action: 'view_rx', rxId: up.data.rxId, userId: owner.userId });
+    const own = call({ action: 'view_rx', rxId: up.data.rxId, userId: owner.userId, sessionToken: owner.sessionToken });
     ok(own.success, 'owner can view the prescription', own.message);
     eq(own.data.fileBase64, content, 'owner receives the original file bytes');
     eq(own.data.fileType, 'application/pdf', 'pdf content type is returned');
     eq(own.data.status, 'PENDING', 'viewer includes status');
     ok(own.data.fileName.indexOf('scan.pdf') !== -1, 'viewer includes the file name', own.data.fileName);
 
-    const stranger = call({ action: 'view_rx', rxId: up.data.rxId, userId: other.userId });
+    const stranger = call({ action: 'view_rx', rxId: up.data.rxId, userId: other.userId, sessionToken: other.sessionToken });
     ok(!stranger.success, 'another customer cannot view the file');
     const anon = call({ action: 'view_rx', rxId: up.data.rxId });
     ok(!anon.success, 'anonymous view is rejected');
@@ -305,7 +313,7 @@ globalThis.runTests = function runTests() {
 
     ok(call({ action: 'update_status', adminKey: 'changeme-admin-key', rxId: up.data.rxId, status: 'APPROVED' }).success,
       'approve before a second view');
-    const after = call({ action: 'view_rx', rxId: up.data.rxId, userId: owner.userId });
+    const after = call({ action: 'view_rx', rxId: up.data.rxId, userId: owner.userId, sessionToken: owner.sessionToken });
     ok(after.success && after.data.fileBase64 === content, 'file remains viewable after approval');
     eq(after.data.status, 'APPROVED', 'viewer reflects the reviewed status');
 
@@ -450,7 +458,8 @@ globalThis.runTests = function runTests() {
     eq(call({ action: 'get_medicines' }).data.length, 1, 'inactive medicine hidden from catalogue');
 
     // vendor only sees/edits their own
-    const mine = call({ action: 'get_data', sheetName: 'Medicines', merchantId: mid });
+    const vendorLogin = call({ action: 'login', loginId: mid, password: 'vendorpw1' });
+    const mine = call({ action: 'get_data', sheetName: 'Medicines', merchantId: mid, sessionToken: vendorLogin.data.sessionToken });
     ok(mine.success, 'vendor can list own medicines', mine.message);
     eq(mine.data.length, 1, 'vendor sees only their own listing');
     const other = call({
@@ -521,8 +530,8 @@ globalThis.runTests = function runTests() {
     [[1, 'p1.pdf'], [2, 'p2.pdf']].forEach(([n, f]) => {
       call({ action: 'upload_rx', userId: emails[n], fileName: f, fileType: 'application/pdf', fileBase64: H.b64('x') });
     });
-    eq(call({ action: 'get_data', sheetName: 'Prescriptions', userId: uid }).data.length, 0,
-      'user 0 does not see another user\'s upload');
+    ok(!call({ action: 'get_data', sheetName: 'Prescriptions', userId: uid }).success,
+      'a user id alone cannot list prescriptions');
   });
 
   // =====================================================================
@@ -574,16 +583,17 @@ globalThis.runTests = function runTests() {
       action: 'upload_rx', userId: r.data.userId, fileName: 'x.pdf',
       fileType: 'application/pdf', fileBase64: H.b64('x'),
     });
-    ok(!upload.success && /unverified/i.test(upload.message), 'unverified user blocked', upload.message);
+    ok(!upload.success && /sign in again/i.test(upload.message), 'upload without a session is rejected', upload.message);
 
     call({ action: 'verify_email', userId: r.data.userId, otp: H.lastOtp('u@example.com'), password: 'secret123' });
+    const token = call({ action: 'login', loginId: 'u@example.com', password: 'secret123' }).data.sessionToken;
     ok(call({
-      action: 'upload_rx', userId: r.data.userId, fileName: 'x.pdf',
+      action: 'upload_rx', userId: r.data.userId, sessionToken: token, fileName: 'x.pdf',
       fileType: 'application/pdf', fileBase64: H.b64('x'),
     }).success, 'verified user can upload');
 
     const huge = call({
-      action: 'upload_rx', userId: r.data.userId, fileName: 'big.pdf',
+      action: 'upload_rx', userId: r.data.userId, sessionToken: token, fileName: 'big.pdf',
       fileType: 'application/pdf', fileBase64: H.b64('x'.repeat(15 * 1024 * 1024)),
     });
     ok(!huge.success && /too large/i.test(huge.message), 'oversized upload rejected', huge.message);
@@ -605,6 +615,95 @@ globalThis.runTests = function runTests() {
     ok(worked, 'urlencoded form POST sets the password', String(content).slice(0, 160));
     ok(call({ action: 'login', loginId: u.email, password: 'formpass1' }).success,
       'login works after the form POST');
+  });
+
+  // =====================================================================
+  scenario('session token is required, and logout revokes it', () => {
+    boot();
+    const u = verifiedCustomer('tok@example.com', '9800000044', 'secret123');
+    truthy(u.sessionToken, 'login returns a session token');
+    ok(String(H.findRow('Users', 0, u.userId)[3]).indexOf('s1$') === 0, 'new passwords are salted');
+
+    const row = H.findRow('Users', 0, u.userId);
+    row[3] = hashPassword_('secret123');
+    const again = call({ action: 'login', loginId: u.email, password: 'secret123' });
+    ok(again.success, 'legacy unsalted hash still logs in', again.message);
+    ok(String(H.findRow('Users', 0, u.userId)[3]).indexOf('s1$') === 0, 'legacy hash is upgraded on login');
+
+    ok(call({ action: 'logout', sessionToken: again.data.sessionToken }).success, 'logout succeeds');
+    ok(!call({ action: 'get_data', sheetName: 'Prescriptions', sessionToken: again.data.sessionToken }).success,
+      'revoked token cannot list prescriptions');
+    ok(call({ action: 'get_data', sheetName: 'Prescriptions', sessionToken: u.sessionToken }).success,
+      'a different device session still works');
+  });
+
+  // =====================================================================
+  scenario('consumed and expired OTP rows are pruned', () => {
+    boot();
+    const u = registerCustomer('prune@example.com', '9800000045');
+    const before = H.sheetRows('Otps').length;
+    H.sheetRows('Otps')[1][3] = new Date(Date.now() - 60000).toISOString();
+    call({ action: 'resend_otp', email: u.email });
+    ok(H.sheetRows('Otps').length <= before, 'expired OTP row is removed when a new code is issued',
+      String(H.sheetRows('Otps').length));
+    ok(H.lastOtp(u.email), 'a fresh code is still emailed');
+  });
+
+  // =====================================================================
+  scenario('approved prescription can be ordered and the pharmacy can accept it', () => {
+    boot();
+    const customer = verifiedCustomer('ord@example.com', '9800000046', 'secret123');
+    const docs = ['GST', 'DRUG_LICENSE', 'SHOP_ID', 'PAN'].map((t) => ({
+      docType: t, fileName: t + '.pdf', fileType: 'application/pdf', fileBase64: H.b64('doc'),
+    }));
+    const mid = call({
+      action: 'register_merchant', email: 'shop@example.com', phone: '9800000047',
+      shopName: 'Order Pharmacy', documents: docs, password: 'vendorpw1', password2: 'vendorpw1',
+    }).data.merchantId;
+    call({ action: 'verify_merchant', merchantId: mid, otp: H.lastOtp('shop@example.com') });
+    call({ action: 'review_merchant', adminKey: 'changeme-admin-key', merchantId: mid, status: 'APPROVED' });
+    const med = call({
+      action: 'add_medicine', merchantId: mid, password: 'vendorpw1',
+      name: 'Vitamin C', price: 149, stock: 5,
+    });
+    ok(med.success, 'medicine listed for the order test', med.message);
+
+    const pending = call({
+      action: 'upload_rx', sessionToken: customer.sessionToken, fileName: 'rx.pdf',
+      fileType: 'application/pdf', fileBase64: H.b64('%PDF-1.4 rx'),
+    });
+    ok(!call({
+      action: 'place_order', sessionToken: customer.sessionToken,
+      medicineId: med.data.medId, qty: 1, rxId: pending.data.rxId,
+    }).success, 'pending prescription cannot be used for an order');
+
+    call({ action: 'update_status', adminKey: 'changeme-admin-key', rxId: pending.data.rxId, status: 'APPROVED' });
+    const placed = call({
+      action: 'place_order', sessionToken: customer.sessionToken,
+      medicineId: med.data.medId, qty: 2, rxId: pending.data.rxId,
+    });
+    ok(placed.success, 'approved prescription can place an order', placed.message);
+    ok(!call({
+      action: 'place_order', medicineId: med.data.medId, qty: 1, rxId: pending.data.rxId,
+    }).success, 'order without a session is rejected');
+
+    const shopLogin = call({ action: 'login', loginId: mid, password: 'vendorpw1' });
+    const queue = call({ action: 'list_orders', sessionToken: shopLogin.data.sessionToken });
+    ok(queue.success && queue.data.length === 1, 'pharmacy sees the order');
+    eq(queue.data[0].Status, 'PLACED', 'new order is placed');
+
+    ok(call({
+      action: 'review_order', sessionToken: shopLogin.data.sessionToken,
+      orderId: placed.data.orderId, status: 'ACCEPTED',
+    }).success, 'pharmacy can accept');
+    eq(H.findRow('Medicines', 0, med.data.medId)[4], 3, 'stock decreases on accept');
+    const mine = call({ action: 'list_orders', sessionToken: customer.sessionToken });
+    eq(mine.data[0].Status, 'ACCEPTED', 'customer sees the accepted order');
+    ok(/accepted/i.test(H.lastMail(customer.email).subject), 'customer is emailed when the order is accepted');
+    ok(!call({
+      action: 'review_order', sessionToken: customer.sessionToken,
+      orderId: placed.data.orderId, status: 'DECLINED',
+    }).success, 'customer cannot review their own order');
   });
 
   return results;

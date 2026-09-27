@@ -178,6 +178,8 @@
   .chip.status-PENDING { color:#8a5a12; background:#fff4df; animation:pulse 2.2s ease-in-out infinite; }
   .chip.status-APPROVED { color:#0e7a62; background:#e5f6ee; }
   .chip.status-DECLINED { color:#a33b3b; background:#fdecec; }
+  .chip.status-PLACED { color:#8a5a12; background:#fff4df; }
+  .chip.status-ACCEPTED { color:#0e7a62; background:#e5f6ee; }
   .upload-zone {
     border:1.5px dashed #b7d4c6; border-radius:22px; padding:22px; margin:8px 0 16px;
     background:linear-gradient(180deg, #f7fbf8, #fff); transition:border-color .2s, transform .2s, box-shadow .2s;
@@ -416,6 +418,11 @@
   </div>
   <div id="rxHistory" class="rx-grid" aria-live="polite"><div class="rx-skeleton" style="height:190px" role="status" aria-label="Loading prescriptions"></div></div>
   <div class="table-wrap sr-only" aria-hidden="true"><table id="historyTbl"><tr><th>RxID</th><th>File</th><th>Status</th><th>Uploaded At</th><th>Reviewed At</th><th>Note</th></tr></table></div>
+  <div class="section-head">
+    <h3>My orders</h3>
+    <button class="btn gray" onclick="loadMyOrders()">Refresh</button>
+  </div>
+  <div id="orderList" class="rx-grid" aria-live="polite"></div>
 </div>
 
 <!-- ============ SHOP ============ -->
@@ -423,6 +430,16 @@
   <label for="medSearch">Search medicines</label><input id="medSearch" placeholder="Search name, category or pharmacy" oninput="renderMedicines()">
   <h2>Available Medicines</h2>
   <button class="btn" onclick="loadMedicines()">Load Catalogue</button>
+  <div id="orderBar" class="card" hidden>
+    <h3>Place an order</h3>
+    <p id="orderItem" class="hint"></p>
+    <label for="orderRx">Approved prescription</label>
+    <select id="orderRx"></select>
+    <label for="orderQty">Quantity</label>
+    <input id="orderQty" type="number" min="1" max="99" value="1">
+    <button class="btn" onclick="submitOrder()">Place order</button>
+    <button class="btn gray" onclick="cancelOrder()">Cancel</button>
+  </div>
   <div class="table-wrap"><table id="medTbl"><tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Seller</th></tr></table></div>
   <div id="shopMsg" class="msg"></div>
 </div>
@@ -487,6 +504,8 @@
   <button class="btn" onclick="addMedicine(false)">Add Medicine (as Merchant)</button>
   <h3>My Listings <button class="btn gray" style="padding:6px 12px" onclick="loadMyListings()">Refresh</button></h3>
   <div class="table-wrap"><table id="myMedTbl"><tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th><th>Active</th><th>Actions</th></tr></table></div>
+  <h3>Incoming orders <button class="btn gray" style="padding:6px 12px" onclick="loadShopOrders()">Refresh</button></h3>
+  <div id="shopOrders" class="rx-grid"></div>
 </div>
 <div id="merchMsg" class="msg" role="status" aria-live="polite"></div>
 </div>
@@ -523,6 +542,8 @@
       </div>
     </div>
     <div id="pendingRx" class="rx-grid"></div>
+    <h3>Orders</h3>
+    <div id="adminOrders" class="rx-grid"></div>
     <h3>Pharmacies & verification</h3><div id="merchantList"></div>
     <h3>Users</h3><div id="userList" class="table-wrap"></div>
     <h3>Catalogue management</h3><div id="adminMedicineList" class="table-wrap"></div>
@@ -606,8 +627,8 @@ function openTab(evt, id) {
   button.classList.add('active');
   applyAuthUI();
   if (id === 'shop') loadMedicines();
-  if (id === 'user' && session && session.role === 'USER') loadHistory();
-  if (id === 'merchant' && session && session.role === 'MERCHANT') loadMyListings();
+  if (id === 'user' && session && session.role === 'USER') { loadHistory(); loadMyOrders(); }
+  if (id === 'merchant' && session && session.role === 'MERCHANT') { loadMyListings(); loadShopOrders(); }
   if (id === 'admin' && adminKey) loadAdminOverview();
 }
 function activateTab(id) {
@@ -623,16 +644,24 @@ function show(elId, ok, text) {
 async function callAPI(payload) {
   // text/plain keeps the request a CORS "simple request": the browser sends no
   // OPTIONS preflight, which Apps Script cannot answer.
+  const body = Object.assign({}, payload);
+  if (session && session.sessionToken && !body.sessionToken) body.sessionToken = session.sessionToken;
   try {
     const res = await fetch(API_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
       redirect: 'follow' // Apps Script 302s to script.googleusercontent.com
     });
     const text = await res.text();
     try {
-      return JSON.parse(text);
+      const parsed = JSON.parse(text);
+      if (parsed && /please sign in again/i.test(parsed.message || '') && session) {
+        localStorage.removeItem('pharmago_session');
+        session = null;
+        renderSession();
+      }
+      return parsed;
     } catch (parseErr) {
       return { success: false, message: 'The API did not return JSON. Make sure the web app is deployed with "Execute as: me" and access "Anyone". Response started with: ' + String(text).slice(0, 120) };
     }
@@ -816,7 +845,15 @@ async function doLogin() {
     enterVerifyView();
   }
 }
-function logout(){ localStorage.removeItem('pharmago_session'); session=null; renderSession(); showView('login'); activateTab('Login'); }
+function logout() {
+  const token = session && session.sessionToken;
+  localStorage.removeItem('pharmago_session');
+  session = null;
+  renderSession();
+  showView('login');
+  activateTab('Login');
+  if (token) callAPI({ action:'logout', sessionToken: token });
+}
 
 // ===== USER: PRESCRIPTIONS =====
 async function uploadRx() {
@@ -947,12 +984,101 @@ async function loadMedicines() {
 function renderMedicines() {
   const search = document.getElementById('medSearch').value.trim().toLowerCase();
   const rows = catalogue.filter(m => [m.Name,m.Category,m.ShopName].some(v => String(v || '').toLowerCase().includes(search)));
-  let html = '<tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Seller</th></tr>';
+  const canOrder = session && session.role === 'USER';
+  let html = '<tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Seller</th>' + (canOrder ? '<th></th>' : '') + '</tr>';
   rows.forEach(m => {
-    html += `<tr><td>${esc(m.MedicineID)}</td><td>${esc(m.Name)}</td><td>${esc(m.Category)}</td><td>₹${esc(m.Price)}</td><td>${esc(m.Stock)}</td><td>${esc(m.ShopName || m.MerchantID)}</td></tr>`;
+    html += `<tr><td>${esc(m.MedicineID)}</td><td>${esc(m.Name)}</td><td>${esc(m.Category)}</td><td>₹${esc(m.Price)}</td><td>${esc(m.Stock)}</td><td>${esc(m.ShopName || m.MerchantID)}</td>` +
+      (canOrder ? `<td><button class="btn" data-id="${esc(m.MedicineID)}" onclick="startOrder(this.dataset.id)">Order</button></td>` : '') + '</tr>';
   });
   document.getElementById('medTbl').innerHTML = html;
   show('shopMsg', true, rows.length + ' medicine(s) listed.');
+}
+let orderDraft = null;
+function startOrder(medId) {
+  if (!session || session.role !== 'USER') return show('shopMsg', false, 'Sign in as a customer to order.');
+  const med = catalogue.find(m => String(m.MedicineID) === String(medId));
+  if (!med) return;
+  orderDraft = med;
+  document.getElementById('orderItem').textContent = med.Name + ' · ₹' + med.Price + ' · ' + (med.ShopName || 'Pharmacy');
+  document.getElementById('orderQty').value = '1';
+  document.getElementById('orderQty').max = Math.max(1, Number(med.Stock) || 99);
+  document.getElementById('orderBar').hidden = false;
+  fillOrderPrescriptions();
+}
+function cancelOrder() {
+  orderDraft = null;
+  const bar = document.getElementById('orderBar');
+  if (bar) bar.hidden = true;
+}
+async function fillOrderPrescriptions() {
+  const sel = document.getElementById('orderRx');
+  const approved = historyCache.filter(rx => rx.Status === 'APPROVED');
+  if (!approved.length) {
+    const res = await callAPI({ action:'get_data', sheetName:'Prescriptions' });
+    if (res.success) historyCache = res.data || [];
+  }
+  const rows = historyCache.filter(rx => rx.Status === 'APPROVED');
+  sel.innerHTML = rows.length
+    ? rows.map(rx => `<option value="${esc(rx.RxID)}">${esc(prettyFileName(rx.FileName))} · ${esc(rx.RxID)}</option>`).join('')
+    : '<option value="">No approved prescription yet</option>';
+}
+async function submitOrder() {
+  if (!orderDraft) return;
+  const qty = Number(document.getElementById('orderQty').value);
+  const rxId = document.getElementById('orderRx').value;
+  if (!rxId) return show('shopMsg', false, 'An approved prescription is required before you can order.');
+  const res = await callAPI({ action:'place_order', medicineId: orderDraft.MedicineID, qty, rxId });
+  show('shopMsg', res.success, res.message);
+  if (res.success) { cancelOrder(); loadMedicines(); loadMyOrders(); }
+}
+async function loadMyOrders() {
+  if (!session || session.role !== 'USER') return;
+  const res = await callAPI({ action:'list_orders' });
+  const box = document.getElementById('orderList');
+  if (!box) return;
+  if (!res.success) { box.innerHTML = '<p>' + esc(res.message) + '</p>'; return; }
+  box.innerHTML = (res.data || []).map(order => orderCardHtml(order, false)).join('')
+    || '<div class="rx-empty-state"><span class="rx-empty-mark">✚</span><p>No orders yet. An approved prescription can be sent to a pharmacy from the catalogue.</p></div>';
+}
+async function loadShopOrders() {
+  if (!session || session.role !== 'MERCHANT') return;
+  const res = await callAPI({ action:'list_orders' });
+  const box = document.getElementById('shopOrders');
+  if (!box) return;
+  if (!res.success) { box.innerHTML = '<p>' + esc(res.message) + '</p>'; return; }
+  box.innerHTML = (res.data || []).map(order => orderCardHtml(order, true)).join('') || '<p>No orders yet.</p>';
+}
+async function loadAdminOrders() {
+  if (!adminKey) return;
+  const res = await callAPI({ action:'list_orders', adminKey });
+  const box = document.getElementById('adminOrders');
+  if (!box) return;
+  if (!res.success) { box.innerHTML = '<p>' + esc(res.message) + '</p>'; return; }
+  box.innerHTML = (res.data || []).map(order => orderCardHtml(order, true, true)).join('') || '<p>No orders yet.</p>';
+}
+function orderCardHtml(order, canReview, asAdmin) {
+  const status = String(order.Status || 'PLACED');
+  return `<article class="rx-card">
+    <div class="rx-card-top"><span class="chip status-${esc(status)}">${esc(status)}</span><span class="rx-id">${esc(order.OrderID)}</span></div>
+    <h3>${esc(order.MedicineName || 'Medicine')}</h3>
+    <p>${esc(order.Qty)} × ₹${esc(order.Price)} · Rx ${esc(order.RxID)}</p>
+    <p>${asAdmin ? 'Patient ' + esc(order.UserID) + ' · ' : ''}${esc(prettyWhen(order.CreatedAt))}</p>
+    ${order.Note ? `<p class="rx-note">${esc(order.Note)}</p>` : ''}
+    ${canReview && status === 'PLACED' ? `<div class="rx-actions">
+      <button class="btn green" data-id="${esc(order.OrderID)}" onclick="reviewShopOrder(this.dataset.id,'ACCEPTED',${asAdmin ? 'true' : 'false'})">Accept</button>
+      <button class="btn red" data-id="${esc(order.OrderID)}" onclick="reviewShopOrder(this.dataset.id,'DECLINED',${asAdmin ? 'true' : 'false'})">Decline</button>
+    </div>` : ''}
+  </article>`;
+}
+async function reviewShopOrder(orderId, status, asAdmin) {
+  if (asAdmin && !requireAdmin()) return;
+  const note = status === 'DECLINED' ? (prompt('Reason for decline?') || '') : '';
+  const res = await callAPI(Object.assign({ action:'review_order', orderId, status, note }, asAdmin ? { adminKey } : {}));
+  show(asAdmin ? 'adminMsg' : 'merchMsg', res.success, res.message);
+  if (res.success) {
+    if (asAdmin) loadAdminOrders();
+    else { loadShopOrders(); loadMyListings(); }
+  }
 }
 
 // ===== MERCHANT =====
@@ -1109,7 +1235,7 @@ async function adminAuth() {
 }
 async function loadAdminOverview() {
   if (!requireAdmin()) return;
-  await Promise.all([loadPending(), loadMerchants(), loadUsers(), loadAdminMedicines()]);
+  await Promise.all([loadPending(), loadMerchants(), loadUsers(), loadAdminMedicines(), loadAdminOrders()]);
   renderAdminStats();
 }
 function renderAdminStats() {

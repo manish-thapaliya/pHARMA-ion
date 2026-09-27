@@ -32,6 +32,7 @@ const FRONTEND_URL = '';
 // OTP / password-email settings
 const OTP_TTL_MINUTES   = 10;   // one-time code validity
 const RESET_LINK_HOURS  = 24;   // emailed "set password" link validity
+const SESSION_TTL_HOURS = 24 * 7; // login token lifetime
 const MAX_UPLOAD_BYTES  = 10 * 1024 * 1024; // ~10 MB of binary (base64 is ~1.37x)
 
 // Sheet names
@@ -40,7 +41,8 @@ const SHEETS = {
   RX: 'Prescriptions',       // RxID | UserID | FileName | FileId | Status | Timestamp | ReviewedAt | ReviewNote
   MERCHANTS: 'Merchants',    // MerchantID | OwnerEmail | Phone | ShopName | Address | GSTNumber | DrugLicenseNumber | DocFileIds | Status | Password | CreatedAt | ReviewedAt
   MEDICINES: 'Medicines',    // MedicineID | Name | Category | Price | Stock | Description | MerchantID | Active | CreatedAt
-  OTPS: 'Otps'               // Key | CodeHash | Purpose | ExpiresAt | Consumed | Attempts | CreatedAt
+  OTPS: 'Otps',              // Key | CodeHash | Purpose | ExpiresAt | Consumed | Attempts | CreatedAt
+  ORDERS: 'Orders'           // OrderID | UserID | RxID | MerchantID | MedicineID | MedicineName | Qty | Price | Status | Note | CreatedAt | ReviewedAt
 };
 
 // Column headers — also used to create missing sheets on the fly.
@@ -49,7 +51,8 @@ const HEADERS = {
   Prescriptions: ['RxID', 'UserID', 'FileName', 'FileId', 'Status', 'Timestamp', 'ReviewedAt', 'ReviewNote'],
   Merchants:     ['MerchantID', 'OwnerEmail', 'Phone', 'ShopName', 'Address', 'GSTNumber', 'DrugLicenseNumber', 'DocFileIds', 'Status', 'Password', 'CreatedAt', 'ReviewedAt'],
   Medicines:     ['MedicineID', 'Name', 'Category', 'Price', 'Stock', 'Description', 'MerchantID', 'Active', 'CreatedAt'],
-  Otps:          ['Key', 'CodeHash', 'Purpose', 'ExpiresAt', 'Consumed', 'Attempts', 'CreatedAt']
+  Otps:          ['Key', 'CodeHash', 'Purpose', 'ExpiresAt', 'Consumed', 'Attempts', 'CreatedAt'],
+  Orders:        ['OrderID', 'UserID', 'RxID', 'MerchantID', 'MedicineID', 'MedicineName', 'Qty', 'Price', 'Status', 'Note', 'CreatedAt', 'ReviewedAt']
 };
 
 // ============================================================
@@ -91,6 +94,7 @@ function handleRequest_(data) {
     if (action === 'verify_merchant')   return verifyMerchantEmail(data); // vendor OTP step
     if (action === 'resend_otp')        return resendOtp(data);           // new OTP to email
     if (action === 'login')             return loginUser(data);
+    if (action === 'logout')            return logoutSession(data);
     if (action === 'forgot_password')   return sendPasswordResetEmail(data); // emailed token link
     if (action === 'reset_password')    return resetPasswordWithToken(data); // set new password via token
 
@@ -107,6 +111,11 @@ function handleRequest_(data) {
     if (action === 'add_medicine')      return addMedicine(data);      // admin or approved merchant
     if (action === 'update_medicine')   return updateMedicine(data);
     if (action === 'get_medicines')     return getMedicines(data);
+
+    // Orders — an approved prescription can be sent to the pharmacy that listed the medicine
+    if (action === 'place_order')       return placeOrder(data);
+    if (action === 'list_orders')       return listOrders(data);
+    if (action === 'review_order')      return reviewOrder(data);
 
     // Generic reads (dashboards)
     if (action === 'get_data')          return getData(data);
@@ -193,7 +202,7 @@ function registerUser(data) {
       if (pw.length < 6) return fail_('Password must be at least 6 characters.');
       if (data.password2 != null && String(data.password2) !== pw)
         return fail_('Passwords do not match.');
-      passwordHash = hashPassword_(pw);
+      passwordHash = makePasswordHash_(pw);
     }
 
     const userId = nextCustomerId_(rows);
@@ -226,7 +235,7 @@ function verifyEmail(data) {
     if (pw.length < 6) return fail_('Password must be at least 6 characters.');
     if (data.password2 != null && String(data.password2) !== pw)
       return fail_('Passwords do not match.');
-    passwordHash = hashPassword_(pw);
+    passwordHash = makePasswordHash_(pw);
   }
 
   const sheet = getSheet_(SHEETS.USERS);
@@ -265,7 +274,7 @@ function loginUser(data) {
 
   const sheet = getSheet_(SHEETS.USERS);
   const rows = sheet.getDataRange().getValues();
-  const passHash = hashPassword_(String(data.password));
+  const password = String(data.password);
 
   for (let i = 1; i < rows.length; i++) {
     const idMatch = String(rows[i][0]) === loginId;
@@ -277,9 +286,16 @@ function loginUser(data) {
       if (rows[i][6] === 'PENDING')    return fail_('Account awaiting admin approval.');
       if (rows[i][6] === 'DECLINED')   return fail_('Account was declined by admin.');
       if (!rows[i][3])                 return fail_('No password set yet. Use “Forgot password?” to set one via email.');
-      if (rows[i][3] !== passHash)     return fail_('Invalid ID/email or password.');
+      if (!passwordMatches_(rows[i][3], password)) return fail_('Invalid ID/email or password.');
+      // Old rows stored an unsalted SHA-256. Upgrade them on a successful login.
+      if (String(rows[i][3]).indexOf('s1$') !== 0) {
+        const upgraded = makePasswordHash_(password);
+        sheet.getRange(i + 1, 4).setValue(upgraded);
+        setMerchantPassword_(rows[i][0], upgraded);
+      }
       return ok_('Login successful', {
-        userId: rows[i][0], role: rows[i][4], name: rows[i][5]
+        userId: rows[i][0], role: rows[i][4], name: rows[i][5],
+        sessionToken: issueSession_(rows[i][0])
       });
     }
   }
@@ -336,11 +352,11 @@ function resetPasswordWithToken(data) {
   const idx = indexOfUser_(sheet, userId);
   if (idx < 0) return fail_('Account not found.');
 
-  sheet.getRange(idx + 1, 4).setValue(hashPassword_(pw));            // Password
+  sheet.getRange(idx + 1, 4).setValue(makePasswordHash_(pw));       // Password
   if (String(sheet.getRange(idx + 1, 7).getValue()) === 'UNVERIFIED') {
     sheet.getRange(idx + 1, 7).setValue('ACTIVE'); // email access proven -> treat as verified
   }
-  setMerchantPassword_(userId, hashPassword_(pw)); // keep the vendor copy in sync (no-op for customers)
+  setMerchantPassword_(userId, String(sheet.getRange(idx + 1, 4).getValue())); // keep the vendor copy in sync
   invalidateOtps_('PWDRESET:' + userId);           // one link, one use
 
   return ok_('Password set successfully. You can log in now.');
@@ -350,8 +366,10 @@ function resetPasswordWithToken(data) {
 // 2. PRESCRIPTION UPLOAD -> PENDING FOLDER, LOGGED IN SHEET
 // ============================================================
 function uploadPrescription(data) {
-  const userId = String(data.userId || '');
-  if (!userId) return fail_('Missing userId.');
+  const actor = requireActor_(data);
+  if (!actor.ok) return fail_(actor.message);
+  if (actor.role !== 'USER') return fail_('Sign in as a customer to upload a prescription.');
+  const userId = actor.userId;
   if (!data.fileBase64) return fail_('No file received.');
 
   const user = findUserById_(userId);
@@ -374,8 +392,9 @@ function uploadPrescription(data) {
                                  data.fileType || 'application/octet-stream', fileName);
   const file = folder.createFile(blob);
 
-  // Anyone-with-link VIEW so the file can be opened from history / admin panel
-  shareForViewing_(file);
+  // Private. The owner and admin open it through view_rx, which reads Drive as
+  // the script owner. A link must not be enough.
+  keepPrivate_(file);
 
   const rxId = newId_('RX', SHEETS.RX, 0);
   const timestamp = nowIso_(); // "uploaded time" used in naming + history
@@ -422,6 +441,9 @@ function updateRxStatus(data) {
       file.setName(String(rows[i][1]) + '__' + String(rows[i][5]).replace(/[:.]/g, '-'));
     }
 
+    // Older uploads may still be link-shared. Lock them down on review.
+    keepPrivate_(file);
+
     // Move correctly: add to target, remove from all other parents
     targetFolder.addFile(file);
     const parents = file.getParents();
@@ -433,6 +455,11 @@ function updateRxStatus(data) {
     sheet.getRange(i + 1, 5).setValue(newStatus);                // Status
     sheet.getRange(i + 1, 7).setValue(nowIso_());                // ReviewedAt
     sheet.getRange(i + 1, 8).setValue(String(data.note || ''));  // ReviewNote
+    notifyUser_(rows[i][1],
+      'PharmaGo — prescription ' + newStatus.toLowerCase(),
+      'Your prescription ' + rxId + ' was ' + newStatus.toLowerCase() + '.' +
+      (data.note ? '\nNote: ' + data.note : '') +
+      '\n\nSign in to PharmaGo to view it.');
     return ok_('Status updated to ' + newStatus);
   }
   return fail_('Prescription not found.');
@@ -443,12 +470,15 @@ function updateRxStatus(data) {
 function viewPrescription(data) {
   const rxId = String(data.rxId || '');
   if (!rxId) return fail_('Missing prescription id.');
+  const isAdmin = checkAdminKey_(data.adminKey);
+  const actor = isAdmin ? null : requireActor_(data);
+  if (!isAdmin && !actor.ok) return fail_(actor.message);
 
   const rows = getSheet_(SHEETS.RX).getDataRange().getValues();
   for (let i = 1; i < rows.length; i++) {
     if (String(rows[i][0]) !== rxId) continue;
     const owner = String(rows[i][1]);
-    if (!checkAdminKey_(data.adminKey) && String(data.userId || '') !== owner) {
+    if (!isAdmin && actor.userId !== owner) {
       return fail_('You can only view your own prescriptions.');
     }
     let file;
@@ -589,7 +619,7 @@ function verifyMerchantEmail(data) {
     if (pw.length < 6) return fail_('Password must be at least 6 characters.');
     if (data.password2 != null && String(data.password2) !== pw)
       return fail_('Passwords do not match.');
-    passwordHash = hashPassword_(pw);
+    passwordHash = makePasswordHash_(pw);
   }
 
   const usersSheet = getSheet_(SHEETS.USERS);
@@ -700,10 +730,16 @@ function getData(data) {
   if (!isAdmin) {
     if (sheetName === SHEETS.USERS || sheetName === SHEETS.MERCHANTS)
       return fail_('Admin key required to list ' + sheetName + '.');
-    if (sheetName === SHEETS.RX && !data.userId)
-      return fail_('Sign in (or supply the admin key) to list prescriptions.');
-    if (sheetName === SHEETS.MEDICINES && !data.merchantId)
-      return fail_('Sign in as a vendor (or supply the admin key) to list medicines.');
+    const actor = requireActor_(data);
+    if (!actor.ok) return fail_(actor.message);
+    if (sheetName === SHEETS.RX) {
+      data.userId = actor.userId; // ignore a caller-supplied id
+    } else if (sheetName === SHEETS.MEDICINES) {
+      if (actor.role !== 'MERCHANT') return fail_('Sign in as a vendor to list your medicines.');
+      data.merchantId = actor.userId;
+    } else {
+      return fail_('Admin key required to list ' + sheetName + '.');
+    }
   }
 
   const sheet = getSheet_(sheetName);
@@ -813,11 +849,215 @@ function newId_(prefix, sheetName, col) {
   return prefix + Utilities.getUuid(); // last resort
 }
 
-// Lightweight hash (NOT production-grade security; adequate for MVP testing).
-// Swap for a salted KDF before real use.
+// Deterministic digest for OTP codes, reset tokens and session tokens.
+// Passwords use makePasswordHash_ so a leaked sheet does not reveal them.
 function hashPassword_(pw) {
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(pw))
     .map(b => ('0' + (b & 0xff).toString(16)).slice(-2)).join('');
+}
+
+function makePasswordHash_(pw) {
+  const salt = Utilities.getUuid().replace(/-/g, '').slice(0, 16);
+  return 's1$' + salt + '$' + hashPassword_(salt + ':' + pw);
+}
+
+function passwordMatches_(stored, pw) {
+  const value = String(stored || '');
+  if (value.indexOf('s1$') === 0) {
+    const parts = value.split('$');
+    return parts.length === 3 && parts[2] === hashPassword_(parts[1] + ':' + pw);
+  }
+  return value === hashPassword_(pw); // legacy unsalted rows
+}
+
+// A user id is sequential and guessable. Privileged reads require this token.
+function issueSession_(userId) {
+  pruneOtps_();
+  const token = Utilities.getUuid().replace(/-/g, '') + Utilities.getUuid().replace(/-/g, '');
+  const expiresAt = new Date(Date.now() + SESSION_TTL_HOURS * 3600 * 1000).toISOString();
+  getSheet_(SHEETS.OTPS).appendRow([
+    'SESSION:' + userId, hashPassword_(token), 'SESSION', expiresAt, '', 0, new Date().toISOString()
+  ]);
+  return token;
+}
+
+function sessionUser_(token) {
+  const raw = String(token || '').trim();
+  if (!raw) return null;
+  const submitted = hashPassword_(raw);
+  const rows = getSheet_(SHEETS.OTPS).getDataRange().getValues();
+  for (let i = rows.length - 1; i >= 1; i--) {
+    if (String(rows[i][2]) !== 'SESSION' || String(rows[i][1]) !== submitted) continue;
+    if (String(rows[i][4]) === 'YES') return null;
+    if (new Date(rows[i][3]).getTime() < Date.now()) return null;
+    const key = String(rows[i][0]);
+    return key.indexOf('SESSION:') === 0 ? key.slice(8) : null;
+  }
+  return null;
+}
+
+function requireActor_(data) {
+  const userId = sessionUser_(data.sessionToken);
+  if (!userId) return { ok: false, message: 'Please sign in again.' };
+  const user = findUserById_(userId);
+  if (!user || String(user[6]) !== 'ACTIVE') return { ok: false, message: 'Please sign in again.' };
+  return {
+    ok: true, userId: String(user[0]), role: String(user[4]),
+    email: String(user[1] || ''), name: String(user[5] || '')
+  };
+}
+
+function logoutSession(data) {
+  const raw = String(data.sessionToken || '').trim();
+  if (!raw) return ok_('Signed out.');
+  const submitted = hashPassword_(raw);
+  const sheet = getSheet_(SHEETS.OTPS);
+  const rows = sheet.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][2]) === 'SESSION' && String(rows[i][1]) === submitted)
+      sheet.getRange(i + 1, 5).setValue('YES');
+  }
+  return ok_('Signed out.');
+}
+
+function pruneOtps_() {
+  const sheet = getSheet_(SHEETS.OTPS);
+  const rows = sheet.getDataRange().getValues();
+  const now = Date.now();
+  for (let i = rows.length - 1; i >= 1; i--) {
+    const consumed = String(rows[i][4]) === 'YES';
+    const exp = new Date(rows[i][3]).getTime();
+    if (consumed || (exp && exp < now)) sheet.deleteRow(i + 1);
+  }
+}
+
+function notifyUser_(userId, subject, body) {
+  const user = findUserById_(userId);
+  if (!user || !user[1]) return;
+  const greeting = 'Hi ' + (user[5] || 'there') + ',\n\n';
+  try {
+    MailApp.sendEmail({ to: String(user[1]), subject: subject, body: greeting + body });
+  } catch (err) { /* review/order must succeed even if mail quota is exhausted */ }
+}
+
+function placeOrder(data) {
+  const actor = requireActor_(data);
+  if (!actor.ok) return fail_(actor.message);
+  if (actor.role !== 'USER') return fail_('Sign in as a customer to place an order.');
+
+  const qty = Number(data.qty);
+  if (!Number.isInteger(qty) || qty < 1 || qty > 99)
+    return fail_('Quantity must be a whole number from 1 to 99.');
+  const rxId = String(data.rxId || '');
+  if (!rxId) return fail_('Choose an approved prescription for this order.');
+
+  const rxRows = getSheet_(SHEETS.RX).getDataRange().getValues();
+  let rx = null;
+  for (let i = 1; i < rxRows.length; i++) {
+    if (String(rxRows[i][0]) === rxId) { rx = rxRows[i]; break; }
+  }
+  if (!rx || String(rx[1]) !== actor.userId) return fail_('That prescription is not yours.');
+  if (String(rx[4]) !== 'APPROVED') return fail_('Only an approved prescription can be used for an order.');
+
+  const medRows = getSheet_(SHEETS.MEDICINES).getDataRange().getValues();
+  let med = null;
+  for (let i = 1; i < medRows.length; i++) {
+    if (String(medRows[i][0]) === String(data.medicineId)) { med = medRows[i]; break; }
+  }
+  if (!med || med[7] !== 'YES') return fail_('That medicine is not available.');
+  if (Number(med[4]) < qty) return fail_('Not enough stock.');
+
+  const orderId = newId_('ORD', SHEETS.ORDERS, 0);
+  getSheet_(SHEETS.ORDERS).appendRow([
+    orderId, actor.userId, rxId, String(med[6]), String(med[0]), String(med[1]),
+    qty, Number(med[3]), 'PLACED', '', nowIso_(), ''
+  ]);
+  notifyUser_(med[6], 'PharmaGo — new order ' + orderId,
+    actor.name + ' ordered ' + qty + ' × ' + med[1] + ' against prescription ' + rxId +
+    '.\n\nSign in to accept or decline it.');
+  return ok_('Order placed. The pharmacy will confirm it.', { orderId: orderId });
+}
+
+function listOrders(data) {
+  const rows = getSheet_(SHEETS.ORDERS).getDataRange().getValues();
+  const out = [];
+  if (checkAdminKey_(data.adminKey)) {
+    for (let i = 1; i < rows.length; i++) out.push(orderObject_(rows[i]));
+    return ok_('Orders', out);
+  }
+  const actor = requireActor_(data);
+  if (!actor.ok) return fail_(actor.message);
+  for (let i = 1; i < rows.length; i++) {
+    const mine = actor.role === 'MERCHANT'
+      ? String(rows[i][3]) === actor.userId
+      : String(rows[i][1]) === actor.userId;
+    if (mine) out.push(orderObject_(rows[i]));
+  }
+  return ok_('Orders', out);
+}
+
+function reviewOrder(data) {
+  const status = String(data.status || '').toUpperCase();
+  if (status !== 'ACCEPTED' && status !== 'DECLINED')
+    return fail_('Status must be ACCEPTED or DECLINED.');
+  const reviewer = orderReviewer_(data);
+  if (!reviewer.ok) return fail_(reviewer.message);
+
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) return fail_('Please try again.');
+  try {
+    const sheet = getSheet_(SHEETS.ORDERS);
+    const rows = sheet.getDataRange().getValues();
+    for (let i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]) !== String(data.orderId)) continue;
+      if (!reviewer.isAdmin && String(rows[i][3]) !== reviewer.merchantId)
+        return fail_('You can only review orders for your pharmacy.');
+      if (String(rows[i][8]) !== 'PLACED') return fail_('Already reviewed: ' + rows[i][8]);
+
+      if (status === 'ACCEPTED') {
+        const meds = getSheet_(SHEETS.MEDICINES);
+        const medRows = meds.getDataRange().getValues();
+        let found = false;
+        for (let m = 1; m < medRows.length; m++) {
+          if (String(medRows[m][0]) !== String(rows[i][4])) continue;
+          const left = Number(medRows[m][4]) - Number(rows[i][6]);
+          if (left < 0) return fail_('Not enough stock to accept this order.');
+          meds.getRange(m + 1, 5).setValue(left);
+          found = true;
+          break;
+        }
+        if (!found) return fail_('That medicine is no longer listed.');
+      }
+
+      sheet.getRange(i + 1, 9).setValue(status);
+      sheet.getRange(i + 1, 10).setValue(String(data.note || ''));
+      sheet.getRange(i + 1, 12).setValue(nowIso_());
+      notifyUser_(rows[i][1], 'PharmaGo — order ' + status.toLowerCase(),
+        'Your order ' + rows[i][0] + ' (' + rows[i][6] + ' × ' + rows[i][5] + ') was ' +
+        status.toLowerCase() + '.' + (data.note ? '\nNote: ' + data.note : ''));
+      return ok_('Order ' + status.toLowerCase());
+    }
+    return fail_('Order not found.');
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function orderReviewer_(data) {
+  if (checkAdminKey_(data.adminKey)) return { ok: true, isAdmin: true, merchantId: '' };
+  const staff = resolveStaffAuth_(data);
+  if (staff.ok && staff.merchantId) return { ok: true, isAdmin: false, merchantId: staff.merchantId };
+  const actor = requireActor_(data);
+  if (actor.ok && actor.role === 'MERCHANT') return { ok: true, isAdmin: false, merchantId: actor.userId };
+  return { ok: false, message: staff.message || actor.message || 'Sign in as the pharmacy, or use the admin key.' };
+}
+
+function orderObject_(row) {
+  return {
+    OrderID: row[0], UserID: row[1], RxID: row[2], MerchantID: row[3],
+    MedicineID: row[4], MedicineName: row[5], Qty: row[6], Price: row[7],
+    Status: row[8], Note: row[9], CreatedAt: row[10], ReviewedAt: row[11]
+  };
 }
 
 function cfg_(key, fallback) {
@@ -904,7 +1144,7 @@ function resolveStaffAuth_(data) {
       const user = findUserById_(data.merchantId);
       const stored = (user && user[3]) ? user[3] : rows[i][9]; // Users.Password, then legacy copy
       if (!stored) return { ok: false, message: 'No password set for this vendor yet. Use “Forgot password?” to set one.' };
-      if (stored !== hashPassword_(String(data.password)))
+      if (!passwordMatches_(stored, String(data.password)))
         return { ok: false, message: 'Wrong merchant password.' };
       return { ok: true, isAdmin: false, merchantId: String(data.merchantId) };
     }
@@ -919,6 +1159,7 @@ function resolveStaffAuth_(data) {
 //   Only a SHA-256 hash of the code/token is stored; codes are single-use.
 // ------------------------------------------------------------
 function issueOtpRawCode_(identifier, purpose, rawCode, ttlMinutes) {
+  pruneOtps_();
   const sheet = getSheet_(SHEETS.OTPS);
   const key = purpose + ':' + identifier;
   const rows = sheet.getDataRange().getValues();
