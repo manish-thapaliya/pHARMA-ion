@@ -176,6 +176,51 @@ async function run() {
     replies.login = { success:true, data:{userId:'M123',role:'MERCHANT',name:'Green Cross'} }; await w.doLogin();
     check(id('crumbRole').textContent === 'Pharmacy workspace', 'workspace header follows the role');
 
+    // Delivery form requirements and safe rendering.
+    check(id('rxDeliveryForm').querySelectorAll('[required]').length === 6, 'six required delivery fields');
+    check(!id('rxDeliveryForm').checkValidity(), 'empty delivery form cannot submit');
+    id('rxReceiverName').value = 'Private receiver';
+    w.logout();
+    check(id('rxReceiverName').value === '', 'logout clears delivery form');
+    const details = w.deliveryDetailsHtml({DeliveryAddress:'<img src=x onerror=alert(1)>', ReceiverPhone:'9800000002'});
+    const detailNode = d.createElement('div'); detailNode.innerHTML = details;
+    check(!detailNode.querySelector('img') && detailNode.textContent.includes('<img'), 'delivery details escape HTML');
+    check(w.deliveryDetailsHtml({}).includes('not recorded'), 'legacy prescriptions have a delivery fallback');
+
+    // Upload state is independent of focus and recovers from read/API failures.
+    replies.login = { success:true, data:{userId:'U-2026-0010',role:'USER',name:'Alex'} };
+    await w.doLogin();
+    const fields = {rxPatientName:'Patient', rxReceiverName:'Receiver', rxConfirmationPhone:'9800000001',
+      rxReceiverPhone:'9800000002', rxDeliveryAddress:'Ward 4, Demo Street', rxDeliveryCity:'Kathmandu'};
+    Object.entries(fields).forEach(([key,value]) => { id(key).value = value; });
+    w.copyConfirmationPhone();
+    check(id('rxReceiverPhone').value === fields.rxConfirmationPhone, 'copy confirmation phone shortcut');
+    check(d.activeElement === id('rxReceiverPhone'), 'copy shortcut focuses receiver phone');
+    Object.defineProperty(id('rxFile'), 'files', { configurable:true, value:[new w.File(['rx'], 'rx.pdf', {type:'application/pdf'})] });
+    let finishRead;
+    w.fileToBase64 = () => new Promise(resolve => { finishRead = resolve; });
+    const uploading = w.uploadRx();
+    check(id('rxUploadBtn').disabled && !id('rxUploadProgress').hidden, 'busy feedback starts while reading file');
+    check(id('rxDeliveryForm').getAttribute('aria-busy') === 'true', 'form announces busy state');
+    check(id('rxFile').disabled && id('rxPatientName').disabled, 'inputs locked while uploading');
+    const countBefore = calls.filter(c => c.action === 'upload_rx').length;
+    await w.uploadRx();
+    check(calls.filter(c => c.action === 'upload_rx').length === countBefore, 'duplicate submission blocked');
+    replies.upload_rx = {success:false, message:'Please retry'};
+    finishRead('cng='); await uploading;
+    check(id('rxPatientName').value === 'Patient', 'API failure preserves typed details');
+    check(!id('rxUploadBtn').disabled && id('rxUploadProgress').hidden, 'API failure clears busy state');
+    check(last().receiverPhone === fields.rxConfirmationPhone, 'copied number submitted to API');
+    w.fileToBase64 = async () => { throw Error('Unreadable'); };
+    await w.uploadRx();
+    check(id('userMsg').textContent.includes('please try again'), 'file read failure gives retry message');
+    check(!id('rxFile').disabled && !id('rxPatientName').disabled, 'file read failure unlocks controls');
+    w.fileToBase64 = async () => 'cng=';
+    replies.upload_rx = {success:true, message:'Uploaded'};
+    await w.uploadRx();
+    check(id('rxPatientName').value === '', 'successful upload resets delivery form');
+    check(!id('rxDeliveryForm').hasAttribute('aria-busy'), 'successful upload clears accessible busy state');
+
     // Empty states plus the prescription viewer dialog (5).
     w.logout();
     replies.login = { success:true, data:{userId:'U-2026-0010',role:'USER',name:'Alex'} }; await w.doLogin();
@@ -195,7 +240,7 @@ async function run() {
     check(id('rxViewer').hidden && !d.body.classList.contains('viewer-open'), 'Escape closes the dialog');
     check(d.activeElement !== id('rxViewerClose'), 'focus leaves the dialog once it closes');
   } finally { dom.window.close(); }
-  if (checks !== 77) throw Error('Expected 77 UI-state checks, got ' + checks);
-  console.log('✓ 77 UI-state checks passed');
+  if (checks !== 95) throw Error('Expected 95 UI-state checks, got ' + checks);
+  console.log('✓ 95 UI-state checks passed');
 }
 run().catch(err => { console.error('✗ ' + err.stack); process.exitCode = 1; });

@@ -43,9 +43,9 @@ const sampleRx = fs.readFileSync(path.join(__dirname, 'sample-rx.png')).toString
 const sampleApproved = fs.readFileSync(path.join(__dirname, 'sample-rx-approved.png')).toString('base64');
 const customerLogin = call({ action:'login', loginId:'demo@pharmago.test', password:'demo123' });
 const customerToken = customerLogin.success ? customerLogin.data.sessionToken : '';
-call({ action:'upload_rx', userId:customer.data.userId, sessionToken:customerToken, fileName:'sample-rx.png',
+call({ action:'upload_rx', patientName:'Test Patient', receiverName:'Test Receiver', confirmationPhone:'9800000001', receiverPhone:'9800000002', deliveryAddress:'12 Demo Street, Ward 4', deliveryCity:'Kathmandu', userId:customer.data.userId, sessionToken:customerToken, fileName:'sample-rx.png',
   fileType:'image/png', fileBase64:sampleRx });
-const followUp = call({ action:'upload_rx', userId:customer.data.userId, sessionToken:customerToken, fileName:'follow-up-rx.png',
+const followUp = call({ action:'upload_rx', patientName:'Test Patient', receiverName:'Test Receiver', confirmationPhone:'9800000001', receiverPhone:'9800000002', deliveryAddress:'12 Demo Street, Ward 4', deliveryCity:'Kathmandu', userId:customer.data.userId, sessionToken:customerToken, fileName:'follow-up-rx.png',
   fileType:'image/png', fileBase64:sampleApproved });
 if (followUp.success) {
   call({ action:'update_status', adminKey:'changeme-admin-key', rxId:followUp.data.rxId,

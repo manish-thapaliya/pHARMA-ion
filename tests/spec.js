@@ -192,13 +192,50 @@ globalThis.runTests = function runTests() {
   });
 
   // =====================================================================
+  scenario('delivery details are validated, stored, and old prescription sheets upgraded', () => {
+    boot();
+    const u = verifiedCustomer('delivery@example.com', '9800000081', 'secret123');
+    const sheet = getSheet_(SHEETS.RX);
+    sheet.clear();
+    sheet.appendRow(HEADERS.Prescriptions.slice(0, 8));
+    sheet.appendRow(['OLD', u.userId, 'old.pdf', 'old-file', 'PENDING', 'yesterday', '', '']);
+    const payload = {
+      action:'upload_rx', sessionToken:u.sessionToken, fileName:'rx.pdf',
+      fileType:'application/pdf', fileBase64:H.b64('rx'), patientName:' Test Patient ',
+      receiverName:'Receiver', confirmationPhone:'+977 9800000001', receiverPhone:'9800000002',
+      deliveryAddress:'12 Main Street', deliveryCity:'Kathmandu', landmark:'Near hospital',
+      deliveryInstructions:'Call on arrival'
+    };
+    ['patientName','receiverName','confirmationPhone','receiverPhone','deliveryAddress','deliveryCity'].forEach(key => {
+      ok(!call(Object.assign({}, payload, { [key]: '   ' })).success, key + ' is required');
+    });
+    ['abc1234567','123','+1234567890123456'].forEach(phone => {
+      ok(!call(Object.assign({}, payload, { receiverPhone:phone })).success, 'invalid phone rejected');
+    });
+    ok(!call(Object.assign({}, payload, { deliveryInstructions:'x'.repeat(501) })).success, 'length checked server-side');
+    eq(sheet.getLastRow(), 2, 'invalid uploads do not create prescription rows');
+    const result = call(payload);
+    ok(result.success, 'valid delivery upload succeeds', result.message);
+    eq(sheet.getDataRange().getValues()[0].length, 16, 'legacy header upgraded');
+    eq(sheet.getDataRange().getValues()[1][3], 'old-file', 'old file reference preserved');
+    const history = call({action:'get_data', sheetName:'Prescriptions', sessionToken:u.sessionToken});
+    const rx = history.data.find(r => r.RxID === result.data.rxId);
+    eq(rx.PatientName, 'Test Patient', 'text trimmed');
+    eq(rx.DeliveryAddress, payload.deliveryAddress, 'address saved in history');
+    eq(rx.ReceiverPhone, payload.receiverPhone, 'receiver phone saved');
+    eq(rx.DeliveryInstructions, payload.deliveryInstructions, 'instructions saved');
+    eq(prescriptionDelivery_(Object.assign({}, payload, {landmark:'=1+1'})).values[6], "'=1+1", 'formula input stored as text');
+    const other = verifiedCustomer('other-delivery@example.com', '9800000082', 'secret123');
+    eq(call({action:'get_data', sheetName:'Prescriptions', sessionToken:other.sessionToken}).data.length, 0, 'other customers cannot see delivery details');
+  });
+
   scenario('prescription upload -> pending folder -> admin approve moves file', () => {
     boot();
     const u = verifiedCustomer('rx@example.com', '9800000005', 'secret123');
     const content = H.b64('%PDF-1.4 fake prescription');
 
     const up = call({
-      action: 'upload_rx', userId: u.userId, sessionToken: u.sessionToken, fileName: 'my Rx scan.pdf',
+      action:'upload_rx', patientName:'Test Patient', receiverName:'Test Receiver', confirmationPhone:'9800000001', receiverPhone:'9800000002', deliveryAddress:'12 Demo Street, Ward 4', deliveryCity:'Kathmandu', userId: u.userId, sessionToken: u.sessionToken, fileName: 'my Rx scan.pdf',
       fileType: 'application/pdf', fileBase64: content,
     });
     ok(up.success, 'upload_rx succeeds', up.message);
@@ -247,7 +284,7 @@ globalThis.runTests = function runTests() {
 
     // decline path
     const up2 = call({
-      action: 'upload_rx', userId: u.userId, sessionToken: u.sessionToken, fileName: 'second.pdf',
+      action:'upload_rx', patientName:'Test Patient', receiverName:'Test Receiver', confirmationPhone:'9800000001', receiverPhone:'9800000002', deliveryAddress:'12 Demo Street, Ward 4', deliveryCity:'Kathmandu', userId: u.userId, sessionToken: u.sessionToken, fileName: 'second.pdf',
       fileType: 'application/pdf', fileBase64: content,
     });
     ok(call({
@@ -265,7 +302,7 @@ globalThis.runTests = function runTests() {
     const b = verifiedCustomer('h2@example.com', '9800000007', 'secret123');
     const content = H.b64('rx');
     [[a, 'a1.pdf'], [a, 'a2.pdf'], [b, 'b1.pdf']].forEach(([u, f]) => {
-      call({ action: 'upload_rx', userId: u.userId, sessionToken: u.sessionToken, fileName: f, fileType: 'application/pdf', fileBase64: content });
+      call({ action:'upload_rx', patientName:'Test Patient', receiverName:'Test Receiver', confirmationPhone:'9800000001', receiverPhone:'9800000002', deliveryAddress:'12 Demo Street, Ward 4', deliveryCity:'Kathmandu', userId: u.userId, sessionToken: u.sessionToken, fileName: f, fileType: 'application/pdf', fileBase64: content });
     });
 
     const ra = call({ action: 'get_data', sheetName: 'Prescriptions', userId: a.userId, sessionToken: a.sessionToken });
@@ -288,7 +325,7 @@ globalThis.runTests = function runTests() {
     const other = verifiedCustomer('other@example.com', '9800000042', 'secret123');
     const content = H.b64('%PDF-1.4 fictional prescription');
     const up = call({
-      action: 'upload_rx', userId: owner.userId, sessionToken: owner.sessionToken, fileName: 'scan.pdf',
+      action:'upload_rx', patientName:'Test Patient', receiverName:'Test Receiver', confirmationPhone:'9800000001', receiverPhone:'9800000002', deliveryAddress:'12 Demo Street, Ward 4', deliveryCity:'Kathmandu', userId: owner.userId, sessionToken: owner.sessionToken, fileName: 'scan.pdf',
       fileType: 'application/pdf', fileBase64: content,
     });
     ok(up.success, 'upload for view test succeeds', up.message);
@@ -528,7 +565,7 @@ globalThis.runTests = function runTests() {
     const uid = emails[0];
     call({ action: 'verify_email', userId: uid, otp: H.lastOtp('u0@example.com'), password: 'secret123' });
     [[1, 'p1.pdf'], [2, 'p2.pdf']].forEach(([n, f]) => {
-      call({ action: 'upload_rx', userId: emails[n], fileName: f, fileType: 'application/pdf', fileBase64: H.b64('x') });
+      call({ action:'upload_rx', patientName:'Test Patient', receiverName:'Test Receiver', confirmationPhone:'9800000001', receiverPhone:'9800000002', deliveryAddress:'12 Demo Street, Ward 4', deliveryCity:'Kathmandu', userId: emails[n], fileName: f, fileType: 'application/pdf', fileBase64: H.b64('x') });
     });
     ok(!call({ action: 'get_data', sheetName: 'Prescriptions', userId: uid }).success,
       'a user id alone cannot list prescriptions');
@@ -580,7 +617,7 @@ globalThis.runTests = function runTests() {
     boot();
     const r = call({ action: 'register', email: 'u@example.com', phone: '9800000022' });
     const upload = call({
-      action: 'upload_rx', userId: r.data.userId, fileName: 'x.pdf',
+      action:'upload_rx', patientName:'Test Patient', receiverName:'Test Receiver', confirmationPhone:'9800000001', receiverPhone:'9800000002', deliveryAddress:'12 Demo Street, Ward 4', deliveryCity:'Kathmandu', userId: r.data.userId, fileName: 'x.pdf',
       fileType: 'application/pdf', fileBase64: H.b64('x'),
     });
     ok(!upload.success && /sign in again/i.test(upload.message), 'upload without a session is rejected', upload.message);
@@ -588,12 +625,12 @@ globalThis.runTests = function runTests() {
     call({ action: 'verify_email', userId: r.data.userId, otp: H.lastOtp('u@example.com'), password: 'secret123' });
     const token = call({ action: 'login', loginId: 'u@example.com', password: 'secret123' }).data.sessionToken;
     ok(call({
-      action: 'upload_rx', userId: r.data.userId, sessionToken: token, fileName: 'x.pdf',
+      action:'upload_rx', patientName:'Test Patient', receiverName:'Test Receiver', confirmationPhone:'9800000001', receiverPhone:'9800000002', deliveryAddress:'12 Demo Street, Ward 4', deliveryCity:'Kathmandu', userId: r.data.userId, sessionToken: token, fileName: 'x.pdf',
       fileType: 'application/pdf', fileBase64: H.b64('x'),
     }).success, 'verified user can upload');
 
     const huge = call({
-      action: 'upload_rx', userId: r.data.userId, sessionToken: token, fileName: 'big.pdf',
+      action:'upload_rx', patientName:'Test Patient', receiverName:'Test Receiver', confirmationPhone:'9800000001', receiverPhone:'9800000002', deliveryAddress:'12 Demo Street, Ward 4', deliveryCity:'Kathmandu', userId: r.data.userId, sessionToken: token, fileName: 'big.pdf',
       fileType: 'application/pdf', fileBase64: H.b64('x'.repeat(15 * 1024 * 1024)),
     });
     ok(!huge.success && /too large/i.test(huge.message), 'oversized upload rejected', huge.message);
@@ -669,7 +706,7 @@ globalThis.runTests = function runTests() {
     ok(med.success, 'medicine listed for the order test', med.message);
 
     const pending = call({
-      action: 'upload_rx', sessionToken: customer.sessionToken, fileName: 'rx.pdf',
+      action:'upload_rx', patientName:'Test Patient', receiverName:'Test Receiver', confirmationPhone:'9800000001', receiverPhone:'9800000002', deliveryAddress:'12 Demo Street, Ward 4', deliveryCity:'Kathmandu', sessionToken: customer.sessionToken, fileName: 'rx.pdf',
       fileType: 'application/pdf', fileBase64: H.b64('%PDF-1.4 rx'),
     });
     ok(!call({
@@ -691,6 +728,8 @@ globalThis.runTests = function runTests() {
     const queue = call({ action: 'list_orders', sessionToken: shopLogin.data.sessionToken });
     ok(queue.success && queue.data.length === 1, 'pharmacy sees the order');
     eq(queue.data[0].Status, 'PLACED', 'new order is placed');
+    eq(queue.data[0].DeliveryAddress, '12 Demo Street, Ward 4', 'fulfilling pharmacy sees delivery address');
+    eq(queue.data[0].ConfirmationPhone, '9800000001', 'fulfilling pharmacy sees confirmation phone');
 
     ok(call({
       action: 'review_order', sessionToken: shopLogin.data.sessionToken,

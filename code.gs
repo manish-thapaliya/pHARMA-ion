@@ -48,7 +48,7 @@ const SHEETS = {
 // Column headers — also used to create missing sheets on the fly.
 const HEADERS = {
   Users:         ['UserID', 'Email', 'Phone', 'Password', 'Role', 'Name', 'Status', 'CreatedAt'],
-  Prescriptions: ['RxID', 'UserID', 'FileName', 'FileId', 'Status', 'Timestamp', 'ReviewedAt', 'ReviewNote'],
+  Prescriptions: ['RxID', 'UserID', 'FileName', 'FileId', 'Status', 'Timestamp', 'ReviewedAt', 'ReviewNote', 'PatientName', 'ReceiverName', 'ConfirmationPhone', 'ReceiverPhone', 'DeliveryAddress', 'DeliveryCity', 'Landmark', 'DeliveryInstructions'],
   Merchants:     ['MerchantID', 'OwnerEmail', 'Phone', 'ShopName', 'Address', 'GSTNumber', 'DrugLicenseNumber', 'DocFileIds', 'Status', 'Password', 'CreatedAt', 'ReviewedAt'],
   Medicines:     ['MedicineID', 'Name', 'Category', 'Price', 'Stock', 'Description', 'MerchantID', 'Active', 'CreatedAt'],
   Otps:          ['Key', 'CodeHash', 'Purpose', 'ExpiresAt', 'Consumed', 'Attempts', 'CreatedAt'],
@@ -380,6 +380,33 @@ function resetPasswordWithToken(data) {
 // ============================================================
 // 2. PRESCRIPTION UPLOAD -> PENDING FOLDER, LOGGED IN SHEET
 // ============================================================
+// Keep these fields in the same order as the appended Prescriptions columns.
+function prescriptionDelivery_(data) {
+  const fields = [
+    ['patientName', 'Patient name', 120, true],
+    ['receiverName', 'Receiver name', 120, true],
+    ['confirmationPhone', 'Confirmation calling number', 30, true],
+    ['receiverPhone', 'Receiver calling number', 30, true],
+    ['deliveryAddress', 'Delivery address', 500, true],
+    ['deliveryCity', 'City / municipality', 120, true],
+    ['landmark', 'Nearby landmark', 200, false],
+    ['deliveryInstructions', 'Delivery instructions', 500, false]
+  ];
+  const values = [];
+  for (let i = 0; i < fields.length; i++) {
+    const field = fields[i];
+    const value = String(data[field[0]] == null ? '' : data[field[0]]).trim();
+    if (field[3] && !value) return { ok: false, message: field[1] + ' is required.' };
+    if (value.length > field[2]) return { ok: false, message: field[1] + ' is too long (max ' + field[2] + ' characters).' };
+    if (/Phone$/.test(field[0]) && (!/^\+?[0-9 ()-]+$/.test(value) || value.replace(/\D/g, '').length < 7 || value.replace(/\D/g, '').length > 15)) {
+      return { ok: false, message: field[1] + ' must contain 7–15 digits, with an optional country code.' };
+    }
+    // Prevent user-entered text being interpreted as a spreadsheet formula.
+    values.push(/^[=+@-]/.test(value) ? "'" + value : value);
+  }
+  return { ok: true, values: values };
+}
+
 function uploadPrescription(data) {
   const actor = requireActor_(data);
   if (!actor.ok) return fail_(actor.message);
@@ -393,6 +420,9 @@ function uploadPrescription(data) {
     return fail_('Your account is ' + String(user[6]).toLowerCase() +
                  '. Only verified, active accounts can upload prescriptions.');
   }
+
+  const delivery = prescriptionDelivery_(data);
+  if (!delivery.ok) return fail_(delivery.message);
 
   const raw = String(data.fileBase64);
   if (raw.length > Math.round(MAX_UPLOAD_BYTES * 1.4)) {
@@ -413,7 +443,7 @@ function uploadPrescription(data) {
 
   const rxId = newId_('RX', SHEETS.RX, 0);
   const timestamp = nowIso_(); // "uploaded time" used in naming + history
-  sheet.appendRow([rxId, userId, fileName, file.getId(), 'PENDING', timestamp, '', '']);
+  sheet.appendRow([rxId, userId, fileName, file.getId(), 'PENDING', timestamp, '', ''].concat(delivery.values));
 
   return ok_('Prescription uploaded. Status: Pending', {
     rxId, timestamp, driveUrl: file.getUrl()
@@ -791,10 +821,18 @@ function ensureSheet_(name) {
     sh.appendRow(HEADERS[name]);
     sh.setFrozenRows(1);
   }
+  // Upgrade existing prescription sheets without moving columns or changing old rows.
+  if (name === SHEETS.RX) {
+    const headers = sh.getDataRange().getValues()[0] || [];
+    HEADERS[name].forEach(function(header, index) {
+      if (!headers[index]) sh.getRange(1, index + 1).setValue(header);
+    });
+  }
   return sh;
 }
 
 function getSheet_(name) {
+  if (name === SHEETS.RX) return ensureSheet_(name);
   const sh = SpreadsheetApp.openById(SHEET_ID).getSheetByName(name);
   // Auto-create a missing sheet (with headers) instead of failing the request.
   return sh || ensureSheet_(name);
@@ -1085,11 +1123,19 @@ function orderReviewer_(data) {
 }
 
 function orderObject_(row) {
-  return {
+  // Called only after list_orders has authorized access to this order.
+  const rx = getSheet_(SHEETS.RX).getDataRange().getValues().find(function(r) {
+    return String(r[0]) === String(row[2]) && String(r[1]) === String(row[1]);
+  });
+  const delivery = {};
+  HEADERS.Prescriptions.slice(8).forEach(function(key, index) {
+    delivery[key] = rx ? (rx[index + 8] || '') : '';
+  });
+  return Object.assign(delivery, {
     OrderID: row[0], UserID: row[1], RxID: row[2], MerchantID: row[3],
     MedicineID: row[4], MedicineName: row[5], Qty: row[6], Price: row[7],
     Status: row[8], Note: row[9], CreatedAt: row[10], ReviewedAt: row[11]
-  };
+  });
 }
 
 function cfg_(key, fallback) {
