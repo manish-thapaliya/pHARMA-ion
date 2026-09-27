@@ -73,6 +73,23 @@ npm run test:api      # 18 scenarios / 163 checks against code.gs
 npm run test:frontend # index.html wiring + UI-state checks
 ```
 
+### UI states
+
+`index.html` uses `data-show` and `applyAuthUI()` to separate the workspaces:
+
+| Mode | Navigation | Workspace |
+|---|---|---|
+| Guest | Account, catalogue, pharmacy registration, admin | Sign up / OTP / password reset; browse medicines; register a pharmacy; enter admin key |
+| Customer | Prescriptions, catalogue, admin | Upload and track personal prescriptions |
+| Pharmacy | Catalogue, My shop, admin | Add, edit, delist and relist own medicines (password confirmed for writes) |
+| Admin unlocked | Admin tab alongside any role | Overview counts, pending/all Rx queue, KYC links, users and catalogue editing |
+
+The admin key can be unlocked and locked separately from customer/pharmacy sign-in.
+Changing roles automatically moves away from a now-hidden tab. Visibility is **not**
+a security boundary: the Apps Script backend must still verify privileged requests.
+`npm run test:frontend` checks ids, handler wiring, the state vocabulary and all
+five tab rules, then drives 61 UI-state checks with jsdom.
+
 ### Interactive demo
 
 ```bash
@@ -84,8 +101,9 @@ runs **the actual `code.gs`** against an in-memory Apps Script stub. It does not
 connect to the live spreadsheet, send email or store real patient information.
 Sample customer: `demo@pharmago.test` / `demo123`; sample approved pharmacy:
 `vendor@pharmago.test` / `demo123`; demo admin key: `changeme-admin-key`.
-Newly registered users can use the verification code shown on the page. Demo data
-resets on server restart. The demo serves its API at a same-origin `/api` path;
+Newly registered users can use the verification code shown on the page or in
+`/__mailbox`. The seeded customer has a pending sample prescription and a second
+pharmacy (Valley Medicos) is awaiting admin approval. Demo data resets on server restart. The demo serves its API at a same-origin `/api` path;
 the published static `index.html` continues to use the configured Apps Script URL.
 
 Customer IDs now increment within the script's calendar year (`U-2026-0010`,

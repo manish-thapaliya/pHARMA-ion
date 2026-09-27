@@ -37,9 +37,21 @@ if (vendor.success) {
     name:'Vitamin C', category:'Supplement', price:149, stock:48 });
 }
 
+// A pending prescription and pharmacy make the admin review queue interactive.
+call({ action:'upload_rx', userId:customer.data.userId, fileName:'sample-rx.pdf',
+  fileType:'application/pdf', fileBase64:stub.helpers.b64('fictional prescription') });
+const pendingVendor = call({ action:'register_merchant', email:'pending@pharmago.test',
+  phone:'9800000003', shopName:'Valley Medicos', address:'Demo Street',
+  gstNumber:'DEMO-GST-2', drugLicenseNumber:'DEMO-DL-2', documents });
+if (pendingVendor.success) call({ action:'verify_merchant', merchantId:pendingVendor.data.merchantId,
+  otp:stub.helpers.lastOtp('pending@pharmago.test') });
+
+const escapeHtml = s => String(s).replace(/[&<>"']/g, c =>
+  ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
+
 const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8').replace('</head>',
   '<meta name="pharmago-demo" content="true"><style>.demo-hint{background:#e0f3e7;padding:12px 18px;border-radius:10px;margin:14px 0;font-size:13px;color:#174e3b}</style></head>')
-  .replace('<div id="configBanner"', `<div class="demo-hint"><b>Interactive demo — fictional data only.</b> Customer: demo@pharmago.test / demo123 · Pharmacy: vendor@pharmago.test / demo123 · Admin key: changeme-admin-key. New verification codes appear on this page; data resets when the server restarts.</div>\n<div id="configBanner"`);
+  .replace('<div id="configBanner"', `<div class="demo-hint"><b>Interactive demo — fictional data only.</b> Customer: demo@pharmago.test / demo123 · Pharmacy: vendor@pharmago.test / demo123 · Admin key: changeme-admin-key. New verification codes appear on this page or in the <a href="/__mailbox" target="_blank" rel="noopener">demo mailbox</a>; data resets when the server restarts.</div>\n<div id="configBanner"`);
 
 function json(res, status, body) {
   res.writeHead(status, { 'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store' });
@@ -50,6 +62,16 @@ http.createServer((req, res) => {
   if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
     res.writeHead(200, { 'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-store' });
     return res.end(html);
+  }
+  if (req.method === 'GET' && url.pathname === '/__mailbox') {
+    const rows = stub.state.mailbox.slice().reverse().map(mail =>
+      '<article style="border:1px solid #ddd;padding:16px;margin:12px 0;border-radius:8px"><b>' +
+      escapeHtml(mail.subject) + '</b> · ' + escapeHtml(mail.to) +
+      '<pre style="white-space:pre-wrap">' + escapeHtml(mail.body) + '</pre></article>').join('');
+    res.writeHead(200, { 'Content-Type':'text/html; charset=utf-8', 'Cache-Control':'no-store' });
+    return res.end('<!doctype html><html lang="en"><meta charset="utf-8"><title>Demo mailbox</title>' +
+      '<main style="max-width:800px;margin:40px auto;font-family:system-ui"><h1>PharmaGo demo mailbox</h1>' +
+      '<p>Fictional in-memory messages only. <a href="/">Back to app</a></p>' + rows + '</main></html>');
   }
   if (req.method === 'GET' && url.pathname === '/health') return json(res, 200, { ok:true });
   if (req.method !== 'POST' || url.pathname !== '/api') return json(res, 404, { success:false, message:'Not found' });
