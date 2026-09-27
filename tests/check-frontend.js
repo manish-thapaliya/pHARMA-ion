@@ -115,6 +115,40 @@ check(/MAX_UPLOAD_BYTES/.test(script), 'client should enforce MAX_UPLOAD_BYTES b
 check(/text\/plain/.test(script),
   'POSTs must use a CORS-safelisted content type (text/plain) so no preflight is sent');
 
+// ---- design tokens: text contrast must stay WCAG AA ---------------------
+const styleBlock = (html.match(/<style>([\s\S]*?)<\/style>/) || [, ''])[1];
+const rootBlock = (styleBlock.match(/:root\s*{([^}]*)}/) || [, ''])[1];
+const token = (name) => {
+  const m = rootBlock.match(new RegExp('--' + name + '\\s*:\\s*(#[0-9a-fA-F]{6})'));
+  return m ? m[1] : null;
+};
+const channel = (value) => {
+  const c = value / 255;
+  return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+};
+const luminance = (hexColor) => {
+  const n = parseInt(hexColor.slice(1), 16);
+  return 0.2126 * channel(n >> 16 & 255) + 0.7152 * channel(n >> 8 & 255) + 0.0722 * channel(n & 255);
+};
+const contrast = (a, b) => {
+  const l1 = luminance(a), l2 = luminance(b);
+  return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+};
+['ink', 'ink-2', 'muted', 'faint', 'brand', 'ok', 'warn', 'danger']
+  .forEach((name) => check(token(name), 'design token --' + name + ' is missing from :root'));
+[
+  ['ink', '#ffffff'], ['ink-2', '#ffffff'], ['muted', '#ffffff'], ['faint', '#ffffff'],
+  ['muted', '#f5f7fb'], ['faint', '#f5f7fb'], ['brand', '#ffffff'], ['ok', '#e8f7ef'],
+  ['warn', '#fff5e2'], ['danger', '#fdeeed']
+].forEach(([name, bg]) => {
+  const fg = token(name);
+  if (!fg) return;
+  check(contrast(fg, bg) >= 4.5,
+    '--' + name + ' (' + fg + ') on ' + bg + ' is ' + contrast(fg, bg).toFixed(2) + ':1 — needs 4.5:1 for AA');
+});
+check(/prefers-reduced-motion/.test(styleBlock), 'motion should be disabled for prefers-reduced-motion');
+check(/skip-link/.test(html), 'page should offer a skip link');
+
 // ---- report ------------------------------------------------------------
 if (problems.length) {
   console.log('✗ index.html wiring');

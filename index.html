@@ -3,379 +3,748 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PharmaGo | Care, delivered</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,680&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<meta name="theme-color" content="#123d37">
+<title>PharmaGo | Clinical workspace for medicine delivery</title>
+<meta name="description" content="PharmaGo — prescription upload and review, verified local pharmacies, and a medicine catalogue in one clinical workspace.">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preload" href="fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/inter-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="theme-color" content="#1668d3">
 <style>
+  /* ============================================================
+     PharmaGo — "Clinical" UI
+     Cool white surfaces, clinical blue accent, fixed icon rail,
+     command-bar search, dense data tables, mono for identifiers.
+     ============================================================ */
   :root {
-    --brand:#0e7a62; --brand-dark:#0b5c4a; --danger:#c44b4b; --warn:#a86e23;
-    --ink:#142824; --muted:#5d726b; --line:#e3ebe6; --paper:#fffdfb; --sand:#f6f3ec;
-    --shadow:0 18px 50px rgba(20, 60, 48, .08);
+    --brand:#1668d3; --brand-dark:#0d4ea6; --brand-tint:#eef5ff; --brand-line:#bcd6f7;
+    --ok:#0f7b52; --ok-tint:#e8f7ef; --ok-line:#b6e3cb;
+    --danger:#c0392f; --danger-tint:#fdeeed; --danger-line:#f4c9c5;
+    --warn:#9a6410; --warn-tint:#fff5e2; --warn-line:#f2dcaa;
+    --info:#0e7490; --info-tint:#e6f6fa;
+    --ink:#0f1b2d; --ink-2:#33465e; --muted:#5c6b7f; --faint:#61708a;
+    --line:#e4e9f1; --line-2:#eef1f6; --surface:#ffffff; --page:#f5f7fb; --rail:#fbfcfe;
+    --radius:14px; --radius-sm:10px; --radius-lg:20px;
+    --shadow-sm:0 1px 2px rgba(15,27,45,.05);
+    --shadow:0 10px 30px rgba(15,45,90,.08), 0 1px 2px rgba(15,27,45,.05);
+    --shadow-lg:0 28px 70px rgba(11,32,64,.16);
+    --font:'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --mono:'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    --rail-w:266px;
   }
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
+  /* Fonts are vendored in /fonts (latin subsets, woff2) so the page renders identically
+     where the Google Fonts CDN is blocked or slow. Glyphs outside the latin range
+     (arrows, currency signs) fall back to the system font, which is intended. */
+  @font-face {
+    font-family:'Inter'; font-style:normal; font-weight:400; font-display:swap;
+    src:url('fonts/inter-latin-400-normal.woff2') format('woff2'); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  }
+  @font-face {
+    font-family:'Inter'; font-style:normal; font-weight:600; font-display:swap;
+    src:url('fonts/inter-latin-600-normal.woff2') format('woff2'); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  }
+  @font-face {
+    font-family:'Inter'; font-style:normal; font-weight:700; font-display:swap;
+    src:url('fonts/inter-latin-700-normal.woff2') format('woff2'); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  }
+  @font-face {
+    font-family:'Inter'; font-style:normal; font-weight:800; font-display:swap;
+    src:url('fonts/inter-latin-800-normal.woff2') format('woff2'); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  }
+  @font-face {
+    font-family:'IBM Plex Mono'; font-style:normal; font-weight:500; font-display:swap;
+    src:url('fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2'); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  }
+  @font-face {
+    font-family:'IBM Plex Mono'; font-style:normal; font-weight:600; font-display:swap;
+    src:url('fonts/ibm-plex-mono-latin-600-normal.woff2') format('woff2'); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+  }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; -webkit-text-size-adjust:100%; }
   body {
-    min-height:100vh; margin:0; padding:0 24px 48px; color:var(--ink);
-    font-family: Manrope, 'Segoe UI', system-ui, sans-serif; line-height:1.55;
-    background:
-      radial-gradient(900px 520px at 110% -10%, #d7f3e4 0, transparent 55%),
-      radial-gradient(680px 420px at -12% 18%, #f8e7c4 0, transparent 50%),
-      #f3f6f2;
+    margin:0; min-height:100vh; color:var(--ink); font-family:var(--font);
+    font-size:14.5px; line-height:1.55; background-color:var(--page);
+    background-image:
+      radial-gradient(900px 420px at 100% -8%, rgba(22,104,211,.10), transparent 62%),
+      radial-gradient(700px 380px at -6% 4%, rgba(15,123,82,.07), transparent 58%),
+      linear-gradient(rgba(15,27,45,.028) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(15,27,45,.028) 1px, transparent 1px);
+    background-size:auto, auto, 100% 26px, 26px 100%;
+    background-attachment:fixed;
   }
-  body::before, body::after {
-    content:""; position:fixed; z-index:0; width:380px; height:380px; border-radius:50%;
-    filter:blur(46px); pointer-events:none; opacity:.72;
-  }
-  body::before { background:#c9efd9; top:-90px; right:-40px; animation:orb 18s ease-in-out infinite; }
-  body::after { background:#f6e2b8; bottom:8%; left:-140px; animation:orb 22s ease-in-out infinite reverse; }
-  h1, h2, .brand-name { font-family: Fraunces, Georgia, serif; font-weight:680; letter-spacing:-.04em; }
-  .app-shell { position:relative; z-index:1; max-width:1180px; margin:auto; }
-  .topbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; padding:22px 0; }
-  .brand { display:flex; align-items:center; gap:12px; text-decoration:none; color:var(--ink); }
-  .brand-mark {
-    display:grid; place-items:center; width:48px; height:48px; border-radius:16px;
-    background:linear-gradient(160deg, #1c6b59, #0e3f36); color:white; font-size:26px; font-weight:700;
-    box-shadow:0 10px 22px #164e4230; animation:mark 4.8s ease-in-out infinite;
-  }
-  .brand-name { font-size:24px; line-height:1; }
-  .brand-name span { color:var(--brand); }
-  .brand-sub { color:var(--muted); font-size:11px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
-  #sessionBar {
-    padding:8px 14px; border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.86);
-    font-size:13px; max-width:100%; overflow-wrap:anywhere; backdrop-filter:blur(8px);
-    box-shadow:0 8px 24px #2347380c;
-  }
-  #sessionBar .btn { margin:0 0 0 10px; padding:5px 9px; font-size:12px; }
-  .hero {
-    display:grid; grid-template-columns:1.5fr 1fr; align-items:center; gap:32px;
-    margin:8px 0 22px; padding:40px 48px; border-radius:28px; overflow:hidden; position:relative;
-    background:linear-gradient(135deg, #123e36 0%, #1b6a58 62%, #2f8f6e 140%);
-    color:white; box-shadow:0 22px 50px #17463828; animation:rise .7s cubic-bezier(.2,.8,.2,1) both;
-  }
-  .hero:after {
-    content:"+"; position:absolute; right:18%; top:-150px; font-size:460px; line-height:1;
-    color:#ffffff10; font-weight:900; pointer-events:none; animation:drift 16s ease-in-out infinite;
-  }
-  .eyebrow, .kicker {
-    display:inline-block; letter-spacing:.16em; text-transform:uppercase; font-size:11px; font-weight:800;
-  }
-  .eyebrow { color:#b7ebcf; }
-  .kicker { color:var(--brand); }
-  .hero h1 {
-    color:white; font-size:clamp(34px, 4.4vw, 56px); line-height:1.04; max-width:640px; margin:12px 0 16px;
-  }
-  .hero p { color:#d5ebe3; font-size:16px; margin:0; max-width:540px; }
-  .hero-copy { position:relative; z-index:2; }
-  .hero-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; }
-  .hero-actions .btn { margin:0; background:#fff; color:#124d40; padding:13px 20px; }
-  .hero-actions .btn:hover { background:#f1fff8; }
-  .hero-actions .btn.hero-secondary { color:#fff; background:#ffffff12; border:1px solid #ffffff45; }
-  .hero-proof { display:flex; flex-wrap:wrap; gap:16px; margin-top:20px; color:#d5ebe3; font-size:12px; font-weight:700; }
-  .hero-proof span::before { content:'✓'; color:#8ee0b9; margin-right:6px; }
-  .journey { display:grid; grid-template-columns:repeat(3,1fr); gap:0; margin:-4px 18px 22px; padding:14px 20px; background:#fff; border:1px solid var(--line); border-radius:18px; box-shadow:0 12px 36px #2347380c; }
-  .journey-step { display:flex; align-items:center; gap:12px; padding:8px 18px; position:relative; }
-  .journey-step:not(:last-child)::after { content:'→'; position:absolute; right:-5px; color:#9db2a9; }
-  .journey-num { display:grid; place-items:center; flex:none; width:32px; height:32px; border-radius:50%; color:white; background:linear-gradient(145deg,var(--brand),#175344); font:800 12px Manrope,sans-serif; }
-  .journey-step b { display:block; font-size:13px; } .journey-step small { color:var(--muted); font-size:11px; }
-  .network-pill { display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:800; color:var(--muted); }
-  .network-pill::before { content:''; width:7px; height:7px; border-radius:50%; background:#22a06b; box-shadow:0 0 0 3px #22a06b18; }
-  body.offline .network-pill::before { background:var(--danger); } body.offline .network-pill { color:var(--danger); }
-  .btn.busy { pointer-events:none; opacity:.72; padding-right:40px; position:relative; }
-  .btn.busy::after { content:''; position:absolute; right:14px; top:50%; width:14px; height:14px; margin-top:-8px; border:2px solid #ffffff66; border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; }
-  #toastRegion { position:fixed; z-index:120; right:20px; bottom:20px; display:grid; gap:8px; width:min(360px,calc(100vw - 32px)); pointer-events:none; }
-  .toast { padding:13px 15px; border-radius:14px; color:white; background:#173f36; box-shadow:0 16px 42px #0a241f42; font-size:13px; animation:toastIn .3s ease both; }
-  .toast.error { background:#9d3e3e; }
+  h1, h2, h3, h4 { font-family:var(--font); font-weight:700; letter-spacing:-.022em; color:var(--ink); margin:0; }
+  h1 { font-size:clamp(24px, 2.5vw, 32px); line-height:1.15; }
+  h2 { font-size:clamp(20px, 2.1vw, 26px); line-height:1.2; }
+  h3 { font-size:16px; letter-spacing:-.01em; }
+  p { margin:8px 0; color:var(--ink-2); }
+  a { color:var(--brand); }
+  [hidden] { display:none !important; }
+  ::selection { background:#cfe2ff; }
 
-  .hero-cards { z-index:1; display:grid; gap:10px; }
-  .hero-card {
-    background:#ffffff16; border:1px solid #ffffff30; border-radius:16px; padding:14px 16px;
-    display:flex; gap:14px; align-items:center; backdrop-filter:blur(10px); font-size:14px;
-    animation:float 6.5s ease-in-out infinite;
+  /* ---------- shell: icon rail + workspace ---------- */
+  .app-shell { display:grid; grid-template-columns:var(--rail-w) minmax(0,1fr); align-items:start; min-height:100vh; }
+
+  .sidebar {
+    position:sticky; top:0; height:100vh; display:flex; flex-direction:column; gap:14px;
+    padding:18px 14px 14px; background:var(--rail); border-right:1px solid var(--line);
+    overflow-y:auto; z-index:20;
   }
-  .hero-card:nth-child(2) { animation-delay:.7s; }
-  .hero-card:nth-child(3) { animation-delay:1.3s; }
-  .hero-card b { display:block; color:white; } .hero-card span { color:#d5ebe3; font-size:12px; }
-  .hero-icon {
-    display:grid; place-items:center; flex:none; height:40px; width:40px; border-radius:12px;
-    background:#ffffff22; font-size:18px;
+  .sidebar::-webkit-scrollbar { width:8px; }
+  .sidebar::-webkit-scrollbar-thumb { background:#dbe3ee; border-radius:99px; }
+
+  .brand { display:flex; align-items:center; gap:11px; padding:6px 8px 12px; text-decoration:none; color:var(--ink); }
+  .brand-mark {
+    display:grid; place-items:center; flex:none; width:38px; height:38px; border-radius:11px; color:#fff;
+    background:linear-gradient(155deg, #2b83ea, #0d4ea6); box-shadow:0 6px 16px rgba(13,78,166,.32);
   }
-  .tabs { display:flex; flex-wrap:wrap; align-items:center; gap:8px; border:0; margin:0 0 16px; }
+  .brand-mark svg { width:20px; height:20px; }
+  .brand-name { display:block; font-size:16.5px; font-weight:800; letter-spacing:-.03em; line-height:1.1; }
+  .brand-name span { color:var(--brand); }
+  .brand-sub { display:block; font-size:10.5px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); margin-top:2px; }
+  .brand-mobile { display:none; }
+
+  .rail-label {
+    padding:0 10px; margin:2px 0 6px; font-size:10.5px; font-weight:700; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--faint);
+  }
+
+  /* navigation (state machine hooks: .tabs > button#tab*) */
+  .tabs { display:flex; flex-direction:column; gap:3px; border:0; margin:0; padding:0; }
   .tabs button {
-    font:inherit; font-weight:700; color:#456258; background:rgba(255,255,255,.45);
-    border:1px solid transparent; border-radius:12px; padding:10px 16px; cursor:pointer;
-    transition:background .2s, color .2s, transform .2s, box-shadow .2s;
+    position:relative; display:flex; align-items:center; gap:11px; width:100%; padding:10px 12px;
+    font:inherit; font-size:13.5px; font-weight:600; color:var(--ink-2); text-align:left;
+    background:transparent; border:1px solid transparent; border-radius:var(--radius-sm); cursor:pointer;
+    transition:background .16s, color .16s, border-color .16s;
   }
-  .tabs button:hover { background:#e7f2eb; transform:translateY(-1px); }
-  .tabs button.active { background:var(--brand); color:white; box-shadow:0 8px 18px #116e5930; }
+  .tabs button svg { flex:none; width:18px; height:18px; opacity:.85; }
+  .tabs button:hover { background:#eef2f8; color:var(--ink); }
+  .tabs button.active { background:var(--brand-tint); border-color:var(--brand-line); color:var(--brand-dark); font-weight:700; }
+  .tabs button.active svg { opacity:1; }
+  .tabs button.active::before {
+    content:""; position:absolute; left:-14px; top:50%; transform:translateY(-50%);
+    width:3px; height:22px; border-radius:0 3px 3px 0; background:var(--brand);
+  }
+  .tabs button:focus-visible, .btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible {
+    outline:2px solid var(--brand); outline-offset:2px;
+  }
+
+  .rail-foot { margin-top:auto; display:flex; flex-direction:column; gap:10px; }
+  .account { display:flex; flex-direction:column; gap:9px; padding:12px; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow-sm); }
+  #sessionBar {
+    padding:0; border:0; background:none; box-shadow:none; font-size:12.5px; color:var(--ink-2);
+    overflow-wrap:anywhere; line-height:1.5;
+  }
+  #sessionBar strong { display:block; color:var(--ink); font-size:13.5px; font-weight:700; }
+  #sessionBar .btn { margin:0 0 0 6px; padding:4px 8px; font-size:11.5px; }
+  .badge {
+    display:inline-block; margin:4px 4px 0 0; padding:2px 8px; border-radius:999px;
+    background:var(--brand-tint); color:var(--brand-dark); border:1px solid var(--brand-line);
+    font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+  }
+  #logoutBtn { margin:0; width:100%; justify-content:center; }
+
+  .network-pill {
+    display:inline-flex; align-items:center; gap:7px; padding:7px 10px; border-radius:999px;
+    background:var(--ok-tint); color:var(--ok); border:1px solid var(--ok-line);
+    font-size:11px; font-weight:700; letter-spacing:.01em;
+  }
+  .network-pill::before { content:''; width:7px; height:7px; border-radius:50%; background:currentColor; box-shadow:0 0 0 3px rgba(15,123,82,.16); }
+  body.offline .network-pill { background:var(--danger-tint); border-color:var(--danger-line); color:var(--danger); }
+
+  /* ---------- workspace column ---------- */
+  .main { min-width:0; display:flex; flex-direction:column; }
+  .workspace { padding:0 clamp(16px, 2.4vw, 34px) 40px; }
+
+  .topbar {
+    position:sticky; top:0; z-index:15; display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+    padding:12px clamp(16px, 2.4vw, 34px); background:rgba(255,255,255,.86);
+    border-bottom:1px solid var(--line); backdrop-filter:blur(12px) saturate(140%);
+  }
+  .topbar-title { min-width:0; }
+  .crumb { display:block; font-size:10.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--faint); }
+  .topbar-title b { display:block; font-size:15px; font-weight:700; letter-spacing:-.015em; }
+  .topbar-spacer { flex:1 1 auto; }
+  .topbar .btn { margin:0; }
+  .kbd {
+    display:inline-grid; place-items:center; min-width:20px; height:20px; padding:0 5px; border-radius:5px;
+    border:1px solid var(--line); border-bottom-width:2px; background:#fbfcfe; color:var(--faint);
+    font:600 10.5px/1 var(--mono);
+  }
+
+  /* ---------- hero console ---------- */
+  .hero {
+    position:relative; display:grid; grid-template-columns:minmax(0,1.45fr) minmax(0,1fr); gap:26px;
+    margin:22px 0 16px; padding:clamp(20px, 2.4vw, 30px); overflow:hidden;
+    background:linear-gradient(135deg, #ffffff 0%, #f6faff 58%, #eef5ff 100%);
+    border:1px solid var(--line); border-radius:var(--radius-lg); box-shadow:var(--shadow);
+    animation:rise .5s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .hero::after {
+    content:""; position:absolute; inset:0; pointer-events:none; opacity:.5;
+    background-image:linear-gradient(rgba(22,104,211,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(22,104,211,.07) 1px, transparent 1px);
+    background-size:22px 22px;
+    -webkit-mask-image:radial-gradient(420px 200px at 88% 8%, #000, transparent 72%);
+    mask-image:radial-gradient(420px 200px at 88% 8%, #000, transparent 72%);
+  }
+  .hero-copy { position:relative; z-index:1; min-width:0; }
+  .eyebrow, .kicker {
+    display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px;
+    font-size:10.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
+  }
+  .eyebrow { background:var(--brand-tint); color:var(--brand-dark); border:1px solid var(--brand-line); }
+  .kicker { background:#fff; color:var(--brand-dark); border:1px solid var(--brand-line); padding:3px 9px; }
+  .hero h1 { margin:12px 0 8px; max-width:20ch; }
+  .hero p { margin:0; max-width:56ch; color:var(--ink-2); font-size:14.5px; }
+  .hero-actions { display:flex; flex-wrap:wrap; gap:9px; margin-top:18px; }
+  .hero-actions .btn { margin:0; }
+  .hero-proof { display:flex; flex-wrap:wrap; gap:8px 18px; margin-top:18px; padding-top:16px; border-top:1px dashed var(--line); }
+  .hero-proof span { display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:600; color:var(--muted); }
+  .hero-proof span::before { content:'✓'; display:grid; place-items:center; width:16px; height:16px; border-radius:50%; background:var(--ok-tint); color:var(--ok); font-size:10px; font-weight:800; }
+
+  .hero-side { position:relative; z-index:1; display:flex; flex-direction:column; gap:10px; }
+  .hero-card {
+    display:flex; align-items:center; gap:12px; padding:12px 14px; background:var(--surface);
+    border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow-sm);
+    animation:cardIn .5s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .hero-card:nth-child(2) { animation-delay:.06s; }
+  .hero-card:nth-child(3) { animation-delay:.12s; }
+  .hero-icon {
+    display:grid; place-items:center; flex:none; width:36px; height:36px; border-radius:10px;
+    background:var(--brand-tint); color:var(--brand-dark); border:1px solid var(--brand-line);
+  }
+  .hero-icon svg { width:18px; height:18px; }
+  .hero-card b { display:block; font-size:13.5px; font-weight:700; letter-spacing:-.01em; }
+  .hero-card span { display:block; font-size:12px; color:var(--muted); }
+
+  /* ---------- journey stepper ---------- */
+  .journey {
+    display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px; margin:0 0 18px;
+    padding:14px 16px; background:var(--surface); border:1px solid var(--line);
+    border-radius:var(--radius); box-shadow:var(--shadow-sm);
+  }
+  .journey-step { display:flex; align-items:center; gap:11px; position:relative; padding:2px 8px 2px 0; }
+  .journey-step:not(:last-child)::after {
+    content:''; position:absolute; right:-6px; top:50%; width:12px; height:1px; background:var(--line);
+  }
+  .journey-num {
+    display:grid; place-items:center; flex:none; width:30px; height:30px; border-radius:9px;
+    background:var(--brand-tint); border:1px solid var(--brand-line); color:var(--brand-dark);
+    font:600 11.5px/1 var(--mono);
+  }
+  .journey-step b { display:block; font-size:13px; font-weight:700; }
+  .journey-step small { display:block; font-size:11.5px; color:var(--muted); }
+
+  /* ---------- panels ---------- */
   .panel {
-    display:none; background:var(--paper); border:1px solid var(--line); border-radius:24px;
-    padding:clamp(22px, 4vw, 40px); box-shadow:var(--shadow); min-height:340px;
+    display:none; background:var(--surface); border:1px solid var(--line); border-radius:var(--radius-lg);
+    padding:clamp(18px, 2.4vw, 30px); box-shadow:var(--shadow); min-height:360px;
   }
-  .panel.active { display:block; animation:panelIn .45s cubic-bezier(.2,.8,.2,1); }
-  .panel h2 { margin:0 0 6px; font-size:clamp(26px, 3vw, 36px); }
-  .panel h3 { margin:22px 0 6px; font-size:18px; font-family:Fraunces, Georgia, serif; }
-  .panel p { color:var(--muted); }
-  .panel hr { border:0; border-top:1px solid var(--line); margin:28px 0; }
-  .section-head { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap; margin:4px 0 12px; }
+  .panel.active { display:block; animation:panelIn .34s cubic-bezier(.2,.8,.2,1); }
+  .panel h2 { margin:0 0 4px; }
+  .panel h3 { margin:22px 0 6px; }
+  .panel > h2:first-child { margin-top:0; }
+  .panel p { color:var(--ink-2); }
+  .panel hr { border:0; border-top:1px solid var(--line); margin:26px 0; }
+  .section-head { display:flex; justify-content:space-between; align-items:flex-end; gap:14px; flex-wrap:wrap; margin:26px 0 10px; }
+  .section-head:first-child { margin-top:0; }
   .section-head h2, .section-head h3 { margin:0; }
-  .section-head .btn, .topbar .btn { margin-top:0; }
-  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+  .section-head .btn, .topbar .btn { margin:0; }
+  .grid2 { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:18px; }
   .grid2 > div { min-width:0; }
-  #viewLogin .grid2 > div { padding:24px; border:1px solid var(--line); background:#fff; border-radius:18px; transition:transform .2s, box-shadow .2s; }
-  #viewLogin .grid2 > div:hover { transform:translateY(-3px); box-shadow:0 14px 30px #23473810; }
-  #viewLogin .grid2 > div:first-child { background:linear-gradient(180deg, #f3faf6, #fff); }
-  label { display:block; margin-top:14px; font-weight:700; font-size:13px; color:#3c554c; }
+  .auth-grid > div {
+    padding:20px; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface);
+  }
+  .auth-grid > div:first-child { background:linear-gradient(180deg, #f7fbff, #fff); border-color:var(--brand-line); }
+  .auth-grid h2 { font-size:19px; }
+
+  /* ---------- forms ---------- */
+  label { display:block; margin-top:14px; font-size:12px; font-weight:700; color:var(--ink-2); letter-spacing:.005em; }
+  label:first-child { margin-top:0; }
   input, select, textarea {
-    width:100%; padding:12px 13px; margin-top:5px; border:1px solid #cddbd2; border-radius:12px;
-    font:inherit; font-size:14px; background:#fff; color:var(--ink);
-    transition:border-color .15s, box-shadow .15s, transform .15s;
+    width:100%; padding:10px 12px; margin-top:5px; color:var(--ink); font:inherit; font-size:13.5px;
+    background:var(--surface); border:1px solid #d5dcea; border-radius:var(--radius-sm);
+    box-shadow:var(--shadow-sm); transition:border-color .15s, box-shadow .15s;
   }
-  input:focus, textarea:focus, select:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 4px #116e5922; }
+  input::placeholder, textarea::placeholder { color:#7b8797; }
+  input:hover, select:hover, textarea:hover { border-color:#c2ccdd; }
+  input:focus, textarea:focus, select:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px rgba(22,104,211,.16); }
+  input[type="file"] { padding:8px; background:#fbfcfe; cursor:pointer; }
+  input[type="file"]::file-selector-button {
+    margin-right:10px; padding:6px 11px; border:1px solid var(--line); border-radius:8px;
+    background:#fff; color:var(--ink-2); font:600 12px var(--font); cursor:pointer;
+  }
+  select { appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4.5 6 8.5l4-4' fill='none' stroke='%2364748b' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 11px center; padding-right:30px; }
+  small.hint, .hint { color:var(--muted); font-size:12.5px; }
+
+  /* ---------- buttons ---------- */
   .btn {
-    display:inline-block; width:auto !important; margin-top:12px; margin-right:6px; padding:11px 16px;
-    border:none; border-radius:12px; background:var(--brand); color:#fff; cursor:pointer;
-    font:inherit; font-size:14px; font-weight:800;
-    transition:transform .18s, background .18s, box-shadow .18s;
+    display:inline-flex; align-items:center; justify-content:center; gap:7px; width:auto !important;
+    margin:12px 6px 0 0; padding:9px 15px; border:1px solid transparent; border-radius:var(--radius-sm);
+    background:var(--brand); color:#fff; cursor:pointer; font:inherit; font-size:13px; font-weight:700;
+    letter-spacing:-.005em; text-decoration:none; box-shadow:0 1px 2px rgba(13,78,166,.28);
+    transition:background .16s, border-color .16s, color .16s, box-shadow .16s, transform .12s;
   }
-  .btn:hover { background:var(--brand-dark); transform:translateY(-2px); box-shadow:0 10px 18px #116e5928; }
-  .btn:active { transform:translateY(0); }
-  .btn:focus-visible, .tabs button:focus-visible { outline:3px solid #e8b560; outline-offset:2px; }
-  .btn.red { background:var(--danger); } .btn.green { background:#148a62; } .btn.gray { background:#667c70; }
-  .btn.link { background:none; color:var(--brand); text-decoration:underline; padding:6px 0; box-shadow:none; text-align:left; }
-  .btn.link:hover { background:none; transform:none; box-shadow:none; }
-  table { width:100%; border-collapse:collapse; margin-top:10px; font-size:14px; background:white; min-width:560px; }
-  th, td { border:0; border-bottom:1px solid var(--line); padding:12px; text-align:left; }
-  th { font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); background:#f4f8f5; }
-  tr { transition:background .16s; }
-  tbody tr:hover, table tr:hover td { background:#f7fbf8; }
-  .status-APPROVED, .st-ACTIVE { color:#0e7a62; font-weight:800; }
-  .status-DECLINED, .st-DECLINED { color:#c44b4b; font-weight:800; }
-  .status-PENDING, .st-PENDING, .st-UNVERIFIED { color:var(--warn); font-weight:800; }
+  .btn:hover { background:var(--brand-dark); box-shadow:0 6px 16px rgba(13,78,166,.22); }
+  .btn:active { transform:translateY(1px); box-shadow:var(--shadow-sm); }
+  .btn.gray { background:#fff; color:var(--ink-2); border-color:#d5dcea; box-shadow:var(--shadow-sm); }
+  .btn.gray:hover { background:#f4f7fb; color:var(--ink); border-color:#c2ccdd; }
+  .btn.green { background:var(--ok); box-shadow:0 1px 2px rgba(15,123,82,.3); }
+  .btn.green:hover { background:#0b6444; }
+  .btn.red { background:#fff; color:var(--danger); border-color:var(--danger-line); box-shadow:var(--shadow-sm); }
+  .btn.red:hover { background:var(--danger-tint); border-color:#eab3ad; color:#9c2c23; }
+  .btn.link {
+    background:none; border-color:transparent; box-shadow:none; color:var(--brand);
+    text-decoration:none; padding:8px 0; font-weight:600;
+  }
+  .btn.link:hover { background:none; box-shadow:none; text-decoration:underline; }
+  .btn.sm { padding:6px 11px; font-size:12px; margin-top:0; }
+  .btn.busy { pointer-events:none; opacity:.7; padding-right:38px; position:relative; }
+  .btn.busy::after {
+    content:''; position:absolute; right:13px; top:50%; width:13px; height:13px; margin-top:-7px;
+    border:2px solid rgba(255,255,255,.45); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite;
+  }
+  .btn.gray.busy::after, .btn.red.busy::after { border-color:rgba(15,27,45,.2); border-top-color:var(--ink); }
+
+  /* ---------- messages, banners, toasts ---------- */
+  .msg { display:none; margin-top:12px; padding:11px 13px; border-radius:var(--radius-sm); font-size:13px; border:1px solid transparent; }
+  .msg.ok, .msg.err { display:flex; gap:9px; align-items:flex-start; animation:msgIn .3s ease; }
+  .msg.ok::before { content:'✓'; flex:none; font-weight:800; }
+  .msg.err::before { content:'!'; flex:none; display:grid; place-items:center; width:16px; height:16px; margin-top:1px; border-radius:50%; background:var(--danger); color:#fff; font-size:11px; font-weight:800; }
+  .msg.ok { background:var(--ok-tint); border-color:var(--ok-line); color:#0b5f40; }
+  .msg.err { background:var(--danger-tint); border-color:var(--danger-line); color:#96271f; }
+  .banner {
+    display:none; margin:14px 0; padding:12px 14px; border-radius:var(--radius); font-size:13px;
+    background:var(--warn-tint); border:1px solid var(--warn-line); color:#6f4a09;
+  }
+  #toastRegion { position:fixed; z-index:120; right:20px; bottom:20px; display:grid; gap:8px; width:min(360px, calc(100vw - 32px)); pointer-events:none; }
+  .toast {
+    position:relative; padding:12px 14px 12px 16px; border-radius:12px; color:#eaf1fb; font-size:13px;
+    background:#12233c; border:1px solid #24384f; box-shadow:var(--shadow-lg); animation:toastIn .28s ease both;
+  }
+  .toast::before { content:''; position:absolute; left:0; top:10px; bottom:10px; width:3px; border-radius:0 3px 3px 0; background:#4d9dff; }
+  .toast.error { background:#3a1512; border-color:#5d231e; }
+  .toast.error::before { background:#ff8b7d; }
+
+  /* ---------- cards ---------- */
   .card, .rx-card {
-    border:1px solid var(--line); border-radius:18px; padding:16px; margin:10px 0; background:#fff;
-    box-shadow:0 10px 28px #2347380a; transition:transform .2s, box-shadow .2s;
+    background:var(--surface); border:1px solid var(--line); border-radius:var(--radius);
+    padding:15px; margin:10px 0; box-shadow:var(--shadow-sm); transition:box-shadow .18s, border-color .18s, transform .18s;
   }
-  .card:hover, .rx-card:hover { transform:translateY(-4px); box-shadow:0 18px 36px #23473816; }
-  .rx-card { margin:0; animation:cardIn .55s cubic-bezier(.2,.8,.2,1) both; }
-  .rx-card h3, .rx-viewer-head h2 { margin:8px 0 4px; font-size:18px; color:var(--ink); overflow-wrap:anywhere; }
-  .rx-viewer-head h2 { font-size:clamp(24px, 3vw, 34px); margin:2px 0 6px; }
-  .rx-card p { margin:4px 0; font-size:13px; }
+  .card:hover, .rx-card:hover { border-color:#d3dcea; box-shadow:var(--shadow); }
+  .card h3 { margin-top:0; }
+  .card strong { font-size:14px; }
+  .rx-card { margin:0; display:flex; flex-direction:column; animation:cardIn .45s cubic-bezier(.2,.8,.2,1) both; }
+  .rx-card:hover { transform:translateY(-2px); }
+  .rx-card h3, .rx-viewer-head h2 { margin:8px 0 4px; font-size:14.5px; color:var(--ink); overflow-wrap:anywhere; letter-spacing:-.01em; }
+  .rx-card p { margin:3px 0; font-size:12.5px; color:var(--muted); }
   .rx-card-top { display:flex; justify-content:space-between; align-items:center; gap:8px; }
-  .rx-id { color:var(--muted); font-size:12px; font-weight:700; }
-  .rx-note { color:#3c554c !important; }
-  .rx-actions { display:flex; flex-wrap:wrap; gap:6px; }
-  .rx-actions .btn { margin-top:8px; }
-  .rx-grid, #pendingRx {
-    display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:14px; margin-top:8px;
-  }
+  .rx-id { color:var(--muted); font:600 11px/1.4 var(--mono); letter-spacing:-.02em; }
+  .rx-note { color:var(--ink-2) !important; background:var(--line-2); border-radius:8px; padding:7px 9px; margin-top:6px !important; }
+  .rx-actions { display:flex; flex-wrap:wrap; gap:6px; margin-top:auto; padding-top:10px; }
+  .rx-actions .btn { margin:8px 0 0; }
+  .rx-grid, #pendingRx { display:grid; grid-template-columns:repeat(auto-fill, minmax(258px, 1fr)); gap:12px; margin-top:10px; }
   .rx-doc {
-    height:88px; margin:12px 0 8px; border-radius:14px; position:relative; overflow:hidden;
-    display:grid; place-items:center;
-    background:linear-gradient(145deg, #f8fcf9, #e5f4ec 70%, #f7f1e4);
-    border:1px solid #e1eee7;
+    position:relative; height:82px; margin:12px 0 6px; border-radius:12px; overflow:hidden;
+    display:grid; place-items:center; background:linear-gradient(150deg, #f8fbff, #eef4fd 62%, #f4f8fd);
+    border:1px solid var(--line);
   }
-  .rx-doc span { font-family:Fraunces, Georgia, serif; font-size:28px; color:var(--brand); }
+  .rx-doc span { font:600 24px/1 var(--mono); color:var(--brand); letter-spacing:-.04em; }
   .rx-doc::after {
-    content:""; position:absolute; top:-30%; bottom:-30%; width:40%; left:-50%;
-    background:linear-gradient(90deg, transparent, #ffffffaa, transparent);
-    transform:rotate(16deg); animation:sheen 3.6s ease-in-out infinite;
+    content:''; position:absolute; top:-30%; bottom:-30%; left:-50%; width:38%;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.85), transparent);
+    transform:rotate(16deg); animation:sheen 4.2s ease-in-out infinite;
   }
-  .rx-track { display:flex; gap:8px; list-style:none; padding:0; margin:12px 0 4px; }
-  .rx-track li { flex:1; font-size:11px; font-weight:800; color:#8aa097; position:relative; padding-top:12px; }
-  .rx-track li::before {
-    content:""; position:absolute; top:0; left:0; right:0; height:4px; border-radius:99px; background:#e6eeea;
-  }
-  .rx-track li.on { color:var(--brand); }
+  .rx-track { display:flex; gap:6px; list-style:none; padding:0; margin:12px 0 2px; }
+  .rx-track li { position:relative; flex:1; padding-top:10px; font-size:10.5px; font-weight:700; color:var(--faint); letter-spacing:.01em; }
+  .rx-track li::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius:99px; background:#e8edf5; }
+  .rx-track li.on { color:var(--brand-dark); }
   .rx-track li.on::before { background:var(--brand); }
-  .rx-track li.wait::before { background:linear-gradient(90deg, #0e7a62, #e6eeea); background-size:200% 100%; animation:loadbar 1.5s ease infinite; }
+  .rx-track li.wait { color:var(--warn); }
+  .rx-track li.wait::before { background:linear-gradient(90deg, var(--brand), #e8edf5); background-size:200% 100%; animation:loadbar 1.6s ease infinite; }
   .rx-track li.bad { color:var(--danger); }
   .rx-track li.bad::before { background:var(--danger); }
+  .rx-empty-state { grid-column:1 / -1; text-align:center; padding:30px 14px; color:var(--muted); background:#fbfcfe; border:1px dashed var(--line); border-radius:var(--radius); }
+  .rx-empty-mark {
+    display:grid; place-items:center; width:52px; height:52px; margin:0 auto 10px; border-radius:14px;
+    background:var(--brand-tint); border:1px solid var(--brand-line); color:var(--brand);
+  }
+  .rx-empty-mark svg { width:22px; height:22px; }
+  .rx-empty-state p { margin:0; font-size:13px; }
+  .rx-empty { margin:22px; text-align:center; color:var(--muted); font-size:13px; }
+
+  /* ---------- status chips & inline status text ---------- */
   .chip {
-    display:inline-flex; align-items:center; padding:4px 10px; border-radius:999px;
-    font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+    display:inline-flex; align-items:center; gap:6px; padding:3px 9px; border-radius:999px;
+    font-size:10.5px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; border:1px solid transparent;
   }
-  .chip.status-PENDING { color:#8a5a12; background:#fff4df; animation:pulse 2.2s ease-in-out infinite; }
-  .chip.status-APPROVED { color:#0e7a62; background:#e5f6ee; }
-  .chip.status-DECLINED { color:#a33b3b; background:#fdecec; }
-  .chip.status-PLACED { color:#8a5a12; background:#fff4df; }
-  .chip.status-ACCEPTED { color:#0e7a62; background:#e5f6ee; }
+  .chip::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; }
+  .chip.status-PENDING, .chip.status-PLACED { color:var(--warn); background:var(--warn-tint); border-color:var(--warn-line); }
+  .chip.status-PENDING { animation:pulse 2.4s ease-in-out infinite; }
+  .chip.status-APPROVED, .chip.status-ACCEPTED { color:var(--ok); background:var(--ok-tint); border-color:var(--ok-line); }
+  .chip.status-DECLINED { color:var(--danger); background:var(--danger-tint); border-color:var(--danger-line); }
+  .status-APPROVED, .st-ACTIVE { color:var(--ok); font-weight:700; }
+  .status-DECLINED, .st-DECLINED { color:var(--danger); font-weight:700; }
+  .status-PENDING, .st-PENDING, .st-UNVERIFIED { color:var(--warn); font-weight:700; }
+
+  /* ---------- upload zone ---------- */
   .upload-zone {
-    border:1.5px dashed #b7d4c6; border-radius:22px; padding:22px; margin:8px 0 16px;
-    background:linear-gradient(180deg, #f7fbf8, #fff); transition:border-color .2s, transform .2s, box-shadow .2s;
-    animation:glowPulse 3.4s ease-in-out infinite;
+    position:relative; margin:10px 0 16px; padding:20px; border:1.5px dashed var(--brand-line);
+    border-radius:var(--radius); background:linear-gradient(180deg, #f8fbff, #fff);
+    transition:border-color .18s, box-shadow .18s, background .18s;
   }
-  .upload-zone:hover, .upload-zone.drag { border-color:var(--brand); transform:translateY(-2px); box-shadow:0 16px 36px #0e7a6214; }
-  .upload-zone h3 { margin-top:0; }
+  .upload-zone:hover, .upload-zone.drag { border-color:var(--brand); background:#f4f9ff; box-shadow:0 0 0 4px rgba(22,104,211,.08); }
+  .upload-zone.drag { border-style:solid; }
+  .upload-zone h3 { margin:0 0 4px; display:flex; align-items:center; gap:9px; }
+  .upload-zone h3 svg { width:18px; height:18px; color:var(--brand); }
+  .upload-zone p { margin:0 0 8px; font-size:13px; color:var(--muted); }
   .local-preview { margin-top:12px; }
+  .local-preview p { font:600 12px/1.5 var(--mono); color:var(--ink-2); }
   .local-preview img, .local-preview iframe {
-    width:100%; max-height:280px; object-fit:contain; border-radius:14px; background:#f4f1ea; border:1px solid var(--line);
+    width:100%; max-height:280px; object-fit:contain; border-radius:12px; background:#fbfcfe; border:1px solid var(--line);
   }
   .local-preview iframe { height:280px; border:0; }
-  .filter-row { display:flex; flex-wrap:wrap; gap:16px; }
-  .filter-row > div { flex:1; min-width:180px; max-width:320px; }
-  .msg { margin-top:10px; padding:12px 14px; border-radius:12px; display:none; font-size:14px; }
-  .msg.ok, .msg.err { animation:msgIn .35s ease; }
-  .msg.ok { display:block; background:#e6f6ec; color:#146c2e; border:1px solid #b7e4c7; }
-  .msg.err { display:block; background:#fdecec; color:#a11; border:1px solid #f5c2c7; }
-  .banner { display:none; margin:10px 0; padding:12px; border-radius:12px; background:#fff6e5; border:1px solid #f0d69a; color:#7a5b00; font-size:14px; }
-  small.hint, .hint { color:var(--muted); }
-  .otp-row { display:flex; gap:8px; margin-top:6px; }
-  .otp-row input { width:46px; height:54px; text-align:center; font-size:22px; font-weight:800; }
-  .countdown { font-size:13px; color:var(--muted); margin-top:6px; }
-  .stepper { display:flex; gap:6px; align-items:center; font-size:13px; color:var(--muted); margin-bottom:8px; }
-  .stepper .dot { width:10px; height:10px; border-radius:50%; background:#cbd6d1; }
-  .stepper .dot.on { background:var(--brand); box-shadow:0 0 0 4px #0e7a6218; }
-  [hidden] { display:none !important; }
-  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
-  .access-note { background:#f2f8f3; border:1px solid #d7e8dc; border-radius:14px; padding:16px 20px; margin:14px 0; }
-  .access-note p { margin:5px 0 0; }
-  .badge { display:inline-block; padding:4px 10px; border-radius:999px; background:#e0f3e7; color:#164e42; font-size:12px; font-weight:800; margin-left:6px; }
-  .stats { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; margin:18px 0; }
+
+  /* ---------- tables ---------- */
+  .table-wrap { width:100%; overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); background:#fff; box-shadow:var(--shadow-sm); }
+  table { width:100%; min-width:600px; border-collapse:separate; border-spacing:0; margin:0; font-size:13px; background:#fff; }
+  #userList table, #adminMedicineList table { margin-top:10px; border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+  th, td { padding:10px 12px; text-align:left; border-bottom:1px solid var(--line-2); vertical-align:middle; }
+  th {
+    position:sticky; top:0; z-index:1; background:#f7f9fc; color:var(--muted);
+    font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    border-bottom:1px solid var(--line);
+  }
+  tbody tr:last-child td, table tr:last-child td { border-bottom:0; }
+  tbody tr:hover td, table tr:hover td { background:#f8fbff; }
+  td:first-child { font-family:var(--mono); font-size:11.5px; font-weight:500; color:var(--ink-2); letter-spacing:-.02em; }
+  td.num, th.num { text-align:right; font-family:var(--mono); font-size:12px; letter-spacing:-.02em; }
+  td .btn { margin:0 6px 0 0; padding:5px 10px; font-size:11.5px; }
+  .table-wrap.sr-only { border:0; box-shadow:none; }
+
+  /* ---------- command bar (catalogue search) ---------- */
+  .command-bar {
+    position:relative; display:flex; align-items:center; gap:10px; margin:2px 0 18px;
+    padding:5px 8px 5px 14px; background:#fff; border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow-sm); transition:border-color .16s, box-shadow .16s;
+  }
+  .command-bar:focus-within { border-color:var(--brand); box-shadow:0 0 0 4px rgba(22,104,211,.12); }
+  .command-bar > svg { flex:none; width:17px; height:17px; color:var(--faint); }
+  .command-bar label.sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
+  .command-bar input { flex:1 1 auto; margin:0; padding:9px 0; border:0; background:none; box-shadow:none; font-size:14px; }
+  .command-bar input:focus { box-shadow:none; }
+  .command-bar .btn { margin:0; flex:none; }
+  .command-hint { flex:none; display:flex; gap:4px; align-items:center; color:var(--faint); font-size:11px; }
+
+  /* ---------- filters, stats, notes ---------- */
+  .filter-row { display:flex; flex-wrap:wrap; gap:14px; margin-top:8px; }
+  .filter-row > div { flex:1; min-width:190px; max-width:320px; }
+  .stats { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; margin:16px 0; }
   .stat {
-    background:linear-gradient(180deg, #f4fbf7, #fff); border:1px solid var(--line); border-radius:16px; padding:18px;
-    transition:transform .2s, box-shadow .2s; animation:cardIn .5s ease both;
+    position:relative; overflow:hidden; padding:15px 16px; background:#fff; border:1px solid var(--line);
+    border-radius:var(--radius); box-shadow:var(--shadow-sm); animation:cardIn .45s ease both;
+    transition:transform .18s, box-shadow .18s;
   }
-  .stat:nth-child(2) { animation-delay:.05s; } .stat:nth-child(3) { animation-delay:.1s; } .stat:nth-child(4) { animation-delay:.15s; }
-  .stat:hover { transform:translateY(-3px); box-shadow:0 12px 24px #23473810; }
-  .stat strong { display:block; font-size:28px; line-height:1.15; color:var(--brand); font-family:Fraunces, Georgia, serif; }
-  .stat span { font-size:12px; color:var(--muted); }
-  .table-wrap { width:100%; overflow-x:auto; border-radius:14px; }
-  .site-footer { color:var(--muted); font-size:12px; padding:26px 2px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
-  .rx-empty-state { grid-column:1 / -1; text-align:center; padding:34px 12px; color:var(--muted); }
-  .rx-empty-mark {
-    display:grid; place-items:center; width:64px; height:64px; margin:0 auto 8px; border-radius:18px;
-    background:#e7f3ec; color:var(--brand); font-size:28px; animation:float 4.2s ease-in-out infinite;
+  .stat::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--brand); opacity:.85; }
+  .stat:nth-child(2) { animation-delay:.05s; } .stat:nth-child(2)::before { background:var(--warn); }
+  .stat:nth-child(3) { animation-delay:.1s; } .stat:nth-child(3)::before { background:var(--info); }
+  .stat:nth-child(4) { animation-delay:.15s; } .stat:nth-child(4)::before { background:var(--ok); }
+  .stat:hover { transform:translateY(-2px); box-shadow:var(--shadow); }
+  .stat strong { display:block; font:600 30px/1.1 var(--mono); letter-spacing:-.04em; color:var(--ink); }
+  .stat span { display:block; margin-top:4px; font-size:11.5px; font-weight:600; color:var(--muted); letter-spacing:.01em; }
+  .access-note {
+    margin:14px 0; padding:14px 16px; border-radius:var(--radius); background:var(--brand-tint);
+    border:1px solid var(--brand-line); color:var(--brand-dark);
   }
-  .rx-empty { margin:24px; text-align:center; color:var(--muted); }
-  .rx-viewer { position:fixed; inset:0; z-index:80; display:grid; place-items:center; padding:18px; }
-  .rx-viewer-backdrop { position:absolute; inset:0; background:rgba(10, 28, 24, .58); backdrop-filter:blur(8px); animation:fade .25s ease; }
+  .access-note b { font-size:13.5px; }
+  .access-note p { margin:5px 0 0; color:#2b5c96; font-size:13px; }
+  .lock-card { border-left:3px solid var(--brand); background:linear-gradient(180deg, #f8fbff, #fff); max-width:520px; }
+  .stepper { display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-bottom:10px; font-size:12px; font-weight:600; color:var(--muted); }
+  .stepper .dot { width:9px; height:9px; border-radius:50%; background:#d6deea; box-shadow:none; }
+  .stepper .dot.on { background:var(--brand); box-shadow:0 0 0 3px rgba(22,104,211,.16); }
+  .otp-row { display:flex; gap:7px; margin-top:7px; flex-wrap:wrap; }
+  .otp-row input {
+    width:46px; height:54px; padding:0; text-align:center; font:600 22px/1 var(--mono);
+    border-radius:12px; background:#fbfcfe;
+  }
+  .countdown { margin-top:8px; font:500 12px/1.4 var(--mono); color:var(--muted); }
+
+  /* ---------- prescription viewer (modal) ---------- */
+  .rx-viewer { position:fixed; inset:0; z-index:90; display:grid; place-items:center; padding:18px; }
+  .rx-viewer-backdrop { position:absolute; inset:0; background:rgba(9,20,36,.62); backdrop-filter:blur(6px); animation:fade .22s ease; }
   .rx-viewer-dialog {
-    position:relative; width:min(980px, 100%); max-height:min(92vh, 940px); overflow:auto;
-    background:#fffdfb; border-radius:26px; padding:22px; box-shadow:0 30px 80px rgba(0,0,0,.28);
-    animation:pop .4s cubic-bezier(.16,.84,.22,1);
+    position:relative; width:min(1000px, 100%); max-height:min(92vh, 940px); overflow:auto;
+    background:#fff; border:1px solid var(--line); border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-lg); animation:pop .34s cubic-bezier(.16,.84,.22,1);
   }
-  .rx-viewer-head { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; }
-  .rx-viewer-head h2 { margin:2px 0 6px; font-size:clamp(24px, 3vw, 34px); }
-  .rx-viewer-head p { margin:0; color:var(--muted); font-size:13px; }
-  .rx-stage {
-    margin-top:14px; min-height:240px; border-radius:18px; padding:12px; overflow:auto;
-    background:linear-gradient(180deg, #f7f4ee, #fff); border:1px solid var(--line);
+  .rx-viewer-head {
+    display:flex; justify-content:space-between; align-items:flex-start; gap:16px;
+    padding:18px 20px; border-bottom:1px solid var(--line); background:#fbfcfe;
+    position:sticky; top:0; z-index:2;
   }
+  .rx-viewer-head h2 { margin:6px 0 4px; font-size:clamp(17px, 2vw, 21px); }
+  .rx-viewer-head p { margin:0; color:var(--muted); font-size:12px; font-family:var(--mono); }
+  .rx-viewer-head .btn { margin:0; }
+  .rx-stage { margin:0; padding:18px 20px; min-height:240px; overflow:auto; background:linear-gradient(180deg, #f7f9fc, #fff); border-bottom:1px solid var(--line); }
   .rx-preview-img, .rx-paper {
-    display:block; width:100%; max-height:68vh; object-fit:contain; margin:0 auto; border-radius:14px;
-    animation:fade .4s ease; background:white;
+    display:block; width:100%; max-height:66vh; object-fit:contain; margin:0 auto;
+    border-radius:12px; background:#fff; border:1px solid var(--line); animation:fade .35s ease;
   }
-  .rx-preview-frame { width:100%; height:68vh; border:0; border-radius:14px; background:white; }
-  .rx-paper { max-height:none; padding:22px; border:1px solid var(--line); }
-  .rx-paper pre { white-space:pre-wrap; font-family:inherit; color:var(--ink); }
+  .rx-preview-frame { width:100%; height:66vh; border:0; border-radius:12px; background:#fff; }
+  .rx-paper { max-height:none; padding:20px; }
+  .rx-paper pre { white-space:pre-wrap; margin:0; font-family:var(--mono); font-size:12.5px; color:var(--ink); }
   .rx-skeleton {
-    height:320px; border-radius:16px;
-    background:linear-gradient(90deg, #eef3f0 25%, #f8fbf9 37%, #eef3f0 63%);
+    height:320px; border-radius:12px;
+    background:linear-gradient(90deg, #eef2f7 25%, #f8fafc 37%, #eef2f7 63%);
     background-size:400% 100%; animation:shimmer 1.2s ease infinite;
   }
-  .rx-viewer-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
-  .rx-viewer-actions .btn, .rx-viewer-actions a.btn { text-decoration:none; }
+  .rx-viewer-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; padding:14px 20px; position:sticky; bottom:0; background:#fff; }
+  .rx-viewer-actions .btn, .rx-viewer-actions a.btn { margin:0; text-decoration:none; }
   body.viewer-open { overflow:hidden; }
-  @keyframes rise { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
-  @keyframes panelIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
-  @keyframes cardIn { from { opacity:0; transform:translateY(10px) scale(.98); } to { opacity:1; transform:none; } }
-  @keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-7px); } }
-  @keyframes drift { 0%,100% { transform:translateY(0) rotate(0deg); } 50% { transform:translateY(22px) rotate(8deg); } }
-  @keyframes orb { 0%,100% { transform:translate(0,0) scale(1); } 50% { transform:translate(-24px, 18px) scale(1.08); } }
-  @keyframes mark { 0%,100% { transform:rotate(0) scale(1); } 50% { transform:rotate(-8deg) scale(1.06); } }
-  @keyframes pop { from { opacity:0; transform:translateY(22px) scale(.96); } to { opacity:1; transform:none; } }
+
+  /* ---------- footer ---------- */
+  .site-footer {
+    display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;
+    padding:22px 2px 6px; margin-top:22px; border-top:1px solid var(--line); color:var(--muted); font-size:11.5px;
+  }
+  .site-footer span { display:inline-flex; align-items:center; gap:6px; }
+
+  .cell-sub { display:block; font:500 11px/1.4 var(--mono); color:var(--faint); letter-spacing:-.02em; }
+  .cell-mono { font:500 11.5px/1.5 var(--mono); color:var(--ink-2); }
+  td.id-cell { font-family:var(--font); font-size:13px; font-weight:700; color:var(--ink); letter-spacing:-.01em; }
+  .doc-links { display:flex; flex-wrap:wrap; gap:5px; align-items:center; }
+  .doc-chip {
+    display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:999px;
+    background:var(--brand-tint); border:1px solid var(--brand-line); color:var(--brand-dark);
+    font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; text-decoration:none;
+  }
+  .doc-chip:hover { background:#dfeaff; }
+  .doc-chip::after { content:'\2197'; font-size:11px; opacity:.7; }
+  code { padding:1px 5px; border-radius:6px; background:var(--line-2); border:1px solid var(--line); font:500 12px/1.5 var(--mono); color:var(--ink-2); }
+  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
+  .skip-link {
+    position:absolute; left:12px; top:-60px; z-index:200; padding:9px 14px; border-radius:10px;
+    background:var(--brand); color:#fff; font-size:13px; font-weight:700; text-decoration:none; transition:top .18s;
+  }
+  .skip-link:focus { top:12px; }
+
+  /* ---------- motion ---------- */
+  @keyframes rise { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
+  @keyframes panelIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:none; } }
+  @keyframes cardIn { from { opacity:0; transform:translateY(8px) scale(.99); } to { opacity:1; transform:none; } }
+  @keyframes pop { from { opacity:0; transform:translateY(18px) scale(.97); } to { opacity:1; transform:none; } }
   @keyframes fade { from { opacity:0; } to { opacity:1; } }
-  @keyframes msgIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
+  @keyframes msgIn { from { opacity:0; transform:translateY(-5px); } to { opacity:1; transform:none; } }
   @keyframes shimmer { 0% { background-position:100% 0; } 100% { background-position:0 0; } }
-  @keyframes pulse { 0%,100% { box-shadow:0 0 0 0 #e8b56055; } 50% { box-shadow:0 0 0 6px #e8b56000; } }
+  @keyframes pulse { 0%,100% { box-shadow:0 0 0 0 rgba(154,100,16,.28); } 50% { box-shadow:0 0 0 5px rgba(154,100,16,0); } }
   @keyframes sheen { 0% { left:-60%; } 55%,100% { left:130%; } }
   @keyframes loadbar { 0% { background-position:100% 0; } 100% { background-position:0 0; } }
   @keyframes spin { to { transform:rotate(360deg); } }
-  @keyframes toastIn { from { opacity:0; transform:translateY(10px) scale(.96); } to { opacity:1; transform:none; } }
-  @keyframes glowPulse { 0%,100% { box-shadow:0 0 0 0 #0e7a6200; } 50% { box-shadow:0 0 0 7px #0e7a620f; } }
-  @media (max-width:760px) {
-    body { padding:0 14px 28px; }
-    .hero { grid-template-columns:1fr; padding:26px; }
-    .journey { grid-template-columns:1fr; margin:-4px 0 18px; }
-    .journey-step:not(:last-child)::after { content:'↓'; right:14px; bottom:-6px; }
-    .hero-cards { grid-template-columns:1fr; }
-    .grid2 { grid-template-columns:1fr; gap:14px; }
-    .tabs button { font-size:13px; padding:9px 11px; }
-    .stats { grid-template-columns:repeat(2, 1fr); }
+  @keyframes toastIn { from { opacity:0; transform:translateY(10px) scale(.97); } to { opacity:1; transform:none; } }
+
+  /* ---------- responsive ---------- */
+  @media (max-width:1080px) {
+    .hero { grid-template-columns:minmax(0,1fr); }
+    .hero-side { flex-direction:row; flex-wrap:wrap; }
+    .hero-side .hero-card { flex:1 1 220px; }
   }
-  @media (max-width:520px) {
-    .topbar { padding:16px 0; } .panel, .rx-viewer-dialog { padding:18px 14px; }
-    #viewLogin .grid2 > div { padding:16px; }
-    .otp-row input { width:40px; height:48px; }
+  @media (max-width:900px) {
+    .app-shell { grid-template-columns:minmax(0,1fr); }
+    .sidebar {
+      position:fixed; left:0; right:0; bottom:0; top:auto; height:auto; flex-direction:row; align-items:center;
+      gap:8px; padding:8px 10px calc(8px + env(safe-area-inset-bottom)); overflow-x:auto;
+      border-right:0; border-top:1px solid var(--line); background:rgba(255,255,255,.96);
+      backdrop-filter:blur(12px); box-shadow:0 -8px 24px rgba(15,45,90,.08);
+    }
+    .sidebar .brand, .rail-label, .network-pill { display:none; }
+    .tabs { flex-direction:row; flex:1 1 auto; gap:6px; }
+    .tabs button { flex:none; flex-direction:column; gap:4px; width:auto; padding:7px 12px; font-size:10.5px; text-align:center; border-radius:12px; }
+    .tabs button.active::before { left:50%; top:auto; bottom:-8px; transform:translateX(-50%); width:20px; height:3px; border-radius:3px 3px 0 0; }
+    .sidebar { justify-content:flex-end; }
+    .rail-foot { margin:0; flex-direction:row; align-items:center; gap:8px; flex:none; order:-1; }
+    .account { flex-direction:row; align-items:center; gap:8px; padding:7px 10px; border-radius:999px; }
+    #sessionBar { font-size:11px; max-width:26vw; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    #sessionBar strong { display:inline; font-size:11px; }
+    #sessionBar .badge { display:none; }
+    .network-pill { padding:7px; }
+    .network-pill-text { display:none; }
+    #logoutBtn { width:auto; padding:7px 11px; margin:0; }
+    .main { padding-bottom:96px; }
+    .brand-mobile { display:flex; }
+    .workspace { padding:0 14px 24px; }
+    .topbar { padding:10px 14px; }
+    .stats { grid-template-columns:repeat(2, minmax(0,1fr)); }
+    .grid2 { grid-template-columns:minmax(0,1fr); gap:14px; }
+    .journey { grid-template-columns:minmax(0,1fr); gap:6px; }
+    .journey-step:not(:last-child)::after { display:none; }
+    .panel { border-radius:16px; }
+    .rx-viewer-dialog, .rx-viewer-head, .rx-stage, .rx-viewer-actions { border-radius:0; }
+    .rx-viewer { padding:0; }
+    .rx-viewer-dialog { width:100%; max-height:100vh; height:100vh; }
+  }
+  @media (max-width:560px) {
+    body { font-size:14px; }
+    .topbar .btn.hide-sm { display:none; }
+    .command-hint { display:none; }
+    .otp-row input { width:40px; height:48px; font-size:19px; }
+    .stat strong { font-size:24px; }
+    .hero { padding:18px; }
+    #toastRegion { right:12px; left:12px; bottom:104px; width:auto; }
   }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
       animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important;
+      scroll-behavior:auto !important;
     }
   }
-
+  @media print {
+    .sidebar, .topbar, .hero, .journey, #toastRegion { display:none !important; }
+    .app-shell { grid-template-columns:minmax(0,1fr); }
+    .panel { border:0; box-shadow:none; }
+  }
 </style>
 </head>
 <body>
+<a class="skip-link" href="#workspace">Skip to workspace</a>
 <div class="app-shell">
-<header class="topbar">
-  <a class="brand" href="#" onclick="activateTab('Login');return false" aria-label="PharmaGo home">
-    <span class="brand-mark" aria-hidden="true">✚</span><span><span class="brand-name">pharma<span>go.</span></span><br><span class="brand-sub">Your care, closer</span></span>
-  </a>
-  <div id="sessionBar" class="hint" aria-live="polite"></div>
-  <button id="logoutBtn" class="btn gray" onclick="logout()" hidden>Sign out</button>
-</header>
 
-<section class="hero" aria-label="Welcome to PharmaGo">
-  <div class="hero-copy"><span class="eyebrow">A simpler way to care</span><h1>Better health, delivered to your door.</h1>
-    <p>Find everyday medicines, manage prescriptions, and connect with trusted local pharmacies — all in one place.</p>
-    <div class="hero-actions"><button class="btn" onclick="activateTab(session && session.role === 'USER' ? 'User' : 'Shop')">Explore medicines</button><button class="btn hero-secondary" onclick="activateTab(session ? 'User' : 'Login')">Upload prescription</button></div>
-    <div class="hero-proof"><span>Private by design</span><span>Verified pharmacies</span><span>Clear status updates</span></div>
+<!-- ============ ICON RAIL / NAVIGATION ============ -->
+<aside class="sidebar">
+  <a class="brand" href="#" onclick="activateTab('Login');return false" aria-label="PharmaGo home">
+    <span class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+    </span>
+    <span>
+      <span class="brand-name">pharma<span>go</span></span>
+      <span class="brand-sub">Clinical workspace</span>
+    </span>
+  </a>
+
+  <p class="rail-label">Workspace</p>
+  <nav class="tabs" aria-label="Main navigation">
+    <button id="tabLogin" data-show="guest" class="active" onclick="openTab(event,'login')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M4.8 20a7.2 7.2 0 0 1 14.4 0"/></svg>
+      <span class="tab-label">Account</span>
+    </button>
+    <button id="tabUser" data-show="user" hidden onclick="openTab(event,'user')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7.5A1.5 1.5 0 0 0 6 4.5v15A1.5 1.5 0 0 0 7.5 21h9a1.5 1.5 0 0 0 1.5-1.5V7z"/><path d="M14 3v4h4"/><path d="M9.2 12.8h1.6l1 2.6 1.3-4 1 1.4h1.7"/></svg>
+      <span class="tab-label">My prescriptions</span>
+    </button>
+    <button id="tabShop" data-show="all" onclick="openTab(event,'shop')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.8" y="9" width="18.4" height="6" rx="3" transform="rotate(-45 12 12)"/><path d="M9 9l6 6"/></svg>
+      <span class="tab-label">Browse medicines</span>
+    </button>
+    <button id="tabMerchant" data-show="guest,merchant" onclick="openTab(event,'merchant')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9.6 5.4 4.8A1.5 1.5 0 0 1 6.8 3.7h10.4a1.5 1.5 0 0 1 1.4 1.1L20 9.6"/><path d="M4 9.6h16v9.6a1.2 1.2 0 0 1-1.2 1.2H5.2A1.2 1.2 0 0 1 4 19.2z"/><path d="M9.6 20.4v-5.6h4.8v5.6"/></svg>
+      <span class="tab-label">For pharmacies</span>
+    </button>
+    <button id="tabAdmin" data-show="all" onclick="openTab(event,'admin')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2 5 6v6c0 4.2 2.9 7.3 7 8.8 4.1-1.5 7-4.6 7-8.8V6z"/><path d="m9.3 12 1.9 1.9 3.6-3.7"/></svg>
+      <span class="tab-label">Admin</span>
+    </button>
+  </nav>
+
+  <div class="rail-foot">
+    <div class="account">
+      <div id="sessionBar" class="hint" aria-live="polite"></div>
+      <button id="logoutBtn" class="btn gray sm" onclick="logout()" hidden>
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 20H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3.5"/><path d="M15.5 16 20 12l-4.5-4"/><path d="M20 12H9.8"/></svg>
+        Sign out
+      </button>
+      <span class="network-pill" id="networkState"><span class="network-pill-text">Secure connection</span></span>
+    </div>
   </div>
-  <div class="hero-cards">
-    <div class="hero-card"><div class="hero-icon">✚</div><div><b>Easy prescriptions</b><span>Upload once. Track every step.</span></div></div>
-    <div class="hero-card"><div class="hero-icon">◈</div><div><b>Local pharmacies</b><span>Browse medicines near you.</span></div></div>
-    <div class="hero-card"><div class="hero-icon">✓</div><div><b>Verified care</b><span>Safe, reviewed, and reliable.</span></div></div>
-  </div>
-</section>
-<section class="journey" aria-label="How PharmaGo works">
-  <div class="journey-step"><span class="journey-num">01</span><div><b>Upload or browse</b><small>Start in under a minute</small></div></div>
-  <div class="journey-step"><span class="journey-num">02</span><div><b>Get verified</b><small>Safe pharmacist review</small></div></div>
-  <div class="journey-step"><span class="journey-num">03</span><div><b>Order with confidence</b><small>Track every decision</small></div></div>
-</section>
-<div id="configBanner" class="banner" role="alert"></div>
-<nav class="tabs" aria-label="Main navigation">
-  <button id="tabLogin" data-show="guest" class="active" onclick="openTab(event,'login')">Account</button>
-  <button id="tabUser" data-show="user" hidden onclick="openTab(event,'user')">My prescriptions</button>
-  <button id="tabShop" data-show="all" onclick="openTab(event,'shop')">Browse medicines</button>
-  <button id="tabMerchant" data-show="guest,merchant" onclick="openTab(event,'merchant')">For pharmacies</button>
-  <button id="tabAdmin" data-show="all" onclick="openTab(event,'admin')">Admin</button>
-</nav>
+</aside>
+
+<!-- ============ WORKSPACE ============ -->
+<div class="main">
+  <header class="topbar">
+    <a class="brand brand-mobile" href="#" onclick="activateTab('Login');return false" aria-label="PharmaGo home">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </span>
+    </a>
+    <div class="topbar-title">
+      <span class="crumb" id="crumbRole">Guest workspace</span>
+      <b id="crumbTitle">Medicine delivery &amp; prescription review</b>
+    </div>
+    <div class="topbar-spacer"></div>
+    <button class="btn gray sm hide-sm" onclick="activateTab(session && session.role === 'USER' ? 'User' : 'Login')">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/><path d="M4.5 16v3a1 1 0 0 0 1 1h13a1 1 0 0 0 1-1v-3"/></svg>
+      Upload prescription
+    </button>
+    <button class="btn sm" onclick="activateTab('Shop')">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.4"/><path d="m20 20-4.4-4.4"/></svg>
+      Catalogue
+    </button>
+  </header>
+
+  <div class="workspace" id="workspace">
+    <div id="configBanner" class="banner" role="alert"></div>
+
+    <section class="hero" aria-label="Welcome to PharmaGo">
+      <div class="hero-copy">
+        <span class="eyebrow">Care, delivered</span>
+        <h1>Every prescription tracked, every pharmacy verified.</h1>
+        <p>Upload a prescription, follow it through pharmacist review, and order from verified local pharmacies — with a clear status at every step.</p>
+        <div class="hero-actions">
+          <button class="btn" onclick="activateTab(session && session.role === 'USER' ? 'User' : 'Shop')">Explore medicines</button>
+          <button class="btn gray" onclick="activateTab(session ? 'User' : 'Login')">Upload prescription</button>
+        </div>
+        <div class="hero-proof">
+          <span>Private by design</span>
+          <span>Verified pharmacies</span>
+          <span>Clear status updates</span>
+        </div>
+      </div>
+      <div class="hero-side">
+        <div class="hero-card">
+          <span class="hero-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7.5A1.5 1.5 0 0 0 6 4.5v15A1.5 1.5 0 0 0 7.5 21h9a1.5 1.5 0 0 0 1.5-1.5V7z"/><path d="M14 3v4h4"/></svg></span>
+          <div><b>Easy prescriptions</b><span>Upload once. Track every step.</span></div>
+        </div>
+        <div class="hero-card">
+          <span class="hero-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.6 5.4 4.8A1.5 1.5 0 0 1 6.8 3.7h10.4a1.5 1.5 0 0 1 1.4 1.1L20 9.6"/><path d="M4 9.6h16v9.6a1.2 1.2 0 0 1-1.2 1.2H5.2A1.2 1.2 0 0 1 4 19.2z"/></svg></span>
+          <div><b>Local pharmacies</b><span>KYC-checked sellers near you.</span></div>
+        </div>
+        <div class="hero-card">
+          <span class="hero-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2 5 6v6c0 4.2 2.9 7.3 7 8.8 4.1-1.5 7-4.6 7-8.8V6z"/><path d="m9.3 12 1.9 1.9 3.6-3.7"/></svg></span>
+          <div><b>Verified care</b><span>Reviewed by people, not bots.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="journey" aria-label="How PharmaGo works">
+      <div class="journey-step"><span class="journey-num">01</span><div><b>Upload or browse</b><small>Start in under a minute</small></div></div>
+      <div class="journey-step"><span class="journey-num">02</span><div><b>Pharmacist review</b><small>Approved or declined with a note</small></div></div>
+      <div class="journey-step"><span class="journey-num">03</span><div><b>Order with confidence</b><small>Track every decision</small></div></div>
+    </section>
 
 <!-- ============ LOGIN / REGISTER / VERIFY / RESET ============ -->
 <div id="login" class="panel active" data-show="guest">
 
   <!-- STEP: login + register -->
   <div id="viewLogin">
-    <div class="grid2">
+    <div class="grid2 auth-grid">
       <div>
-        <h2>Login</h2>
-        <label>ID or Email</label><input id="lId" autocomplete="username">
-        <label>Password</label><input id="lPass" type="password" autocomplete="current-password">
-        <button class="btn" onclick="doLogin()">Login</button>
+        <span class="kicker">Sign in</span>
+        <h2>Welcome back</h2>
+        <p class="hint">Use your user ID or the email you registered with.</p>
+        <label for="lId">ID or Email</label><input id="lId" autocomplete="username" placeholder="U-2026-0010 or you@example.com">
+        <label for="lPass">Password</label><input id="lPass" type="password" autocomplete="current-password" placeholder="••••••••">
+        <button class="btn" onclick="doLogin()">Sign in</button>
         <button class="btn link" onclick="showView('forgot')">Forgot password? Set it through email →</button>
       </div>
       <div>
+        <span class="kicker">New patient</span>
         <h2>Register as Customer</h2>
         <p><small class="hint">We'll email a one-time 6-digit code to verify your address. You can set your password now, or later through an emailed link.</small></p>
-        <label>Name</label><input id="rName">
-        <label>Email (unique)</label><input id="rEmail" type="email">
-        <label>Phone (unique)</label><input id="rPhone" type="tel">
-        <label>Password <small class="hint">— optional, min 6 chars</small></label>
+        <label for="rName">Name</label><input id="rName" autocomplete="name">
+        <label for="rEmail">Email (unique)</label><input id="rEmail" type="email" autocomplete="email">
+        <label for="rPhone">Phone (unique)</label><input id="rPhone" type="tel" autocomplete="tel">
+        <label for="rPass">Password <small class="hint">— optional, min 6 chars</small></label>
         <input id="rPass" type="password" autocomplete="new-password">
-        <label>Confirm password</label>
+        <label for="rPass2">Confirm password</label>
         <input id="rPass2" type="password" autocomplete="new-password">
         <button class="btn" onclick="doRegister()">Register → Get Email Code</button>
       </div>
@@ -388,12 +757,12 @@
     <h2>Enter the code we emailed you</h2>
     <p class="hint">Sent to <strong id="vEmailShow"></strong> for account <strong id="vIdShow"></strong>. Valid 10 minutes, single use.</p>
     <div class="otp-row">
-      <input maxlength="1" class="otp" inputmode="numeric"><input maxlength="1" class="otp" inputmode="numeric"><input maxlength="1" class="otp" inputmode="numeric"><input maxlength="1" class="otp" inputmode="numeric"><input maxlength="1" class="otp" inputmode="numeric"><input maxlength="1" class="otp" inputmode="numeric">
+      <input maxlength="1" class="otp" inputmode="numeric" aria-label="Digit 1"><input maxlength="1" class="otp" inputmode="numeric" aria-label="Digit 2"><input maxlength="1" class="otp" inputmode="numeric" aria-label="Digit 3"><input maxlength="1" class="otp" inputmode="numeric" aria-label="Digit 4"><input maxlength="1" class="otp" inputmode="numeric" aria-label="Digit 5"><input maxlength="1" class="otp" inputmode="numeric" aria-label="Digit 6">
     </div>
     <div class="countdown" id="otpCountdown"></div>
-    <label>Set your password now <small class="hint">— optional, min 6 chars. Leave blank to set it later by email.</small></label>
+    <label for="vPass">Set your password now <small class="hint">— optional, min 6 chars. Leave blank to set it later by email.</small></label>
     <input id="vPass" type="password" autocomplete="new-password">
-    <label>Confirm password</label>
+    <label for="vPass2">Confirm password</label>
     <input id="vPass2" type="password" autocomplete="new-password">
     <button class="btn" onclick="doVerify()">Verify Code</button>
     <button class="btn gray" onclick="doResend()">Resend code</button>
@@ -406,7 +775,7 @@
     <div class="stepper"><span class="dot on"></span> Request email link → <span class="dot"></span> Open link → <span class="dot"></span> New password</div>
     <h2>Set / reset password via email</h2>
     <p><small class="hint">We'll send a one-time secure link (valid 24 h). Open it and choose your new password there.</small></p>
-    <label>Email or User ID</label><input id="fId">
+    <label for="fId">Email or User ID</label><input id="fId">
     <button class="btn" onclick="doForgot()">Email me a password link</button>
     <button class="btn link" onclick="showView('login')">← Back to login</button>
     <div id="forgotMsg" class="msg"></div>
@@ -417,8 +786,8 @@
     <div class="stepper"><span class="dot on"></span> Link opened → <span class="dot on"></span> Enter new password</div>
     <h2>Choose your new password</h2>
     <p><small class="hint">This page was reached from your emailed link. The link works once.</small></p>
-    <label>New password (min 6 chars)</label><input id="np1" type="password" autocomplete="new-password">
-    <label>Confirm password</label><input id="np2" type="password" autocomplete="new-password">
+    <label for="np1">New password (min 6 chars)</label><input id="np1" type="password" autocomplete="new-password">
+    <label for="np2">Confirm password</label><input id="np2" type="password" autocomplete="new-password">
     <button class="btn" onclick="doReset()">Set Password</button>
     <button class="btn link" onclick="showView('login')">← Back to login</button>
     <div id="resetMsg" class="msg"></div>
@@ -435,10 +804,17 @@
       <h2>My prescriptions</h2>
       <p id="whoami" class="hint">Not logged in.</p>
     </div>
+    <button class="btn gray sm" onclick="loadHistory()">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.6h-4.6"/></svg>
+      Refresh history
+    </button>
   </div>
   <div id="rxDrop" class="upload-zone">
-    <h3>Upload a prescription</h3>
-    <p>PDF, JPG or PNG, up to 10 MB. Preview it here, then track every review step.</p>
+    <h3>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"/><path d="m7.5 8.5 4.5-4.5 4.5 4.5"/><path d="M4.5 16v3a1 1 0 0 0 1 1h13a1 1 0 0 0 1-1v-3"/></svg>
+      Upload a prescription
+    </h3>
+    <p>PDF, JPG or PNG, up to 10 MB. Drop the file here or browse — preview it, then track every review step.</p>
     <label for="rxFile">Prescription file (PDF/JPG/PNG, max 10 MB)</label>
     <input type="file" id="rxFile" accept=".pdf,.jpg,.jpeg,.png" onchange="previewSelectedRx()">
     <div id="rxLocalPreview" class="local-preview" hidden></div>
@@ -447,59 +823,80 @@
   <div id="userMsg" class="msg"></div>
   <div class="section-head">
     <h3>My history</h3>
-    <button class="btn gray" onclick="loadHistory()">Refresh</button>
+    <span class="hint">Open any card to view the file the pharmacist saw.</span>
   </div>
   <div id="rxHistory" class="rx-grid" aria-live="polite"><div class="rx-skeleton" style="height:190px" role="status" aria-label="Loading prescriptions"></div></div>
   <div class="table-wrap sr-only" aria-hidden="true"><table id="historyTbl"><tr><th>RxID</th><th>File</th><th>Status</th><th>Uploaded At</th><th>Reviewed At</th><th>Note</th></tr></table></div>
   <div class="section-head">
     <h3>My orders</h3>
-    <button class="btn gray" onclick="loadMyOrders()">Refresh</button>
+    <button class="btn gray sm" onclick="loadMyOrders()">Refresh</button>
   </div>
-  <div id="orderList" class="rx-grid" aria-live="polite"></div>
+  <div id="orderList" class="rx-grid" aria-live="polite"><div class="rx-skeleton" style="height:150px" role="status" aria-label="Loading orders"></div></div>
 </div>
 
 <!-- ============ SHOP ============ -->
 <div id="shop" class="panel" data-show="all">
-  <label for="medSearch">Search medicines</label><input id="medSearch" placeholder="Search name, category or pharmacy" oninput="renderMedicines()">
-  <h2>Available Medicines</h2>
-  <button class="btn" onclick="loadMedicines()">Load Catalogue</button>
+  <div class="section-head">
+    <div>
+      <span class="kicker">Catalogue</span>
+      <h2>Available medicines</h2>
+      <p class="hint">Listed by verified pharmacies. Customers with an approved prescription can order directly.</p>
+    </div>
+    <button class="btn gray sm" onclick="loadMedicines()">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.6h-4.6"/></svg>
+      Reload catalogue
+    </button>
+  </div>
+  <div class="command-bar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.4"/><path d="m20 20-4.4-4.4"/></svg>
+    <label class="sr-only" for="medSearch">Search medicines</label>
+    <input id="medSearch" placeholder="Search by medicine, category or pharmacy…" oninput="renderMedicines()">
+    <span class="command-hint"><span class="kbd">/</span> to focus</span>
+  </div>
   <div id="orderBar" class="card" hidden>
     <h3>Place an order</h3>
     <p id="orderItem" class="hint"></p>
-    <label for="orderRx">Approved prescription</label>
-    <select id="orderRx"></select>
-    <label for="orderQty">Quantity</label>
-    <input id="orderQty" type="number" min="1" max="99" value="1">
+    <div class="grid2">
+      <div>
+        <label for="orderRx">Approved prescription</label>
+        <select id="orderRx"></select>
+      </div>
+      <div>
+        <label for="orderQty">Quantity</label>
+        <input id="orderQty" type="number" min="1" max="99" value="1">
+      </div>
+    </div>
     <button class="btn" onclick="submitOrder()">Place order</button>
     <button class="btn gray" onclick="cancelOrder()">Cancel</button>
   </div>
-  <div class="table-wrap"><table id="medTbl"><tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Seller</th></tr></table></div>
+  <div class="table-wrap"><table id="medTbl"><tr><th>ID</th><th>Name</th><th>Category</th><th class="num">Price</th><th class="num">Stock</th><th>Seller</th></tr></table></div>
   <div id="shopMsg" class="msg"></div>
 </div>
 
 <!-- ============ MERCHANT PORTAL ============ -->
 <div id="merchant" class="panel">
   <div id="vendorRegister" data-show="guest">
+  <span class="kicker">Onboarding</span>
   <h2>New Vendor Registration</h2>
   <p><small class="hint">All four documents are required for pharma vendor verification: GST, Drug License, Shop ID proof, PAN. A one-time email code verifies the owner address first; then an admin reviews your documents.</small></p>
   <div class="grid2">
     <div>
-      <label>Owner Email (unique)</label><input id="mEmail" type="email">
-      <label>Phone (unique)</label><input id="mPhone" type="tel">
-      <label>Shop Name</label><input id="mShop">
-      <label>Address</label><input id="mAddr">
-      <label>Password <small class="hint">— optional, min 6 chars</small></label>
+      <label for="mEmail">Owner Email (unique)</label><input id="mEmail" type="email">
+      <label for="mPhone">Phone (unique)</label><input id="mPhone" type="tel">
+      <label for="mShop">Shop Name</label><input id="mShop">
+      <label for="mAddr">Address</label><input id="mAddr">
+      <label for="mPass">Password <small class="hint">— optional, min 6 chars</small></label>
       <input id="mPass" type="password" autocomplete="new-password">
-      <label>Confirm password</label>
+      <label for="mPass2">Confirm password</label>
       <input id="mPass2" type="password" autocomplete="new-password">
     </div>
     <div>
-      <label>GST Number</label><input id="mGst">
-      <label>Drug License Number</label><input id="mDl">
-      <label>GST Certificate *</label><input type="file" id="docGST" accept=".pdf,.jpg,.png">
-      <label>Drug License Doc *</label><input type="file" id="docDRUG_LICENSE" accept=".pdf,.jpg,.png">
-      <label>Shop ID Proof *</label><input type="file" id="docSHOP_ID" accept=".pdf,.jpg,.png">
-      <label>PAN Card *</label><input type="file" id="docPAN" accept=".pdf,.jpg,.png">
+      <label for="mGst">GST Number</label><input id="mGst">
+      <label for="mDl">Drug License Number</label><input id="mDl">
+      <label for="docGST">GST Certificate *</label><input type="file" id="docGST" accept=".pdf,.jpg,.png">
+      <label for="docDRUG_LICENSE">Drug License Doc *</label><input type="file" id="docDRUG_LICENSE" accept=".pdf,.jpg,.png">
+      <label for="docSHOP_ID">Shop ID Proof *</label><input type="file" id="docSHOP_ID" accept=".pdf,.jpg,.png">
+      <label for="docPAN">PAN Card *</label><input type="file" id="docPAN" accept=".pdf,.jpg,.png">
     </div>
   </div>
   <button class="btn" onclick="registerMerchant()">Submit → Email Verification Code</button>
@@ -507,12 +904,12 @@
     <h3>Verify vendor email (one-time code)</h3>
     <p class="hint">Code sent to <strong id="mvEmail"></strong> for vendor <strong id="mvId"></strong>.</p>
     <div class="otp-row">
-      <input maxlength="1" class="motp" inputmode="numeric"><input maxlength="1" class="motp" inputmode="numeric"><input maxlength="1" class="motp" inputmode="numeric"><input maxlength="1" class="motp" inputmode="numeric"><input maxlength="1" class="motp" inputmode="numeric"><input maxlength="1" class="motp" inputmode="numeric">
+      <input maxlength="1" class="motp" inputmode="numeric" aria-label="Digit 1"><input maxlength="1" class="motp" inputmode="numeric" aria-label="Digit 2"><input maxlength="1" class="motp" inputmode="numeric" aria-label="Digit 3"><input maxlength="1" class="motp" inputmode="numeric" aria-label="Digit 4"><input maxlength="1" class="motp" inputmode="numeric" aria-label="Digit 5"><input maxlength="1" class="motp" inputmode="numeric" aria-label="Digit 6">
     </div>
     <div class="countdown" id="motpCountdown"></div>
-    <label>Set your password now <small class="hint">— optional, min 6 chars</small></label>
+    <label for="mvPass">Set your password now <small class="hint">— optional, min 6 chars</small></label>
     <input id="mvPass" type="password" autocomplete="new-password">
-    <label>Confirm password</label>
+    <label for="mvPass2">Confirm password</label>
     <input id="mvPass2" type="password" autocomplete="new-password">
     <button class="btn" onclick="doMerchantVerify()">Verify Code</button>
     <button class="btn gray" onclick="doMerchantResend()">Resend code</button>
@@ -522,40 +919,61 @@
   </div>
   <div id="vendorNote" class="access-note" data-show="user" hidden><b>Own a pharmacy?</b><p>Sign out of your customer account to register a pharmacy.</p></div>
   <div id="vendorTools" data-show="merchant" hidden>
+  <span class="kicker">Pharmacy console</span>
   <h2>Vendor Tools (after login &amp; approval)</h2>
   <p><small class="hint">Log in with your vendor ID/email. If you have no password yet, use "Forgot password?" on the Login tab — the emailed link sets it for you.</small></p>
-  <div class="grid2">
-    <div>
-      <label>Medicine Name</label><input id="nmName">
-      <label>Category</label><input id="nmCat" placeholder="e.g. Tablet, Syrup">
+  <div class="card">
+    <h3>List a medicine</h3>
+    <div class="grid2">
+      <div>
+        <label for="nmName">Medicine Name</label><input id="nmName">
+        <label for="nmCat">Category</label><input id="nmCat" placeholder="e.g. Tablet, Syrup">
+      </div>
+      <div>
+        <label for="nmPrice">Price (NPR)</label><input id="nmPrice" type="number" min="0">
+        <label for="nmStock">Stock</label><input id="nmStock" type="number" min="0">
+      </div>
     </div>
-    <div>
-      <label>Price (₹)</label><input id="nmPrice" type="number">
-      <label>Stock</label><input id="nmStock" type="number">
-    </div>
+    <button class="btn" onclick="addMedicine(false)">Add Medicine (as Merchant)</button>
   </div>
-  <button class="btn" onclick="addMedicine(false)">Add Medicine (as Merchant)</button>
-  <h3>My Listings <button class="btn gray" style="padding:6px 12px" onclick="loadMyListings()">Refresh</button></h3>
-  <div class="table-wrap"><table id="myMedTbl"><tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th><th>Active</th><th>Actions</th></tr></table></div>
-  <h3>Incoming orders <button class="btn gray" style="padding:6px 12px" onclick="loadShopOrders()">Refresh</button></h3>
-  <div id="shopOrders" class="rx-grid"></div>
+  <div class="section-head">
+    <h3>My Listings</h3>
+    <button class="btn gray sm" onclick="loadMyListings()">Refresh</button>
+  </div>
+  <div class="table-wrap"><table id="myMedTbl"><tr><th>ID</th><th>Name</th><th class="num">Price</th><th class="num">Stock</th><th>Active</th><th>Actions</th></tr></table></div>
+  <div class="section-head">
+    <h3>Incoming orders</h3>
+    <button class="btn gray sm" onclick="loadShopOrders()">Refresh</button>
+  </div>
+  <div id="shopOrders" class="rx-grid"><div class="rx-skeleton" style="height:150px" role="status" aria-label="Loading orders"></div></div>
 </div>
 <div id="merchMsg" class="msg" role="status" aria-live="polite"></div>
 </div>
 
 <!-- ============ ADMIN PANEL ============ -->
 <div id="admin" class="panel" data-show="all">
-  <h2>Admin console</h2>
-  <div id="adminLockCard" class="card" data-show="locked">
-    <p>Unlock administrator tools with your admin key. You do not need a customer account.</p>
+  <div class="section-head">
+    <div>
+      <span class="kicker">Privileged</span>
+      <h2>Admin console</h2>
+      <p class="hint">Visibility here is not authorization — the Apps Script backend validates every privileged request.</p>
+    </div>
+  </div>
+  <div id="adminLockCard" class="card lock-card" data-show="locked">
+    <h3>Unlock administrator tools</h3>
+    <p>Enter your admin key. You do not need a customer account — the key unlocks independently of any sign-in. If the deployment also sets <code>ADMIN_GOOGLE_DOMAIN</code>, the Google account serving the request must be in that domain.</p>
     <label for="adminKey">Admin key</label><input id="adminKey" type="password" autocomplete="off" placeholder="Set ADMIN_KEY in Apps Script">
     <button class="btn" onclick="adminAuth()">Unlock admin</button>
   </div>
   <div id="adminDashboard" data-show="admin" hidden>
-    <p>Review prescriptions, verify pharmacies and manage the catalogue. Open any file here — the same viewer the patient uses.</p>
-    <span id="adminState" class="badge">Unlocked</span>
-    <button class="btn gray" onclick="lockAdmin()">Lock admin</button>
-    <button class="btn" onclick="loadAdminOverview()">Refresh overview</button>
+    <div class="section-head">
+      <p style="margin:0">Review prescriptions, verify pharmacies and manage the catalogue. Open any file here — the same viewer the patient uses.</p>
+      <div>
+        <span id="adminState" class="badge">Unlocked</span>
+        <button class="btn gray sm" onclick="lockAdmin()">Lock admin</button>
+        <button class="btn sm" onclick="loadAdminOverview()">Refresh overview</button>
+      </div>
+    </div>
     <div class="stats" aria-label="Overview statistics">
       <div class="stat"><strong id="statUsers">0</strong><span>Customers</span></div>
       <div class="stat"><strong id="statRx">0</strong><span>Pending prescriptions</span></div>
@@ -563,7 +981,9 @@
       <div class="stat"><strong id="statMedicines">0</strong><span>Active medicines</span></div>
     </div>
     <hr>
-    <h3>Prescription reviews</h3>
+    <div class="section-head">
+      <h3>Prescription reviews</h3>
+    </div>
     <div class="filter-row">
       <div>
         <label for="rxFilter">Show</label>
@@ -574,23 +994,33 @@
         <select id="rxUserFilter" onchange="renderAdminRx()"><option value="">All patients</option></select>
       </div>
     </div>
-    <div id="pendingRx" class="rx-grid"></div>
-    <h3>Orders</h3>
-    <div id="adminOrders" class="rx-grid"></div>
-    <h3>Pharmacies & verification</h3><div id="merchantList"></div>
-    <h3>Users</h3><div id="userList" class="table-wrap"></div>
-    <h3>Catalogue management</h3><div id="adminMedicineList" class="table-wrap"></div>
-    <h3>Add medicine as admin</h3>
-    <div class="grid2">
-      <div><label for="amName">Name</label><input id="amName"><label for="amCat">Category</label><input id="amCat"></div>
-      <div><label for="amPrice">Price (₹)</label><input id="amPrice" type="number" min="0"><label for="amStock">Stock</label><input id="amStock" type="number" min="0"></div>
+    <div id="pendingRx" class="rx-grid"><div data-show="admin" class="rx-skeleton" style="height:190px" role="status" aria-label="Loading prescriptions"></div></div>
+    <div class="section-head"><h3>Orders</h3></div>
+    <div id="adminOrders" class="rx-grid"><div data-show="admin" class="rx-skeleton" style="height:150px" role="status" aria-label="Loading orders"></div></div>
+    <div class="section-head"><h3>Pharmacies &amp; verification</h3></div>
+    <div id="merchantList" class="table-wrap"><div data-show="admin" class="rx-skeleton" style="height:120px" role="status" aria-label="Loading pharmacies"></div></div>
+    <div class="section-head"><h3>Users</h3></div>
+    <div id="userList" class="table-wrap"><div data-show="admin" class="rx-skeleton" style="height:120px" role="status" aria-label="Loading users"></div></div>
+    <div class="section-head"><h3>Catalogue management</h3></div>
+    <div id="adminMedicineList" class="table-wrap"><div data-show="admin" class="rx-skeleton" style="height:120px" role="status" aria-label="Loading catalogue"></div></div>
+    <div class="card">
+      <h3>Add medicine as admin</h3>
+      <div class="grid2">
+        <div><label for="amName">Name</label><input id="amName"><label for="amCat">Category</label><input id="amCat"></div>
+        <div><label for="amPrice">Price (NPR)</label><input id="amPrice" type="number" min="0"><label for="amStock">Stock</label><input id="amStock" type="number" min="0"></div>
+      </div>
+      <button class="btn" onclick="addMedicine(true)">Add medicine</button>
     </div>
-    <button class="btn" onclick="addMedicine(true)">Add medicine</button>
   </div>
   <div id="adminMsg" class="msg" role="status" aria-live="polite"></div>
 </div>
 
-<footer class="site-footer"><span>© PharmaGo · Care made accessible</span><span class="network-pill" id="networkState">Secure connection</span><span>Google Sheets & Drive powered · Never share your admin key</span></footer>
+    <footer class="site-footer">
+      <span>© PharmaGo · Care made accessible</span>
+      <span>Google Sheets &amp; Drive powered · Never share your admin key</span>
+    </footer>
+  </div>
+</div>
 </div>
 <div id="toastRegion" aria-live="polite" aria-atomic="true"></div>
 
@@ -604,11 +1034,17 @@
         <p id="rxViewerMeta"></p>
         <p id="rxViewerNote"></p>
       </div>
-      <button id="rxViewerClose" class="btn gray" onclick="closeRxViewer()" aria-label="Close prescription viewer">Close</button>
+      <button id="rxViewerClose" class="btn gray" onclick="closeRxViewer()" aria-label="Close prescription viewer">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        Close
+      </button>
     </header>
     <div id="rxViewerStage" class="rx-stage"></div>
     <div class="rx-viewer-actions">
-      <button class="btn" onclick="downloadCurrentRx()">Download</button>
+      <button class="btn" onclick="downloadCurrentRx()">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="m7.5 10.5 4.5 4.5 4.5-4.5"/><path d="M5 19h14"/></svg>
+        Download
+      </button>
       <a id="rxViewerDrive" class="btn gray" href="#" target="_blank" rel="noopener noreferrer" hidden>Open in Drive</a>
       <button id="rxViewerApprove" class="btn green" onclick="reviewFromViewer('APPROVED')" hidden>Approve</button>
       <button id="rxViewerDecline" class="btn red" onclick="reviewFromViewer('DECLINED')" hidden>Decline</button>
@@ -634,8 +1070,28 @@ let rxViewerUrl = '';
 let rxViewerName = 'prescription';
 let rxViewerId = '';
 let rxLocalUrl = '';
+let lastFocused = null;
 function updateNetworkState() { const online = navigator.onLine; document.body.classList.toggle('offline', !online); const el=document.getElementById('networkState'); if(el) el.textContent=online?'Secure connection':'You are offline'; }
 window.addEventListener('online', updateNetworkState); window.addEventListener('offline', updateNetworkState);
+
+// Workspace header copy — purely cosmetic, the tabs stay the source of truth.
+const TOPBAR_TITLES = {
+  login: 'Sign in, register or reset a password',
+  user: 'Upload a prescription and track its review',
+  shop: 'Search the catalogue of verified pharmacies',
+  merchant: 'Register a pharmacy and manage your listings',
+  admin: 'Review prescriptions, pharmacies and the catalogue'
+};
+function syncTopbar() {
+  const crumb = document.getElementById('crumbRole');
+  const title = document.getElementById('crumbTitle');
+  if (!crumb || !title) return;
+  const active = document.querySelector('.tabs button.active');
+  crumb.textContent = adminKey ? 'Admin unlocked'
+    : session && session.role === 'MERCHANT' ? 'Pharmacy workspace'
+    : session ? 'Customer workspace' : 'Guest workspace';
+  title.textContent = TOPBAR_TITLES[active ? active.id.slice(3).toLowerCase() : 'login'] || TOPBAR_TITLES.login;
+}
 
 // Visibility is a view concern, not authorization: the Apps Script API still
 // validates privileged actions. Admin is independent of the signed-in role.
@@ -653,14 +1109,16 @@ function applyAuthUI() {
     const first = document.querySelector('.tabs button:not([hidden])');
     if (first) first.click();
   }
+  syncTopbar();
 }
 function openTab(evt, id) {
   const button = evt.currentTarget;
   if (button.hidden) return;
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(b => { b.classList.remove('active'); b.removeAttribute('aria-current'); });
   document.getElementById(id).classList.add('active');
   button.classList.add('active');
+  button.setAttribute('aria-current', 'page');
   applyAuthUI();
   if (id === 'shop') loadMedicines();
   if (id === 'user' && session && session.role === 'USER') { loadHistory(); loadMyOrders(); }
@@ -935,10 +1393,12 @@ async function loadHistory() {
     if (grid) grid.innerHTML = '';
     return show('userMsg', false, res.message);
   }
+  if (!document) return;
   historyCache = res.data || [];
   renderHistory();
 }
 function renderHistory() {
+  if (!document) return;
   let table = '<tr><th>RxID</th><th>File</th><th>Status</th><th>Uploaded At</th><th>Reviewed At</th><th>Note</th></tr>';
   historyCache.forEach(rx => {
     table += `<tr><td>${esc(rx.RxID)}</td><td>${esc(rx.FileName)}</td>
@@ -1040,9 +1500,9 @@ function renderMedicines() {
   const search = document.getElementById('medSearch').value.trim().toLowerCase();
   const rows = catalogue.filter(m => [m.Name,m.Category,m.ShopName].some(v => String(v || '').toLowerCase().includes(search)));
   const canOrder = session && session.role === 'USER';
-  let html = '<tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Seller</th>' + (canOrder ? '<th></th>' : '') + '</tr>';
+  let html = '<tr><th>ID</th><th>Name</th><th>Category</th><th class="num">Price</th><th class="num">Stock</th><th>Seller</th>' + (canOrder ? '<th></th>' : '') + '</tr>';
   rows.forEach(m => {
-    html += `<tr><td>${esc(m.MedicineID)}</td><td>${esc(m.Name)}</td><td>${esc(m.Category)}</td><td>₹${esc(m.Price)}</td><td>${esc(m.Stock)}</td><td>${esc(m.ShopName || m.MerchantID)}</td>` +
+    html += `<tr><td>${esc(m.MedicineID)}</td><td>${esc(m.Name)}</td><td>${esc(m.Category)}</td><td class="num">NPR ${esc(m.Price)}</td><td class="num">${esc(m.Stock)}</td><td>${esc(m.ShopName || m.MerchantID)}</td>` +
       (canOrder ? `<td><button class="btn" data-id="${esc(m.MedicineID)}" onclick="startOrder(this.dataset.id)">Order</button></td>` : '') + '</tr>';
   });
   document.getElementById('medTbl').innerHTML = html;
@@ -1054,7 +1514,7 @@ function startOrder(medId) {
   const med = catalogue.find(m => String(m.MedicineID) === String(medId));
   if (!med) return;
   orderDraft = med;
-  document.getElementById('orderItem').textContent = med.Name + ' · ₹' + med.Price + ' · ' + (med.ShopName || 'Pharmacy');
+  document.getElementById('orderItem').textContent = med.Name + ' · NPR ' + med.Price + ' · ' + (med.ShopName || 'Pharmacy');
   document.getElementById('orderQty').value = '1';
   document.getElementById('orderQty').max = Math.max(1, Number(med.Stock) || 99);
   document.getElementById('orderBar').hidden = false;
@@ -1089,6 +1549,7 @@ async function submitOrder() {
 async function loadMyOrders() {
   if (!session || session.role !== 'USER') return;
   const res = await callAPI({ action:'list_orders' });
+  if (!document) return;
   const box = document.getElementById('orderList');
   if (!box) return;
   if (!res.success) { box.innerHTML = '<p>' + esc(res.message) + '</p>'; return; }
@@ -1098,6 +1559,7 @@ async function loadMyOrders() {
 async function loadShopOrders() {
   if (!session || session.role !== 'MERCHANT') return;
   const res = await callAPI({ action:'list_orders' });
+  if (!document) return;
   const box = document.getElementById('shopOrders');
   if (!box) return;
   if (!res.success) { box.innerHTML = '<p>' + esc(res.message) + '</p>'; return; }
@@ -1106,6 +1568,7 @@ async function loadShopOrders() {
 async function loadAdminOrders() {
   if (!adminKey) return;
   const res = await callAPI({ action:'list_orders', adminKey });
+  if (!document) return;
   const box = document.getElementById('adminOrders');
   if (!box) return;
   if (!res.success) { box.innerHTML = '<p>' + esc(res.message) + '</p>'; return; }
@@ -1116,7 +1579,7 @@ function orderCardHtml(order, canReview, asAdmin) {
   return `<article class="rx-card">
     <div class="rx-card-top"><span class="chip status-${esc(status)}">${esc(status)}</span><span class="rx-id">${esc(order.OrderID)}</span></div>
     <h3>${esc(order.MedicineName || 'Medicine')}</h3>
-    <p>${esc(order.Qty)} × ₹${esc(order.Price)} · Rx ${esc(order.RxID)}</p>
+    <p>${esc(order.Qty)} × NPR ${esc(order.Price)} · Rx ${esc(order.RxID)}</p>
     <p>${asAdmin ? 'Patient ' + esc(order.UserID) + ' · ' : ''}${esc(prettyWhen(order.CreatedAt))}</p>
     ${order.Note ? `<p class="rx-note">${esc(order.Note)}</p>` : ''}
     ${canReview && status === 'PLACED' ? `<div class="rx-actions">
@@ -1222,12 +1685,13 @@ async function addMedicine(asAdmin) {
 async function loadMyListings() {
   if (!session || session.role !== 'MERCHANT') return;
   const res = await callAPI({ action:'get_data', sheetName:'Medicines', merchantId:session.userId });
+  if (!document) return;                      // page torn down while the request was in flight
   if (!res.success) return show('merchMsg', false, res.message);
   myListings = res.data || [];
-  let html = '<tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th><th>Active</th><th>Actions</th></tr>';
+  let html = '<tr><th>ID</th><th>Name</th><th class="num">Price</th><th class="num">Stock</th><th>Active</th><th>Actions</th></tr>';
   myListings.forEach(m => {
     const active = m.Active === 'YES';
-    html += `<tr><td>${esc(m.MedicineID)}</td><td>${esc(m.Name)}</td><td>₹${esc(m.Price)}</td><td>${esc(m.Stock)}</td><td>${esc(m.Active)}</td>
+    html += `<tr><td>${esc(m.MedicineID)}</td><td>${esc(m.Name)}</td><td class="num">NPR ${esc(m.Price)}</td><td class="num">${esc(m.Stock)}</td><td>${esc(m.Active)}</td>
       <td><button class="btn gray" data-id="${esc(m.MedicineID)}" onclick="editMyMedicine(this.dataset.id)">Edit</button>
       <button class="btn ${active ? 'red' : 'green'}" data-id="${esc(m.MedicineID)}" onclick="setMedicineActive(this.dataset.id,${!active},false)">${active ? 'Delist' : 'Relist'}</button></td></tr>`;
   });
@@ -1242,7 +1706,7 @@ function medicineCredentials(asAdmin) {
 async function editMyMedicine(medId, asAdmin = false) {
   const medicine = (asAdmin ? adminCache.medicines : myListings).find(m => String(m.MedicineID) === medId);
   if (!medicine) return;
-  const price = prompt('Price (₹)', medicine.Price);
+  const price = prompt('Price (NPR)', medicine.Price);
   if (price === null) return;
   const stock = prompt('Stock', medicine.Stock);
   if (stock === null) return;
@@ -1345,9 +1809,29 @@ function closeRxViewer() {
   if (overlay) overlay.hidden = true;
   document.body.classList.remove('viewer-open');
   if (rxViewerUrl) { URL.revokeObjectURL(rxViewerUrl); rxViewerUrl = ''; }
+  // Leave the (now hidden) dialog before handing focus back, otherwise it stays put.
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  if (lastFocused && lastFocused.focus) { try { lastFocused.focus(); } catch (err) { /* element is gone */ } }
+  lastFocused = null;
+}
+// Keep Tab inside the dialog while it is open, and remember where focus came from.
+function trapRxViewerFocus(event) {
+  const overlay = document.getElementById('rxViewer');
+  if (!overlay || overlay.hidden || event.key !== 'Tab') return;
+  // getClientRects() is always empty in a non-rendering DOM (jsdom, prerender), so only
+  // use it for visibility when the document is actually laid out.
+  const rendered = document.body.getClientRects().length > 0;
+  const items = Array.from(overlay.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
+    .filter(el => !el.hidden && !el.disabled && (!rendered || el.getClientRects().length > 0));
+  if (!items.length) return;
+  const first = items[0], last = items[items.length - 1];
+  const inside = overlay.contains(document.activeElement);
+  if (event.shiftKey && (!inside || document.activeElement === first)) { event.preventDefault(); last.focus(); }
+  else if (!event.shiftKey && (!inside || document.activeElement === last)) { event.preventDefault(); first.focus(); }
 }
 async function openRxViewer(rxId, source) {
   rxViewerId = rxId;
+  lastFocused = document.activeElement;
   const asAdmin = source === 'admin';
   const overlay = document.getElementById('rxViewer');
   overlay.hidden = false;
@@ -1506,23 +1990,31 @@ function documentLinks(ids) {
     const at = entry.indexOf(':');
     const label = entry.slice(0, at), id = entry.slice(at + 1);
     if (at < 0 || !/^[\w-]+$/.test(id)) return '';
-    return `<a href="https://drive.google.com/file/d/${encodeURIComponent(id)}/view" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`;
-  }).filter(Boolean).join(' · ');
+    return `<a class="doc-chip" href="https://drive.google.com/file/d/${encodeURIComponent(id)}/view" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`;
+  }).filter(Boolean).join('');
 }
 async function loadMerchants() {
   if (!requireAdmin()) return;
   const res = await callAPI({ action:'get_data', sheetName:'Merchants', adminKey });
   if (!res.success) return show('adminMsg', false, res.message);
+  if (!document) return;
   adminCache.merchants = res.data || [];
-  let html = '';
+  let html = '<table><tr><th>Shop</th><th>Owner</th><th>GST / DL</th><th>KYC documents</th><th>Status</th><th>Actions</th></tr>';
   adminCache.merchants.forEach(m => {
-    html += `<div class="card"><strong>${esc(m.ShopName)}</strong> (${esc(m.MerchantID)}) — ${esc(m.OwnerEmail)} / ${esc(m.Phone)}<br>
-      GST: ${esc(m.GSTNumber)} | DL: ${esc(m.DrugLicenseNumber)}<br>Documents: ${documentLinks(m.DocFileIds) || 'None'}<br>
-      Status: <span class="status-${esc(m.Status)}">${esc(m.Status)}</span>
-      ${m.Status === 'PENDING' ? `<br><button class="btn green" data-id="${esc(m.MerchantID)}" onclick="reviewMerchant(this.dataset.id,'APPROVED')">Approve</button>
-        <button class="btn red" data-id="${esc(m.MerchantID)}" onclick="reviewMerchant(this.dataset.id,'DECLINED')">Decline</button>` : ''}</div>`;
+    html += `<tr>
+      <td class="id-cell">${esc(m.ShopName)}<span class="cell-sub">${esc(m.MerchantID)}</span></td>
+      <td>${esc(m.OwnerEmail)}<span class="cell-sub">${esc(m.Phone)}</span></td>
+      <td class="cell-mono">${esc(m.GSTNumber)}<span class="cell-sub">${esc(m.DrugLicenseNumber)}</span></td>
+      <td class="doc-links">${documentLinks(m.DocFileIds) || '<span class="hint">None uploaded</span>'}</td>
+      <td><span class="chip status-${esc(m.Status)}">${esc(m.Status)}</span></td>
+      <td>${m.Status === 'PENDING'
+        ? `<button class="btn green" data-id="${esc(m.MerchantID)}" onclick="reviewMerchant(this.dataset.id,'APPROVED')">Approve</button>
+           <button class="btn red" data-id="${esc(m.MerchantID)}" onclick="reviewMerchant(this.dataset.id,'DECLINED')">Decline</button>`
+        : '<span class="hint">Reviewed</span>'}</td>
+    </tr>`;
   });
-  document.getElementById('merchantList').innerHTML = html || '<p>No pharmacies yet.</p>';
+  document.getElementById('merchantList').innerHTML =
+    adminCache.merchants.length ? html + '</table>' : '<p class="rx-empty">No pharmacies have registered yet.</p>';
   renderAdminStats();
 }
 async function reviewMerchant(mid, status) {
@@ -1546,10 +2038,10 @@ async function loadAdminMedicines() {
   const res = await callAPI({ action:'get_data', sheetName:'Medicines', adminKey });
   if (!res.success) return show('adminMsg', false, res.message);
   adminCache.medicines = res.data || [];
-  let html = '<table><tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th><th>Active</th><th>Actions</th></tr>';
+  let html = '<table><tr><th>ID</th><th>Name</th><th class="num">Price</th><th class="num">Stock</th><th>Active</th><th>Actions</th></tr>';
   adminCache.medicines.forEach(m => {
     const active = m.Active === 'YES';
-    html += `<tr><td>${esc(m.MedicineID)}</td><td>${esc(m.Name)}</td><td>₹${esc(m.Price)}</td><td>${esc(m.Stock)}</td><td>${esc(m.Active)}</td>
+    html += `<tr><td>${esc(m.MedicineID)}</td><td>${esc(m.Name)}</td><td class="num">NPR ${esc(m.Price)}</td><td class="num">${esc(m.Stock)}</td><td>${esc(m.Active)}</td>
       <td><button class="btn gray" data-id="${esc(m.MedicineID)}" onclick="editMyMedicine(this.dataset.id,true)">Edit</button>
       <button class="btn ${active ? 'red' : 'green'}" data-id="${esc(m.MedicineID)}" onclick="setMedicineActive(this.dataset.id,${!active},true)">${active ? 'Delist' : 'Relist'}</button></td></tr>`;
   });
@@ -1563,7 +2055,23 @@ async function loadAdminMedicines() {
   wireOtpBoxes('.motp');
   wireRxDrop();
   document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && !document.getElementById('rxViewer').hidden) closeRxViewer();
+    const overlay = document.getElementById('rxViewer');
+    if (overlay && !overlay.hidden) {
+      if (event.key === 'Escape') closeRxViewer();
+      else trapRxViewerFocus(event);
+      return;
+    }
+    // "/" jumps to the catalogue search from anywhere in the workspace.
+    if (event.key !== '/' || event.metaKey || event.ctrlKey || event.altKey) return;
+    const typing = event.target && event.target.closest &&
+      event.target.closest('input, textarea, select, [contenteditable="true"]');
+    if (typing) return;
+    const search = document.getElementById('medSearch');
+    if (!search) return;
+    event.preventDefault();
+    activateTab('Shop');
+    search.focus();
+    search.select();
   });
 
   if (!API_URL || /PASTE_YOUR|REPLACE_WITH|^$/.test(API_URL)) {

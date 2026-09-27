@@ -706,5 +706,29 @@ globalThis.runTests = function runTests() {
     }).success, 'customer cannot review their own order');
   });
 
+  scenario('ADMIN_GOOGLE_DOMAIN restricts the admin key to one Google domain', () => {
+    boot();
+    const customer = registerCustomer('domain@example.com', '9800000090');
+    ok(call({ action: 'get_data', sheetName: 'Users', adminKey: ADMIN_KEY }).success,
+      'admin key alone works while ADMIN_GOOGLE_DOMAIN is unset');
+    ok(call({ action: 'update_status', adminKey: ADMIN_KEY, rxId: 'RX-MISSING', status: 'APPROVED' })
+      .message.indexOf('Unauthorized') === -1, 'the key is accepted before the record lookup');
+
+    MOCK.state.props.ADMIN_GOOGLE_DOMAIN = 'example.com';
+    ok(call({ action: 'get_data', sheetName: 'Users', adminKey: ADMIN_KEY }).success,
+      'caller inside the configured domain keeps admin access');
+
+    MOCK.state.props.ADMIN_GOOGLE_DOMAIN = 'somewhere-else.test';
+    const denied = call({ action: 'get_data', sheetName: 'Users', adminKey: ADMIN_KEY });
+    ok(!denied.success, 'caller outside the configured domain is refused', denied.message);
+    ok(!call({ action: 'update_status', adminKey: ADMIN_KEY, rxId: 'RX1', status: 'APPROVED' }).success,
+      'the domain gate also blocks admin writes');
+
+    MOCK.state.props.ADMIN_GOOGLE_DOMAIN = '';
+    ok(call({ action: 'get_data', sheetName: 'Users', adminKey: ADMIN_KEY }).success,
+      'clearing the property restores key-only behaviour');
+    void customer;
+  });
+
   return results;
 };
