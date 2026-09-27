@@ -1,0 +1,113 @@
+# 💊 PharmaGo — online medicine delivery (MVP)
+
+Static frontend (`index.html`, GitHub Pages) + Google Apps Script backend (`code.gs`) that uses
+**Google Sheets as the database** and **Google Drive as file storage**.
+
+| Piece | File | Where it runs |
+|---|---|---|
+| API / business logic | `code.gs` | Google Apps Script, deployed as a Web App |
+| App UI | `index.html` | GitHub Pages (or any static host) |
+| Data | Sheets: `Users`, `Prescriptions`, `Merchants`, `Medicines`, `Otps` | your Google Drive |
+| Files | Drive folders: Pending / Approved / Declined Rx + vendor KYC docs | your Google Drive |
+
+---
+
+## Deploy in 10 minutes
+
+1. **Spreadsheet** — create one, copy its ID from the URL, set it as `SHEET_ID` in `code.gs`
+   (or as a Script Property — see [Configuration](#configuration)).
+2. **Drive folders** — create three folders for prescriptions (pending / approved / declined) and
+   paste their IDs into `PENDING_FOLDER_ID`, `APPROVED_FOLDER_ID`, `DECLINED_FOLDER_ID`.
+   The vendor KYC folder is optional — leave it blank and the script creates one on first use.
+3. **Apps Script** — *Extensions → Apps Script*, paste `code.gs`, then
+   **Deploy → New deployment → Web app**
+   *Execute as: **Me*** · *Who has access: **Anyone*** → copy the `/exec` URL.
+4. **Frontend** — paste that `/exec` URL into `API_URL` at the top of the `<script>` in `index.html`,
+   then publish the file with GitHub Pages (or open it locally).
+5. **(optional)** Set the `FRONTEND_URL` Script Property to your Pages URL so emailed
+   “set password” links land on your site. Left blank, Apps Script serves its own
+   set-password form, so the link always works.
+
+> ### ⚠️ The #1 gotcha
+> Editing `code.gs` in the editor does **not** change the live `/exec` URL. After every edit go to
+> **Deploy → Manage deployments → ✏️ Edit → Version: _New version_ → Deploy**.
+> If the UI behaves like an older build, this is almost always why.
+
+---
+
+## Configuration
+
+Every value below can be set as a **Script Property** (*Project settings → Script properties*),
+which overrides the constant in `code.gs` — handy for keeping secrets out of Git.
+
+| Key | Default | Purpose |
+|---|---|---|
+| `SHEET_ID` | *(in file)* | Target spreadsheet |
+| `PENDING_FOLDER_ID` / `APPROVED_FOLDER_ID` / `DECLINED_FOLDER_ID` | *(in file)* | Prescription folders |
+| `MERCHANT_DOCS_FOLDER_ID` | blank → auto-create `PharmaGo — Merchant KYC Docs` | Vendor documents |
+| `ADMIN_KEY` | `changeme-admin-key` | **Change this.** Unlocks admin actions |
+| `FRONTEND_URL` | blank → Apps-Script-hosted set-password page | Emailed link target |
+
+---
+
+## Flows at a glance
+
+* **Customer** — register → 6-digit email code → (set password now, or by emailed link) → log in →
+  upload prescription → track status.
+* **Vendor** — register with GST + Drug License + Shop ID + PAN → email code → admin reviews the
+  documents → approved vendor logs in and lists medicines (own listings only).
+* **Admin** — unlock with the admin key → approve/decline prescriptions (the file is moved between
+  the Pending/Approved/Declined folders and approved files are renamed `UserID__UploadedTime`),
+  approve/decline vendors, list users, add medicines.
+
+---
+
+## Tests
+
+No npm install needed — the backend runs against a mocked Apps Script runtime:
+
+```bash
+npm test              # backend end-to-end + frontend wiring checks
+npm run test:api      # 17 scenarios / 157 checks against code.gs
+npm run test:frontend # index.html wiring (ids, handlers, OTP boxes)
+```
+
+`tests/spec.js` drives `doPost()` exactly as the browser does (register → OTP → password-by-email →
+login → upload → admin review → vendor approval → medicine listing), so a regression in any of those
+flows fails the build.
+
+---
+
+## Audit: what was broken, and what changed
+
+Run against the previous revision — the first four made the app unusable end to end.
+
+| # | Sev | Symptom | Root cause | Fix |
+|---|-----|---------|-----------|-----|
+| 1 | 🔴 | **Nobody could ever log in.** “Forgot password?” emailed a link; opening it and setting a password returned *“No active code found”* | Token was stored under key `PWDRESET:<userId>` but looked up as `PWDRESET:<token>` — a different row, so it never matched. Even on a match, `key.split(':')[1]` returned the token, not the user id | Tokens are matched by purpose + hash (`consumeToken_`), the user id is read back from the row key, and the link is single-use (siblings are invalidated) |
+| 2 | 🔴 | Emailed link opened a page stuck on *“Taking you to the set-password page…”* | `FRONTEND_URL` was the placeholder `https://USERNAME.github.io/REPO/` | Blank/placeholder ⇒ Apps Script renders its own password form (plain form POST, no CORS). Set `FRONTEND_URL` to redirect to Pages instead |
+| 3 | 🔴 | Vendor registration always failed | `MERCHANT_DOCS_FOLDER_ID` was `REPLACE_WITH_…`, and KYC files used `DOMAIN_RESTRICTED` sharing, which throws on normal (non-Workspace) Google accounts | Folder is auto-created and cached in Script Properties; documents are set `PRIVATE` with a safe fallback |
+| 4 | 🔴 | Approved vendor could never add a medicine — always *“Wrong merchant password.”* | `resolveStaffAuth_` compared against `Merchants.Password`, which was never written (the UI sends no password during OTP verification) | Passwords live in `Users` (the login sheet) as the single source of truth; the `Merchants` copy is kept in sync for old rows |
+| 5 | 🟠 | Two sign-ups/uploads in the same millisecond shared an ID: approving one prescription moved a *different* user's file, and users saw each other's history | IDs were `prefix + Date.now()` | `newId_()` adds a random suffix and verifies the ID is unused before returning |
+| 6 | 🟠 | Anyone could call `get_data` and download every user's email/phone, all prescriptions and vendor KYC file IDs | `getData` had no authorisation | Admin lists require `adminKey`; prescriptions require `userId` (scoped to that user); medicines require `merchantId`. Password hashes are never returned |
+| 7 | 🟠 | Clicking a button sometimes did nothing at all | `fetch()` had no `try/catch` — CORS/network failures became unhandled rejections | `callAPI` reports network, non-JSON and HTTP failures in the on-screen message, and keeps `text/plain` so the browser sends no preflight (Apps Script cannot answer `OPTIONS`) |
+| 8 | 🟠 | After verifying a vendor email, “send me a password link” appeared to do nothing | It switched to the *Forgot* view, which lives on another (hidden) tab | The tab is switched before the view; the code now also lets you set the password right on the OTP screen |
+| 9 | 🟡 | A failed verification email left an account that could not be re-registered | The user row was written *before* the mail was sent | Email first: on failure nothing is created, so the visitor can just retry |
+| 10 | 🟡 | Unverified or declined users could still upload prescriptions | No status check in `upload_rx` | Uploads require an `ACTIVE` account; oversized files are rejected client- and server-side |
+| 11 | 🟡 | `Sheet not found … run setupSheets()` broke every request | Sheets were only created by the manual setup step | `getSheet_()` creates a missing sheet (with headers) on demand; `setupSheets()` still exists |
+| 12 | 🟡 | Approving a prescription whose Drive file had been deleted showed a raw internal error | Unhandled `getFileById` exception | Clear message, status left unchanged |
+| 13 | 🟡 | Vendors pending approval were told *“No password set yet”* | Credential checks ran before status checks | Status is checked first; credentials are never revealed before identity |
+| 14 | 🟢 | OTP countdown ran into negative numbers (`-1:-59`) and never stopped | `setInterval` was never cleared | Timer stops and shows “Code expired” |
+| 15 | 🟢 | “Uploaded At” was 5:45 off | `toISOString()` (UTC) stored in a local-timezone sheet | Timestamps use the script timezone (`Asia/Kathmandu`, see `appsscript.json`) |
+| 16 | 🟢 | Invalid email → MailApp threw *after* the account was created | No validation | Email/phone validated before anything is written |
+
+---
+
+## Still to do before real use
+
+* `ADMIN_KEY` is typed into the browser and kept in `localStorage` — fine for an MVP, but move admin
+  actions behind a real Google sign-in (`Session.getActiveUser()`) before going live.
+* Passwords are unsalted SHA-256 (`hashPassword_`). Swap in a salted KDF and/or rely on Google sign-in.
+* Prescription files are shared “anyone with the link” so the admin panel can open them. Use signed
+  URLs or Drive-scoped access if real patient data is involved.
+* Add pagination / pruning — the `Otps` sheet grows forever today.

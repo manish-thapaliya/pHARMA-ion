@@ -41,6 +41,7 @@
   .stepper .dot { width:10px; height:10px; border-radius:50%; background:#cbd6d1; }
   .stepper .dot.on { background:var(--brand); }
   .topbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+  .banner { display:none; margin:10px 0; padding:10px; border-radius:6px; background:#fff6e5; border:1px solid #f0d69a; color:#7a5b00; font-size:14px; }
 </style>
 </head>
 <body>
@@ -53,12 +54,14 @@
   <div id="sessionBar" class="hint"></div>
 </div>
 
+<div id="configBanner" class="banner"></div>
+
 <div class="tabs">
-  <button class="active" onclick="openTab(event,'login')">Login / Register</button>
-  <button onclick="openTab(event,'user')">My Portal</button>
-  <button onclick="openTab(event,'shop')">Shop (Medicines)</button>
-  <button onclick="openTab(event,'merchant')">Vendor Portal</button>
-  <button onclick="openTab(event,'admin')">Admin Panel</button>
+  <button id="tabLogin" class="active" onclick="openTab(event,'login')">Login / Register</button>
+  <button id="tabUser" onclick="openTab(event,'user')">My Portal</button>
+  <button id="tabShop" onclick="openTab(event,'shop')">Shop (Medicines)</button>
+  <button id="tabMerchant" onclick="openTab(event,'merchant')">Vendor Portal</button>
+  <button id="tabAdmin" onclick="openTab(event,'admin')">Admin Panel</button>
 </div>
 
 <!-- ============ LOGIN / REGISTER / VERIFY / RESET ============ -->
@@ -76,10 +79,14 @@
       </div>
       <div>
         <h2>Register as Customer</h2>
-        <p><small class="hint">We'll email a one-time 6-digit code to verify your address. Password is set after verification.</small></p>
+        <p><small class="hint">We'll email a one-time 6-digit code to verify your address. You can set your password now, or later through an emailed link.</small></p>
         <label>Name</label><input id="rName">
         <label>Email (unique)</label><input id="rEmail" type="email">
         <label>Phone (unique)</label><input id="rPhone" type="tel">
+        <label>Password <small class="hint">— optional, min 6 chars</small></label>
+        <input id="rPass" type="password" autocomplete="new-password">
+        <label>Confirm password</label>
+        <input id="rPass2" type="password" autocomplete="new-password">
         <button class="btn" onclick="doRegister()">Register → Get Email Code</button>
       </div>
     </div>
@@ -94,6 +101,10 @@
       <input maxlength="1" class="otp" inputmode="numeric"><input maxlength="1" class="otp" inputmode="numeric"><input maxlength="1" class="otp" inputmode="numeric"><input maxlength="1" class="otp" inputmode="numeric"><input maxlength="1" class="otp" inputmode="numeric"><input maxlength="1" class="otp" inputmode="numeric">
     </div>
     <div class="countdown" id="otpCountdown"></div>
+    <label>Set your password now <small class="hint">— optional, min 6 chars. Leave blank to set it later by email.</small></label>
+    <input id="vPass" type="password" autocomplete="new-password">
+    <label>Confirm password</label>
+    <input id="vPass2" type="password" autocomplete="new-password">
     <button class="btn" onclick="doVerify()">Verify Code</button>
     <button class="btn gray" onclick="doResend()">Resend code</button>
     <button class="btn link" onclick="showView('login')">← Back to login</button>
@@ -130,7 +141,7 @@
 <div id="user" class="panel">
   <h2>Upload Prescription</h2>
   <p id="whoami" class="hint">Not logged in.</p>
-  <label>Prescription file (PDF/JPG/PNG)</label>
+  <label>Prescription file (PDF/JPG/PNG, max 10 MB)</label>
   <input type="file" id="rxFile" accept=".pdf,.jpg,.jpeg,.png">
   <button class="btn" onclick="uploadRx()">Upload → Status: Pending</button>
   <div id="userMsg" class="msg"></div>
@@ -144,6 +155,7 @@
   <h2>Available Medicines</h2>
   <button class="btn" onclick="loadMedicines()">Load Catalogue</button>
   <table id="medTbl"><tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Seller</th></tr></table>
+  <div id="shopMsg" class="msg"></div>
 </div>
 
 <!-- ============ MERCHANT PORTAL ============ -->
@@ -156,6 +168,10 @@
       <label>Phone (unique)</label><input id="mPhone" type="tel">
       <label>Shop Name</label><input id="mShop">
       <label>Address</label><input id="mAddr">
+      <label>Password <small class="hint">— optional, min 6 chars</small></label>
+      <input id="mPass" type="password" autocomplete="new-password">
+      <label>Confirm password</label>
+      <input id="mPass2" type="password" autocomplete="new-password">
     </div>
     <div>
       <label>GST Number</label><input id="mGst">
@@ -175,13 +191,19 @@
     <div class="otp-row">
       <input maxlength="1" class="motp" inputmode="numeric"><input maxlength="1" class="motp" inputmode="numeric"><input maxlength="1" class="motp" inputmode="numeric"><input maxlength="1" class="motp" inputmode="numeric"><input maxlength="1" class="motp" inputmode="numeric"><input maxlength="1" class="motp" inputmode="numeric">
     </div>
+    <div class="countdown" id="motpCountdown"></div>
+    <label>Set your password now <small class="hint">— optional, min 6 chars</small></label>
+    <input id="mvPass" type="password" autocomplete="new-password">
+    <label>Confirm password</label>
+    <input id="mvPass2" type="password" autocomplete="new-password">
     <button class="btn" onclick="doMerchantVerify()">Verify Code</button>
+    <button class="btn gray" onclick="doMerchantResend()">Resend code</button>
     <div id="mvMsg" class="msg"></div>
   </div>
 
   <hr>
-  <h2>Vendor Tools (after login & approval)</h2>
-  <p><small class="hint">Log in with your vendor ID/email (set your password via "Forgot password?" email), then add medicines below.</small></p>
+  <h2>Vendor Tools (after login &amp; approval)</h2>
+  <p><small class="hint">Log in with your vendor ID/email. If you have no password yet, use "Forgot password?" on the Login tab — the emailed link sets it for you.</small></p>
   <div class="grid2">
     <div>
       <label>Medicine Name</label><input id="nmName">
@@ -194,7 +216,7 @@
   </div>
   <button class="btn" onclick="addMedicine(false)">Add Medicine (as Merchant)</button>
   <h3>My Listings <button class="btn gray" style="padding:6px 12px" onclick="loadMyListings()">Refresh</button></h3>
-  <table id="myMedTbl"><tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th></tr></table>
+  <table id="myMedTbl"><tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th><th>Active</th></tr></table>
 </div>
 
 <!-- ============ ADMIN PANEL ============ -->
@@ -235,10 +257,12 @@
 <script>
 // ===== CONFIG — paste your deployed Apps Script /exec URL =====
 const API_URL = "https://script.google.com/macros/s/AKfycbwEcJiZpX29IFGWZPnB9HbGOnSeSd4jRKtZ6pbAOPayyJbqKYw3Mw-omQ2NdtaIWGYt3w/exec";
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // keep in sync with MAX_UPLOAD_BYTES in code.gs
 
 let session = JSON.parse(localStorage.getItem('pharmago_session') || 'null'); // {userId, role, name}
 let adminKey = localStorage.getItem('pharmago_adminkey') || '';
-let pendingVerify = null;   // { userId, email, purpose:'VERIFY'|'MVERIFY' }
+let pendingVerify = null;   // { userId, email, purpose:'VERIFY' }
+let pendingMerchant = null; // { merchantId, email, purpose:'MVERIFY' }
 let otpTimer = null;
 
 // ===== HELPERS =====
@@ -248,16 +272,35 @@ function openTab(evt, id) {
   document.getElementById(id).classList.add('active');
   evt.currentTarget.classList.add('active');
   renderSession();
+  if (id === 'shop') loadMedicines();
+  if (id === 'user' && session) loadHistory();
 }
+function activateTab(id) { const b = document.getElementById('tab' + id); if (b) b.click(); }
 function show(elId, ok, text) {
   const el = document.getElementById(elId);
+  if (!el) return;
   el.className = 'msg ' + (ok ? 'ok' : 'err');
   el.textContent = text;
 }
 async function callAPI(payload) {
-  // redirect:'follow' handles the Apps Script 302 to googleusercontent.com
-  const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload), redirect: 'follow' });
-  return await res.json();
+  // text/plain keeps the request a CORS "simple request": the browser sends no
+  // OPTIONS preflight, which Apps Script cannot answer.
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: JSON.stringify(payload),
+      redirect: 'follow' // Apps Script 302s to script.googleusercontent.com
+    });
+    const text = await res.text();
+    try {
+      return JSON.parse(text);
+    } catch (parseErr) {
+      return { success: false, message: 'The API did not return JSON. Make sure the web app is deployed with "Execute as: me" and access "Anyone". Response started with: ' + String(text).slice(0, 120) };
+    }
+  } catch (err) {
+    return { success: false, message: 'Could not reach the API (' + err.message + '). Check API_URL in index.html and that the Apps Script web app is deployed (Deploy → New deployment → Web app, access: Anyone).' };
+  }
 }
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
@@ -267,7 +310,7 @@ function fileToBase64(file) {
     r.readAsDataURL(file);
   });
 }
-function esc(s){ return String(s ?? '').replace(/[<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function renderSession() {
   const who = document.getElementById('whoami');
   const bar = document.getElementById('sessionBar');
@@ -287,6 +330,15 @@ function showView(v) {
     const el = document.getElementById('view' + cap);
     if (el) el.style.display = (x === v ? '' : 'none');
   });
+}
+/** Collect an optional password pair, or return null with a message shown. */
+function readPassword(msgEl, a, b) {
+  const p1 = (document.getElementById(a).value || '').trim();
+  const p2 = (document.getElementById(b).value || '').trim();
+  if (!p1 && !p2) return { password: '', password2: '' };       // optional
+  if (p1.length < 6) { show(msgEl, false, 'Password must be at least 6 characters.'); return null; }
+  if (p1 !== p2)     { show(msgEl, false, 'Passwords do not match.'); return null; }
+  return { password: p1, password2: p2 };
 }
 
 // ===== OTP BOX WIDGET (auto-advance, paste, backspace) =====
@@ -310,55 +362,74 @@ function wireOtpBoxes(selector) {
 function readOtp(selector) {
   return Array.from(document.querySelectorAll(selector)).map(b => b.value).join('');
 }
-function startOtpCountdown(seconds) {
+function startOtpCountdown(seconds, elId) {
   clearInterval(otpTimer);
-  const el = document.getElementById('otpCountdown');
+  const el = document.getElementById(elId || 'otpCountdown');
+  if (!el) return;
   let left = seconds;
   const tick = () => {
+    if (left < 0) {                        // stop at zero instead of counting negative
+      clearInterval(otpTimer);
+      el.textContent = 'Code expired — resend a new one.';
+      return;
+    }
     const m = Math.floor(left/60), s = String(left%60).padStart(2,'0');
-    el.textContent = left > 0 ? `Code expires in ${m}:${s}` : 'Code expired — resend a new one.';
+    el.textContent = `Code expires in ${m}:${s}`;
     left--;
   };
   tick(); otpTimer = setInterval(tick, 1000);
 }
-function stopCountdown(){ clearInterval(otpTimer); const el=document.getElementById('otpCountdown'); if(el) el.textContent=''; }
+function stopCountdown(elId){ clearInterval(otpTimer); const el=document.getElementById(elId||'otpCountdown'); if(el) el.textContent=''; }
 
 // ===== AUTH FLOW =====
 async function doRegister() {
   const email = document.getElementById('rEmail').value.trim(), phone = document.getElementById('rPhone').value.trim();
   if (!email || !phone) return show('loginMsg', false, 'Fill email and phone.');
+  const pw = readPassword('loginMsg', 'rPass', 'rPass2');
+  if (!pw) return;
   show('loginMsg', true, 'Creating account & emailing your code…');
-  const res = await callAPI({ action:'register', name:document.getElementById('rName').value.trim(), email, phone });
+  const res = await callAPI(Object.assign({
+    action:'register', name:document.getElementById('rName').value.trim(), email, phone
+  }, pw));
   show('loginMsg', res.success, res.message);
   if (res.success) {
-    pendingVerify = { userId: res.data.userId, email, purpose:'VERIFY' };
+    pendingVerify = { userId: res.data && res.data.userId, email, purpose:'VERIFY' };
     enterVerifyView();
   }
 }
 function enterVerifyView() {
+  activateTab('Login');
   showView('verify');
   document.getElementById('vEmailShow').textContent = pendingVerify.email;
   document.getElementById('vIdShow').textContent = pendingVerify.userId;
   document.querySelectorAll('.otp').forEach(b => b.value='');
   const first = document.querySelector('.otp'); if (first) first.focus();
-  startOtpCountdown(600);
+  startOtpCountdown(600, 'otpCountdown');
 }
 async function doVerify() {
   if (!pendingVerify) return show('verifyMsg', false, 'Nothing to verify — register first.');
   const otp = readOtp('.otp');
   if (otp.length !== 6) return show('verifyMsg', false, 'Enter all 6 digits.');
-  const res = await callAPI({ action:'verify_email', userId: pendingVerify.userId, otp });
+  const pw = readPassword('verifyMsg', 'vPass', 'vPass2');
+  if (!pw) return;
+  const res = await callAPI(Object.assign({ action:'verify_email', userId: pendingVerify.userId, otp }, pw));
   show('verifyMsg', res.success, res.message);
   if (res.success) {
-    stopCountdown();
-    // Password set through mail: offer to send the one-time link right away
-    if (confirm('Email verified! Receive a "set password" link on ' + pendingVerify.email + ' now?')) {
+    stopCountdown('otpCountdown');
+    const email = pendingVerify.email;
+    if (res.data && res.data.passwordSet) {           // password chosen here → straight to login
+      showView('login');
+      document.getElementById('lId').value = email;
+      document.getElementById('lPass').value = '';
+      show('loginMsg', true, 'Email verified. Sign in with the password you just chose.');
+      document.getElementById('lPass').focus();
+    } else if (confirm('Email verified! Receive a "set password" link on ' + email + ' now?')) {
       document.getElementById('fId').value = pendingVerify.userId;
       showView('forgot');
       doForgot();
     } else {
       showView('login');
-      document.getElementById('lId').value = pendingVerify.email;
+      document.getElementById('lId').value = email;
     }
   }
 }
@@ -366,7 +437,7 @@ async function doResend() {
   if (!pendingVerify) return;
   const res = await callAPI({ action:'resend_otp', email: pendingVerify.email });
   show('verifyMsg', res.success, res.message);
-  if (res.success) startOtpCountdown(600);
+  if (res.success) startOtpCountdown(600, 'otpCountdown');
 }
 async function doForgot() {
   const loginId = document.getElementById('fId').value.trim();
@@ -381,7 +452,7 @@ async function doReset() {
   if (p1 !== p2)     return show('resetMsg', false, 'Passwords do not match.');
   const token = new URLSearchParams(location.search).get('token') || sessionStorage.getItem('pharmago_token');
   if (!token) return show('resetMsg', false, 'No reset token found — please use the link from your email.');
-  const res = await callAPI({ action:'reset_password', token, password: p1 });
+  const res = await callAPI({ action:'reset_password', token, password: p1, password2: p2 });
   show('resetMsg', res.success, res.message);
   if (res.success) {
     sessionStorage.removeItem('pharmago_token');
@@ -395,32 +466,31 @@ async function doLogin() {
     session = res.data;
     localStorage.setItem('pharmago_session', JSON.stringify(session));
     renderSession();
-    const tabBtns = document.querySelectorAll('.tabs button');
-    (session.role === 'ADMIN' ? tabBtns[4] : session.role === 'MERCHANT' ? tabBtns[3] : tabBtns[1]).click();
-    if (session.role !== 'MERCHANT') loadHistory();
-    else loadMyListings();
+    activateTab(session.role === 'MERCHANT' ? 'Merchant' : (session.role === 'ADMIN' ? 'Admin' : 'User'));
+    if (session.role === 'MERCHANT') loadMyListings(); else loadHistory();
   } else if (/verify your email first/i.test(res.message) && pendingVerify) {
     enterVerifyView();
   }
 }
-function logout(){ localStorage.removeItem('pharmago_session'); session=null; renderSession(); showView('login'); }
+function logout(){ localStorage.removeItem('pharmago_session'); session=null; renderSession(); showView('login'); activateTab('Login'); }
 
 // ===== USER: PRESCRIPTIONS =====
 async function uploadRx() {
   if (!session) return show('userMsg', false, 'Please log in first.');
   const f = document.getElementById('rxFile').files[0];
   if (!f) return show('userMsg', false, 'Select a file.');
+  if (f.size > MAX_UPLOAD_BYTES) return show('userMsg', false, 'File is larger than 10 MB — please upload a smaller scan.');
   show('userMsg', true, 'Uploading…');
   const res = await callAPI({ action:'upload_rx', userId: session.userId, fileName: f.name, fileType: f.type, fileBase64: await fileToBase64(f) });
   show('userMsg', res.success, res.message);
-  if (res.success) loadHistory();
+  if (res.success) { document.getElementById('rxFile').value=''; loadHistory(); }
 }
 async function loadHistory() {
   if (!session) return;
   const res = await callAPI({ action:'get_data', sheetName:'Prescriptions', userId: session.userId });
-  if (!res.success) return;
+  if (!res.success) return show('userMsg', false, res.message);
   let html = '<tr><th>RxID</th><th>File</th><th>Status</th><th>Uploaded At</th><th>Reviewed At</th><th>Note</th></tr>';
-  res.data.forEach(rx => {
+  (res.data||[]).forEach(rx => {
     html += `<tr><td>${esc(rx.RxID)}</td><td>${esc(rx.FileName)}</td>
       <td class="status-${esc(rx.Status)}">${esc(rx.Status)}</td>
       <td>${esc(rx.Timestamp)}</td><td>${esc(rx.ReviewedAt||'')}</td><td>${esc(rx.ReviewNote||'')}</td></tr>`;
@@ -431,11 +501,13 @@ async function loadHistory() {
 // ===== SHOP =====
 async function loadMedicines() {
   const res = await callAPI({ action:'get_medicines' });
+  if (!res.success) return show('shopMsg', false, res.message);
   let html = '<tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Seller</th></tr>';
   (res.data||[]).forEach(m => {
-    html += `<tr><td>${esc(m.MedicineID)}</td><td>${esc(m.Name)}</td><td>${esc(m.Category)}</td><td>₹${esc(m.Price)}</td><td>${esc(m.Stock)}</td><td>${esc(m.MerchantID)}</td></tr>`;
+    html += `<tr><td>${esc(m.MedicineID)}</td><td>${esc(m.Name)}</td><td>${esc(m.Category)}</td><td>₹${esc(m.Price)}</td><td>${esc(m.Stock)}</td><td>${esc(m.ShopName || m.MerchantID)}</td></tr>`;
   });
   document.getElementById('medTbl').innerHTML = html;
+  show('shopMsg', true, (res.data||[]).length + ' medicine(s) listed.');
 }
 
 // ===== MERCHANT =====
@@ -444,10 +516,13 @@ async function registerMerchant() {
   for (const t of ['GST','DRUG_LICENSE','SHOP_ID','PAN']) {
     const f = document.getElementById('doc'+t).files[0];
     if (!f) return show('merchMsg', false, 'Missing document: ' + t);
+    if (f.size > MAX_UPLOAD_BYTES) return show('merchMsg', false, t + ' is larger than 10 MB.');
     docs.push({ docType:t, fileName:f.name, fileType:f.type, fileBase64: await fileToBase64(f) });
   }
+  const pw = readPassword('merchMsg', 'mPass', 'mPass2');
+  if (!pw) return;
   show('merchMsg', true, 'Uploading documents…');
-  const res = await callAPI({
+  const res = await callAPI(Object.assign({
     action:'register_merchant',
     email:document.getElementById('mEmail').value.trim(),
     phone:document.getElementById('mPhone').value.trim(),
@@ -456,59 +531,83 @@ async function registerMerchant() {
     gstNumber:document.getElementById('mGst').value.trim(),
     drugLicenseNumber:document.getElementById('mDl').value.trim(),
     documents: docs
-  });
+  }, pw));
   show('merchMsg', res.success, res.message + (res.success ? ' Vendor ID: ' + res.data.merchantId : ''));
   if (res.success) {
-    pendingVerify = { userId: res.data.merchantId, email: document.getElementById('mEmail').value.trim(), purpose:'MVERIFY' };
+    pendingMerchant = { merchantId: res.data.merchantId, email: document.getElementById('mEmail').value.trim(), purpose:'MVERIFY' };
     document.getElementById('mvCard').style.display = '';
-    document.getElementById('mvEmail').textContent = pendingVerify.email;
-    document.getElementById('mvId').textContent = pendingVerify.userId;
+    document.getElementById('mvEmail').textContent = pendingMerchant.email;
+    document.getElementById('mvId').textContent = pendingMerchant.merchantId;
     document.querySelectorAll('.motp').forEach(b => b.value='');
+    startOtpCountdown(600, 'motpCountdown');
+    document.querySelector('.motp').focus();
   }
 }
 async function doMerchantVerify() {
-  if (!pendingVerify || pendingVerify.purpose !== 'MVERIFY') return show('mvMsg', false, 'Register first.');
+  if (!pendingMerchant) return show('mvMsg', false, 'Register first.');
   const otp = readOtp('.motp');
   if (otp.length !== 6) return show('mvMsg', false, 'Enter all 6 digits.');
-  const res = await callAPI({ action:'verify_merchant', merchantId: pendingVerify.userId, otp });
+  const pw = readPassword('mvMsg', 'mvPass', 'mvPass2');
+  if (!pw) return;
+  const res = await callAPI(Object.assign({ action:'verify_merchant', merchantId: pendingMerchant.merchantId, otp }, pw));
   show('mvMsg', res.success, res.message);
-  if (res.success && confirm('Vendor email verified! Receive a "set password" link by email now?')) {
-    document.getElementById('fId').value = pendingVerify.userId;
-    showView('forgot');
-    doForgot();
+  if (res.success) {
+    stopCountdown('motpCountdown');
+    if (res.data && res.data.passwordSet) {
+      show('mvMsg', true, res.message + ' You can log in from the Login tab once an admin approves your documents.');
+    } else if (confirm('Vendor email verified! Receive a "set password" link by email now?')) {
+      activateTab('Login');                    // the forgot view lives on the Login tab
+      document.getElementById('fId').value = pendingMerchant.merchantId;
+      showView('forgot');
+      doForgot();
+    }
   }
+}
+async function doMerchantResend() {
+  if (!pendingMerchant) return show('mvMsg', false, 'Register first.');
+  const res = await callAPI({ action:'resend_otp', email: pendingMerchant.email });
+  show('mvMsg', res.success, res.message);
+  if (res.success) startOtpCountdown(600, 'motpCountdown');
 }
 async function addMedicine(asAdmin) {
   const g = id => document.getElementById(id);
   const payload = { action:'add_medicine', name:(asAdmin?g('amName'):g('nmName')).value.trim(),
     category:(asAdmin?g('amCat'):g('nmCat')).value.trim(), price:Number((asAdmin?g('amPrice'):g('nmPrice')).value),
     stock:Number((asAdmin?g('amStock'):g('nmStock')).value) };
+  if (!payload.name || !isFinite(payload.price)) {
+    return show(asAdmin ? 'adminMsg' : 'merchMsg', false, 'Medicine name and a valid price are required.');
+  }
   if (asAdmin) {
     if (!requireAdmin()) return;
     payload.adminKey = adminKey;
   } else {
     if (!session || session.role !== 'MERCHANT') return show('merchMsg', false, 'Log in as a merchant first.');
     payload.merchantId = session.userId;
-    payload.password = prompt('Merchant password (for server-side verification):') || '';
+    payload.password = prompt('Confirm your vendor password:') || '';
   }
   const res = await callAPI(payload);
   show(asAdmin ? 'adminMsg' : 'merchMsg', res.success, res.message);
-  if (res.success && !asAdmin) loadMyListings();
+  if (res.success && !asAdmin) {
+    ['nmName','nmCat','nmPrice','nmStock'].forEach(id => g(id).value='');
+    loadMyListings();
+  }
 }
 async function loadMyListings() {
   if (!session || session.role !== 'MERCHANT') return;
   const res = await callAPI({ action:'get_data', sheetName:'Medicines', merchantId: session.userId });
-  let html = '<tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th></tr>';
-  (res.data||[]).forEach(m => html += `<tr><td>${esc(m.MedicineID)}</td><td>${esc(m.Name)}</td><td>₹${esc(m.Price)}</td><td>${esc(m.Stock)}</td></tr>`);
+  if (!res.success) return show('merchMsg', false, res.message);
+  let html = '<tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th><th>Active</th></tr>';
+  (res.data||[]).forEach(m => html += `<tr><td>${esc(m.MedicineID)}</td><td>${esc(m.Name)}</td><td>₹${esc(m.Price)}</td><td>${esc(m.Stock)}</td><td>${esc(m.Active)}</td></tr>`);
   document.getElementById('myMedTbl').innerHTML = html;
 }
 
 // ===== ADMIN =====
-function requireAdmin(){ if(!adminKey){ show('adminMsg',false,'Enter Admin Key first.'); return false;} return true; }
+function requireAdmin(){ if(!adminKey){ show('adminMsg',false,'Enter the Admin Key first (and press “Unlock Admin Actions”).'); return false;} return true; }
 function adminAuth(){ adminKey = document.getElementById('adminKey').value.trim(); localStorage.setItem('pharmago_adminkey', adminKey); renderSession(); show('adminMsg', !!adminKey, adminKey?'Admin actions unlocked.':'Enter a key.'); }
 
 async function loadPending() {
-  const res = await callAPI({ action:'get_data', sheetName:'Prescriptions' });
+  if (!requireAdmin()) return;
+  const res = await callAPI({ action:'get_data', sheetName:'Prescriptions', adminKey });
   if (!res.success) return show('adminMsg', false, res.message);
   let html = '';
   res.data.filter(rx => rx.Status === 'PENDING').forEach(rx => {
@@ -524,10 +623,12 @@ async function reviewRx(rxId, status) {
   const note = status==='DECLINED' ? (prompt('Reason for decline?')||'') : '';
   const res = await callAPI({ action:'update_status', adminKey, rxId, status, note });
   show('adminMsg', res.success, res.message);
-  loadPending();
+  if (res.success) loadPending();
 }
 async function loadMerchants() {
-  const res = await callAPI({ action:'get_data', sheetName:'Merchants' });
+  if (!requireAdmin()) return;
+  const res = await callAPI({ action:'get_data', sheetName:'Merchants', adminKey });
+  if (!res.success) return show('adminMsg', false, res.message);
   let html = '';
   (res.data||[]).forEach(m => {
     html += `<div class="card"><strong>${esc(m.ShopName)}</strong> (${esc(m.MerchantID)}) — ${esc(m.OwnerEmail)} / ${esc(m.Phone)}<br>
@@ -543,10 +644,12 @@ async function reviewMerchant(mid, status) {
   if (!requireAdmin()) return;
   const res = await callAPI({ action:'review_merchant', adminKey, merchantId: mid, status });
   show('adminMsg', res.success, res.message);
-  loadMerchants();
+  if (res.success) loadMerchants();
 }
 async function loadUsers() {
-  const res = await callAPI({ action:'get_data', sheetName:'Users' });
+  if (!requireAdmin()) return;
+  const res = await callAPI({ action:'get_data', sheetName:'Users', adminKey });
+  if (!res.success) return show('adminMsg', false, res.message);
   let html = '<tr><th>ID</th><th>Email</th><th>Phone</th><th>Role</th><th>Status</th><th>Created</th></tr>';
   (res.data||[]).forEach(u => html += `<tr><td>${esc(u.UserID)}</td><td>${esc(u.Email)}</td><td>${esc(u.Phone)}</td><td>${esc(u.Role)}</td><td class="st-${esc(u.Status)}">${esc(u.Status)}</td><td>${esc(u.CreatedAt)}</td></tr>`);
   document.getElementById('userList').innerHTML = html;
@@ -556,9 +659,20 @@ async function loadUsers() {
 (function init() {
   wireOtpBoxes('.otp');
   wireOtpBoxes('.motp');
+
+  if (!API_URL || /PASTE_YOUR|REPLACE_WITH|^$/.test(API_URL)) {
+    const b = document.getElementById('configBanner');
+    b.style.display = 'block';
+    b.textContent = 'API_URL is not set in index.html — paste your deployed Apps Script /exec URL to connect this page to the backend.';
+  }
+
+  if (adminKey) document.getElementById('adminKey').value = adminKey;
+
   const q = new URLSearchParams(location.search);
-  if ((q.get('page') === 'reset' || q.get('action') === 'pwreset') && q.get('token')) {
-    sessionStorage.setItem('pharmago_token', q.get('token'));
+  const token = q.get('token');
+  if ((q.get('page') === 'reset' || q.get('action') === 'pwreset') && token) {
+    sessionStorage.setItem('pharmago_token', token);
+    activateTab('Login');
     showView('reset');
   }
   renderSession();
