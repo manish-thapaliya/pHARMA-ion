@@ -3,381 +3,549 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PharmaGo | Care, delivered</title>
+<title>PharmaGo — Medicines & Prescriptions, Delivered | Public Beta</title>
+<meta name="description" content="PharmaGo public beta: upload prescriptions, order from verified local pharmacies, and track every review step. Currently open for testing.">
+<meta property="og:title" content="PharmaGo — Care, delivered">
+<meta property="og:description" content="Upload prescriptions, browse verified pharmacies and track orders. Now in public beta for testing.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0A2E25">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230A7A55'/%3E%3Cpath d='M32 14v36M14 32h36' stroke='white' stroke-width='9' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,680&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<meta name="theme-color" content="#123d37">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,560;0,9..144,680;1,9..144,560&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+  /* ============ PharmaGo 2.0 — public-beta design system ============ */
   :root {
-    --brand:#0e7a62; --brand-dark:#0b5c4a; --danger:#c44b4b; --warn:#a86e23;
-    --ink:#142824; --muted:#5d726b; --line:#e3ebe6; --paper:#fffdfb; --sand:#f6f3ec;
-    --shadow:0 18px 50px rgba(20, 60, 48, .08);
+    --bg:#F3F7F5; --card:#FFFFFF; --ink:#0D211B; --muted:#5A7474; --faint:#8AA3A0;
+    --line:#DFE9E4; --line-soft:#EAF1ED;
+    --brand:#0A7A55; --brand-deep:#075C41; --pine:#0A2E25; --pine-2:#104134;
+    --lime:#C7F464; --amber:#FFB020; --amber-deep:#8A5A12;
+    --danger:#C24343; --danger-deep:#9D3B3B; --ok:#0E7A62; --ok-bg:#E4F6EE;
+    --radius:20px; --radius-sm:12px;
+    --shadow:0 24px 60px rgba(10,46,37,.10);
+    --shadow-sm:0 10px 28px rgba(10,46,37,.08);
+    --font-body:'Plus Jakarta Sans',Manrope,'Segoe UI',system-ui,-apple-system,sans-serif;
+    --font-display:Fraunces,Georgia,'Times New Roman',serif;
   }
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
+  * { box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
   body {
-    min-height:100vh; margin:0; padding:0 24px 48px; color:var(--ink);
-    font-family: Manrope, 'Segoe UI', system-ui, sans-serif; line-height:1.55;
+    margin:0; min-height:100vh; color:var(--ink); font-family:var(--font-body);
+    font-size:15px; line-height:1.6;
     background:
-      radial-gradient(900px 520px at 110% -10%, #d7f3e4 0, transparent 55%),
-      radial-gradient(680px 420px at -12% 18%, #f8e7c4 0, transparent 50%),
-      #f3f6f2;
+      radial-gradient(1100px 480px at 85% -8%, #D9F2E3 0, transparent 55%),
+      radial-gradient(800px 480px at -10% 12%, #E4EFE8 0, transparent 50%),
+      var(--bg);
   }
-  body::before, body::after {
-    content:""; position:fixed; z-index:0; width:380px; height:380px; border-radius:50%;
-    filter:blur(46px); pointer-events:none; opacity:.72;
-  }
-  body::before { background:#c9efd9; top:-90px; right:-40px; animation:orb 18s ease-in-out infinite; }
-  body::after { background:#f6e2b8; bottom:8%; left:-140px; animation:orb 22s ease-in-out infinite reverse; }
-  h1, h2, .brand-name { font-family: Fraunces, Georgia, serif; font-weight:680; letter-spacing:-.04em; }
-  .app-shell { position:relative; z-index:1; max-width:1180px; margin:auto; }
-  .topbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; padding:22px 0; }
-  .brand { display:flex; align-items:center; gap:12px; text-decoration:none; color:var(--ink); }
-  .brand-mark {
-    display:grid; place-items:center; width:48px; height:48px; border-radius:16px;
-    background:linear-gradient(160deg, #1c6b59, #0e3f36); color:white; font-size:26px; font-weight:700;
-    box-shadow:0 10px 22px #164e4230; animation:mark 4.8s ease-in-out infinite;
-  }
-  .brand-name { font-size:24px; line-height:1; }
-  .brand-name span { color:var(--brand); }
-  .brand-sub { color:var(--muted); font-size:11px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
-  #sessionBar {
-    padding:8px 14px; border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.86);
-    font-size:13px; max-width:100%; overflow-wrap:anywhere; backdrop-filter:blur(8px);
-    box-shadow:0 8px 24px #2347380c;
-  }
-  #sessionBar .btn { margin:0 0 0 10px; padding:5px 9px; font-size:12px; }
-  .hero {
-    display:grid; grid-template-columns:1.5fr 1fr; align-items:center; gap:32px;
-    margin:8px 0 22px; padding:40px 48px; border-radius:28px; overflow:hidden; position:relative;
-    background:linear-gradient(135deg, #123e36 0%, #1b6a58 62%, #2f8f6e 140%);
-    color:white; box-shadow:0 22px 50px #17463828; animation:rise .7s cubic-bezier(.2,.8,.2,1) both;
-  }
-  .hero:after {
-    content:"+"; position:absolute; right:18%; top:-150px; font-size:460px; line-height:1;
-    color:#ffffff10; font-weight:900; pointer-events:none; animation:drift 16s ease-in-out infinite;
-  }
-  .eyebrow, .kicker {
-    display:inline-block; letter-spacing:.16em; text-transform:uppercase; font-size:11px; font-weight:800;
-  }
-  .eyebrow { color:#b7ebcf; }
-  .kicker { color:var(--brand); }
-  .hero h1 {
-    color:white; font-size:clamp(34px, 4.4vw, 56px); line-height:1.04; max-width:640px; margin:12px 0 16px;
-  }
-  .hero p { color:#d5ebe3; font-size:16px; margin:0; max-width:540px; }
-  .hero-copy { position:relative; z-index:2; }
-  .hero-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; }
-  .hero-actions .btn { margin:0; background:#fff; color:#124d40; padding:13px 20px; }
-  .hero-actions .btn:hover { background:#f1fff8; }
-  .hero-actions .btn.hero-secondary { color:#fff; background:#ffffff12; border:1px solid #ffffff45; }
-  .hero-proof { display:flex; flex-wrap:wrap; gap:16px; margin-top:20px; color:#d5ebe3; font-size:12px; font-weight:700; }
-  .hero-proof span::before { content:'✓'; color:#8ee0b9; margin-right:6px; }
-  .journey { display:grid; grid-template-columns:repeat(3,1fr); gap:0; margin:-4px 18px 22px; padding:14px 20px; background:#fff; border:1px solid var(--line); border-radius:18px; box-shadow:0 12px 36px #2347380c; }
-  .journey-step { display:flex; align-items:center; gap:12px; padding:8px 18px; position:relative; }
-  .journey-step:not(:last-child)::after { content:'→'; position:absolute; right:-5px; color:#9db2a9; }
-  .journey-num { display:grid; place-items:center; flex:none; width:32px; height:32px; border-radius:50%; color:white; background:linear-gradient(145deg,var(--brand),#175344); font:800 12px Manrope,sans-serif; }
-  .journey-step b { display:block; font-size:13px; } .journey-step small { color:var(--muted); font-size:11px; }
-  .network-pill { display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:800; color:var(--muted); }
-  .network-pill::before { content:''; width:7px; height:7px; border-radius:50%; background:#22a06b; box-shadow:0 0 0 3px #22a06b18; }
-  body.offline .network-pill::before { background:var(--danger); } body.offline .network-pill { color:var(--danger); }
-  .btn.busy { pointer-events:none; opacity:.72; padding-right:40px; position:relative; }
-  .btn.busy::after { content:''; position:absolute; right:14px; top:50%; width:14px; height:14px; margin-top:-8px; border:2px solid #ffffff66; border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; }
-  #toastRegion { position:fixed; z-index:120; right:20px; bottom:20px; display:grid; gap:8px; width:min(360px,calc(100vw - 32px)); pointer-events:none; }
-  .toast { padding:13px 15px; border-radius:14px; color:white; background:#173f36; box-shadow:0 16px 42px #0a241f42; font-size:13px; animation:toastIn .3s ease both; }
-  .toast.error { background:#9d3e3e; }
+  ::selection { background:#0A7A5533; }
+  h1, h2, h3, .brand-name { font-family:var(--font-display); letter-spacing:-.02em; }
+  a { color:var(--brand); }
+  button { font-family:inherit; }
+  :focus-visible { outline:3px solid var(--amber); outline-offset:2px; border-radius:6px; }
 
-  .hero-cards { z-index:1; display:grid; gap:10px; }
-  .hero-card {
-    background:#ffffff16; border:1px solid #ffffff30; border-radius:16px; padding:14px 16px;
-    display:flex; gap:14px; align-items:center; backdrop-filter:blur(10px); font-size:14px;
-    animation:float 6.5s ease-in-out infinite;
+  .skip {
+    position:absolute; left:16px; top:-48px; z-index:200; background:var(--pine); color:#fff;
+    padding:10px 16px; border-radius:10px; text-decoration:none; font-weight:700; transition:top .2s;
   }
-  .hero-card:nth-child(2) { animation-delay:.7s; }
-  .hero-card:nth-child(3) { animation-delay:1.3s; }
-  .hero-card b { display:block; color:white; } .hero-card span { color:#d5ebe3; font-size:12px; }
-  .hero-icon {
-    display:grid; place-items:center; flex:none; height:40px; width:40px; border-radius:12px;
-    background:#ffffff22; font-size:18px;
+  .skip:focus { top:12px; }
+
+  /* ---- public-beta strip ---- */
+  .beta-strip {
+    background:linear-gradient(90deg,#0A2E25,#104134 60%,#0A2E25); color:#EAF6F0;
+    font-size:12.5px; font-weight:600; text-align:center; padding:9px 16px;
+    display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;
   }
-  .tabs { display:flex; flex-wrap:wrap; align-items:center; gap:8px; border:0; margin:0 0 16px; }
+  .beta-strip .pulse-dot { width:8px; height:8px; border-radius:50%; background:var(--lime); box-shadow:0 0 0 0 #C7F46488; animation:betaPulse 2s infinite; flex:none; }
+  .beta-strip strong { color:var(--lime); font-weight:800; letter-spacing:.04em; }
+  .beta-strip a { color:#fff; font-weight:700; }
+  @keyframes betaPulse { 0%{box-shadow:0 0 0 0 #C7F46477} 70%{box-shadow:0 0 0 9px transparent} 100%{box-shadow:0 0 0 0 transparent} }
+
+  /* ---- header ---- */
+  .site-header {
+    position:sticky; top:0; z-index:60;
+    background:rgba(255,255,255,.86); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .header-inner {
+    max-width:1220px; margin:0 auto; padding:12px 24px;
+    display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+  }
+  .brand { display:flex; align-items:center; gap:12px; text-decoration:none; color:var(--ink); margin-right:auto; }
+  .brand-mark {
+    display:grid; place-items:center; width:44px; height:44px; border-radius:14px; flex:none;
+    background:linear-gradient(150deg,var(--brand),var(--pine)); color:#fff;
+    font-size:24px; font-weight:800; box-shadow:0 10px 22px #0A7A5533;
+  }
+  .brand-name { font-size:22px; font-weight:680; line-height:1; }
+  .brand-name em { font-style:normal; color:var(--brand); }
+  .brand-sub { display:flex; align-items:center; gap:6px; color:var(--muted); font-size:10.5px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+  .beta-badge {
+    font-family:var(--font-body); font-size:9.5px; font-weight:800; letter-spacing:.08em;
+    background:var(--pine); color:var(--lime); border-radius:99px; padding:2px 8px; text-transform:uppercase;
+  }
+  .header-session { display:flex; align-items:center; gap:10px; margin-left:auto; }
+  #sessionBar {
+    font-size:13px; color:var(--muted); background:#fff; border:1px solid var(--line);
+    padding:7px 14px; border-radius:999px; max-width:min(420px,60vw); overflow-wrap:anywhere;
+    box-shadow:var(--shadow-sm);
+  }
+  #sessionBar strong { color:var(--ink); }
+  .header-session .btn { margin:0; }
+
+  /* ---- nav tabs (segmented control) ---- */
+  .tabs {
+    display:flex; align-items:center; gap:4px; background:#EBF2EE; border:1px solid var(--line);
+    padding:4px; border-radius:999px; order:3; flex-basis:100%;
+  }
   .tabs button {
-    font:inherit; font-weight:700; color:#456258; background:rgba(255,255,255,.45);
-    border:1px solid transparent; border-radius:12px; padding:10px 16px; cursor:pointer;
-    transition:background .2s, color .2s, transform .2s, box-shadow .2s;
+    flex:1 1 auto; border:0; border-radius:999px; background:transparent; cursor:pointer;
+    font-weight:700; font-size:13.5px; color:#3E5A52; padding:9px 14px; white-space:nowrap;
+    transition:background .18s, color .18s, box-shadow .18s, transform .18s;
   }
-  .tabs button:hover { background:#e7f2eb; transform:translateY(-1px); }
-  .tabs button.active { background:var(--brand); color:white; box-shadow:0 8px 18px #116e5930; }
+  .tabs button:hover { background:#fff; color:var(--ink); }
+  .tabs button.active { background:var(--pine); color:#fff; box-shadow:0 8px 18px #0A2E2540; }
+  @media (min-width:1020px) {
+    .tabs { order:0; flex-basis:auto; }
+    .header-session { margin-left:0; }
+  }
+
+  .app-shell { max-width:1220px; margin:0 auto; padding:0 24px 8px; }
+
+  /* ---- hero ---- */
+  .hero {
+    position:relative; overflow:hidden; margin:26px 0 18px; border-radius:28px;
+    background:linear-gradient(120deg,#081F19 0%,#0C3A2E 55%,#0E6B4E 130%);
+    color:#fff; box-shadow:var(--shadow);
+    display:grid; grid-template-columns:1.15fr .85fr; gap:36px; align-items:center;
+    padding:clamp(30px,5vw,60px);
+  }
+  .hero::before {
+    content:""; position:absolute; inset:0; pointer-events:none;
+    background:
+      radial-gradient(560px 340px at 88% 12%, #C7F4642E 0, transparent 60%),
+      radial-gradient(700px 420px at 8% 110%, #2FD08C26 0, transparent 55%);
+  }
+  .hero::after {
+    content:""; position:absolute; inset:0; pointer-events:none; opacity:.5;
+    background-image:linear-gradient(#ffffff0D 1px,transparent 1px),linear-gradient(90deg,#ffffff0D 1px,transparent 1px);
+    background-size:44px 44px;
+    mask-image:radial-gradient(80% 90% at 70% 20%, #000 30%, transparent 75%);
+  }
+  .hero-copy { position:relative; z-index:1; }
+  .eyebrow {
+    display:inline-flex; align-items:center; gap:8px; font-size:11px; font-weight:800;
+    letter-spacing:.16em; text-transform:uppercase; color:var(--lime);
+    background:#ffffff12; border:1px solid #ffffff2E; padding:7px 14px; border-radius:999px;
+  }
+  .hero h1 { font-size:clamp(34px,4.6vw,58px); line-height:1.05; margin:18px 0 14px; font-weight:680; }
+  .hero h1 em { font-style:italic; color:var(--lime); font-weight:560; }
+  .hero p.lead { color:#CFE7DC; font-size:16.5px; max-width:520px; margin:0; }
+  .hero-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:26px; }
+  .hero-actions .btn { margin:0; padding:14px 24px; font-size:15px; border-radius:14px; }
+  .btn-lime { background:var(--lime) !important; color:#0A2E25 !important; }
+  .btn-lime:hover { background:#D8FF7E !important; }
+  .btn-ghostlight { background:#ffffff14 !important; color:#fff !important; border:1px solid #ffffff40 !important; }
+  .btn-ghostlight:hover { background:#ffffff24 !important; }
+  .hero-proof { display:flex; flex-wrap:wrap; gap:8px 20px; margin-top:24px; color:#CFE7DC; font-size:13px; font-weight:600; }
+  .hero-proof span::before { content:"✓"; color:var(--lime); font-weight:800; margin-right:7px; }
+  .hero-visual { position:relative; z-index:1; display:grid; gap:12px; }
+  .mock-card {
+    background:#ffffff12; border:1px solid #ffffff2C; border-radius:18px; padding:16px 18px;
+    backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+    display:flex; gap:14px; align-items:center; animation:float 7s ease-in-out infinite;
+    box-shadow:0 18px 40px #00000030;
+  }
+  .mock-card:nth-child(2) { animation-delay:.8s; margin-left:26px; }
+  .mock-card:nth-child(3) { animation-delay:1.6s; }
+  .mock-icon {
+    display:grid; place-items:center; flex:none; width:46px; height:46px; border-radius:14px;
+    background:linear-gradient(150deg,#C7F464,#37C98A); color:#0A2E25; font-size:20px; font-weight:800;
+  }
+  .mock-card b { display:block; font-size:14.5px; }
+  .mock-card span { color:#CFE7DC; font-size:12.5px; }
+  .mock-track { display:flex; gap:5px; margin-top:8px; }
+  .mock-track i { height:5px; flex:1; border-radius:99px; background:#ffffff2A; }
+  .mock-track i.done { background:var(--lime); }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+
+  /* ---- steps strip ---- */
+  .journey {
+    display:grid; grid-template-columns:repeat(4,1fr); gap:0; margin:0 0 20px;
+    background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+    box-shadow:var(--shadow-sm); overflow:hidden;
+  }
+  .journey-step { display:flex; align-items:center; gap:13px; padding:18px 20px; position:relative; }
+  .journey-step + .journey-step { border-left:1px solid var(--line-soft); }
+  .journey-num {
+    display:grid; place-items:center; flex:none; width:36px; height:36px; border-radius:12px;
+    color:#fff; background:linear-gradient(145deg,var(--brand),var(--pine));
+    font:800 13px var(--font-body);
+  }
+  .journey-step b { display:block; font-size:13.5px; }
+  .journey-step small { color:var(--muted); font-size:12px; }
+
+  /* ---- panels & sections ---- */
   .panel {
-    display:none; background:var(--paper); border:1px solid var(--line); border-radius:24px;
-    padding:clamp(22px, 4vw, 40px); box-shadow:var(--shadow); min-height:340px;
+    display:none; background:var(--card); border:1px solid var(--line); border-radius:24px;
+    padding:clamp(24px,4vw,44px); box-shadow:var(--shadow); min-height:360px; margin-bottom:26px;
   }
-  .panel.active { display:block; animation:panelIn .45s cubic-bezier(.2,.8,.2,1); }
-  .panel h2 { margin:0 0 6px; font-size:clamp(26px, 3vw, 36px); }
-  .panel h3 { margin:22px 0 6px; font-size:18px; font-family:Fraunces, Georgia, serif; }
-  .panel p { color:var(--muted); }
-  .panel hr { border:0; border-top:1px solid var(--line); margin:28px 0; }
-  .section-head { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap; margin:4px 0 12px; }
+  .panel.active { display:block; animation:panelIn .4s cubic-bezier(.2,.8,.2,1); }
+  @keyframes panelIn { from{opacity:0; transform:translateY(12px)} to{opacity:1; transform:none} }
+  .panel h2 { margin:0 0 6px; font-size:clamp(26px,3vw,34px); font-weight:680; }
+  .panel h3 { margin:26px 0 8px; font-size:19px; font-weight:680; }
+  .panel > p, .panel-sub { color:var(--muted); margin-top:0; }
+  .panel hr { border:0; border-top:1px solid var(--line); margin:30px 0; }
+  .kicker {
+    display:inline-block; letter-spacing:.16em; text-transform:uppercase;
+    font-size:11px; font-weight:800; color:var(--brand); margin-bottom:2px;
+  }
+  .section-head { display:flex; justify-content:space-between; align-items:flex-end; gap:14px; flex-wrap:wrap; margin:6px 0 14px; }
   .section-head h2, .section-head h3 { margin:0; }
-  .section-head .btn, .topbar .btn { margin-top:0; }
-  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+  .section-head p { margin:4px 0 0; color:var(--muted); }
+  .section-head .btn { margin-top:0; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
   .grid2 > div { min-width:0; }
-  #viewLogin .grid2 > div { padding:24px; border:1px solid var(--line); background:#fff; border-radius:18px; transition:transform .2s, box-shadow .2s; }
-  #viewLogin .grid2 > div:hover { transform:translateY(-3px); box-shadow:0 14px 30px #23473810; }
-  #viewLogin .grid2 > div:first-child { background:linear-gradient(180deg, #f3faf6, #fff); }
-  label { display:block; margin-top:14px; font-weight:700; font-size:13px; color:#3c554c; }
+  .auth-card {
+    padding:26px; border:1px solid var(--line); background:#FBFDFC; border-radius:18px;
+    transition:transform .2s, box-shadow .2s;
+  }
+  .auth-card:hover { transform:translateY(-3px); box-shadow:var(--shadow-sm); }
+  .auth-card.featured { background:linear-gradient(180deg,#EFF8F2,#fff); border-color:#CBE7D8; }
+  .auth-card h2 { font-size:24px; }
+  .field-note { font-size:12.5px; color:var(--muted); }
+
+  /* ---- forms ---- */
+  label { display:block; margin-top:14px; font-weight:700; font-size:13px; color:#33544B; }
+  label small, small.hint, .hint { color:var(--muted); font-weight:500; }
   input, select, textarea {
-    width:100%; padding:12px 13px; margin-top:5px; border:1px solid #cddbd2; border-radius:12px;
-    font:inherit; font-size:14px; background:#fff; color:var(--ink);
-    transition:border-color .15s, box-shadow .15s, transform .15s;
+    width:100%; padding:12px 14px; margin-top:6px; border:1.5px solid #CBDAD2; border-radius:var(--radius-sm);
+    font:inherit; font-size:14.5px; background:#fff; color:var(--ink);
+    transition:border-color .15s, box-shadow .15s;
   }
-  input:focus, textarea:focus, select:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 4px #116e5922; }
+  input::placeholder { color:#9DB4AD; }
+  input:focus, textarea:focus, select:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 4px #0A7A5522; }
+  input[type="file"] { padding:10px 12px; background:#F6FAF7; cursor:pointer; }
+  input[type="checkbox"] { width:auto; }
+  .search-row { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; }
+  .search-row > div:first-child { flex:1 1 280px; }
+  .search-row .btn { margin:0 0 1px; }
+
+  /* ---- buttons ---- */
   .btn {
-    display:inline-block; width:auto !important; margin-top:12px; margin-right:6px; padding:11px 16px;
-    border:none; border-radius:12px; background:var(--brand); color:#fff; cursor:pointer;
-    font:inherit; font-size:14px; font-weight:800;
-    transition:transform .18s, background .18s, box-shadow .18s;
+    display:inline-block; width:auto !important; margin:14px 8px 0 0; padding:12px 20px;
+    border:none; border-radius:var(--radius-sm); background:var(--brand); color:#fff; cursor:pointer;
+    font-size:14px; font-weight:800;
+    transition:transform .16s, background .16s, box-shadow .16s;
   }
-  .btn:hover { background:var(--brand-dark); transform:translateY(-2px); box-shadow:0 10px 18px #116e5928; }
+  .btn:hover { background:var(--brand-deep); transform:translateY(-2px); box-shadow:0 12px 22px #0A7A5530; }
   .btn:active { transform:translateY(0); }
-  .btn:focus-visible, .tabs button:focus-visible { outline:3px solid #e8b560; outline-offset:2px; }
-  .btn.red { background:var(--danger); } .btn.green { background:#148a62; } .btn.gray { background:#667c70; }
-  .btn.link { background:none; color:var(--brand); text-decoration:underline; padding:6px 0; box-shadow:none; text-align:left; }
-  .btn.link:hover { background:none; transform:none; box-shadow:none; }
-  table { width:100%; border-collapse:collapse; margin-top:10px; font-size:14px; background:white; min-width:560px; }
-  th, td { border:0; border-bottom:1px solid var(--line); padding:12px; text-align:left; }
-  th { font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); background:#f4f8f5; }
-  tr { transition:background .16s; }
-  tbody tr:hover, table tr:hover td { background:#f7fbf8; }
-  .status-APPROVED, .st-ACTIVE { color:#0e7a62; font-weight:800; }
-  .status-DECLINED, .st-DECLINED { color:#c44b4b; font-weight:800; }
-  .status-PENDING, .st-PENDING, .st-UNVERIFIED { color:var(--warn); font-weight:800; }
+  .btn:disabled { opacity:.6; cursor:wait; transform:none; }
+  .btn.red { background:var(--danger); } .btn.red:hover { background:var(--danger-deep); }
+  .btn.green { background:#149065; } .btn.green:hover { background:#0E734F; }
+  .btn.gray { background:#5F7A70; } .btn.gray:hover { background:#4C635A; }
+  .btn.link { background:none; color:var(--brand); text-decoration:underline; padding:8px 2px; box-shadow:none; }
+  .btn.link:hover { background:none; transform:none; box-shadow:none; color:var(--brand-deep); }
+  .btn.sm { padding:8px 14px; font-size:13px; }
+  .btn.busy { pointer-events:none; opacity:.75; padding-right:42px; position:relative; }
+  .btn.busy::after {
+    content:""; position:absolute; right:15px; top:50%; width:15px; height:15px; margin-top:-8.5px;
+    border:2.5px solid #ffffff55; border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite;
+  }
+  @keyframes spin { to{transform:rotate(360deg)} }
+
+  /* ---- feedback ---- */
+  .msg { margin-top:14px; padding:13px 16px; border-radius:var(--radius-sm); display:none; font-size:14px; font-weight:600; }
+  .msg.ok, .msg.err { display:block; animation:msgIn .3s ease; }
+  .msg.ok { background:var(--ok-bg); color:#0D5C2E; border:1px solid #AFDFC2; }
+  .msg.err { background:#FCECEC; color:#A13333; border:1px solid #F3B8B8; }
+  @keyframes msgIn { from{opacity:0; transform:translateY(-6px)} to{opacity:1; transform:none} }
+  .banner {
+    display:none; margin:0 0 18px; padding:13px 18px; border-radius:14px; font-size:14px;
+    background:#FFF6E2; border:1px solid #EFD49A; color:#7A5B00;
+  }
+  .demo-hint {
+    background:#fff; border:1px solid #CBE7D8; border-left:5px solid var(--brand);
+    padding:14px 18px; border-radius:14px; margin:0 0 18px; font-size:13.5px; color:#174E3B;
+    box-shadow:var(--shadow-sm);
+  }
+  #toastRegion { position:fixed; z-index:120; right:20px; bottom:20px; display:grid; gap:8px; width:min(360px,calc(100vw - 32px)); pointer-events:none; }
+  .toast {
+    padding:14px 16px; border-radius:14px; color:#fff; background:var(--pine);
+    box-shadow:0 18px 44px #0A2E2550; font-size:13.5px; font-weight:600; animation:toastIn .3s ease both;
+    border-left:4px solid var(--lime);
+  }
+  .toast.error { background:#7E2B2B; border-left-color:#FF9D9D; }
+  @keyframes toastIn { from{opacity:0; transform:translateY(10px) scale(.97)} to{opacity:1; transform:none} }
+
+  /* ---- OTP & steppers ---- */
+  .otp-row { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .otp-row input { width:48px; height:56px; text-align:center; font-size:22px; font-weight:800; padding:8px 4px; }
+  .countdown { font-size:13px; color:var(--muted); margin-top:8px; font-weight:600; }
+  .stepper { display:flex; gap:8px; align-items:center; font-size:13px; color:var(--muted); margin-bottom:10px; flex-wrap:wrap; }
+  .stepper .dot { width:10px; height:10px; border-radius:50%; background:#C6D4CE; flex:none; }
+  .stepper .dot.on { background:var(--brand); box-shadow:0 0 0 4px #0A7A5520; }
+
+  /* ---- cards, tables, stats ---- */
   .card, .rx-card {
-    border:1px solid var(--line); border-radius:18px; padding:16px; margin:10px 0; background:#fff;
-    box-shadow:0 10px 28px #2347380a; transition:transform .2s, box-shadow .2s;
+    border:1px solid var(--line); border-radius:18px; padding:18px; margin:12px 0; background:#fff;
+    box-shadow:var(--shadow-sm); transition:transform .2s, box-shadow .2s;
   }
-  .card:hover, .rx-card:hover { transform:translateY(-4px); box-shadow:0 18px 36px #23473816; }
-  .rx-card { margin:0; animation:cardIn .55s cubic-bezier(.2,.8,.2,1) both; }
-  .rx-card h3, .rx-viewer-head h2 { margin:8px 0 4px; font-size:18px; color:var(--ink); overflow-wrap:anywhere; }
-  .rx-viewer-head h2 { font-size:clamp(24px, 3vw, 34px); margin:2px 0 6px; }
-  .rx-card p { margin:4px 0; font-size:13px; }
+  .card:hover, .rx-card:hover { transform:translateY(-3px); box-shadow:0 18px 36px #0A2E2514; }
+  .rx-card { margin:0; animation:cardIn .5s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes cardIn { from{opacity:0; transform:translateY(10px) scale(.98)} to{opacity:1; transform:none} }
+  .rx-card h3 { margin:10px 0 4px; font-size:17px; overflow-wrap:anywhere; }
+  .rx-card p { margin:4px 0; font-size:13px; color:var(--muted); }
   .rx-card-top { display:flex; justify-content:space-between; align-items:center; gap:8px; }
-  .rx-id { color:var(--muted); font-size:12px; font-weight:700; }
-  .rx-note { color:#3c554c !important; }
+  .rx-id { color:var(--faint); font-size:11.5px; font-weight:700; }
+  .rx-note { color:#33544B !important; }
   .rx-actions { display:flex; flex-wrap:wrap; gap:6px; }
-  .rx-actions .btn { margin-top:8px; }
-  .rx-grid, #pendingRx {
-    display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:14px; margin-top:8px;
-  }
+  .rx-actions .btn { margin-top:10px; }
+  .rx-grid, #pendingRx { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:14px; margin-top:10px; }
   .rx-doc {
-    height:88px; margin:12px 0 8px; border-radius:14px; position:relative; overflow:hidden;
+    height:86px; margin:12px 0 6px; border-radius:14px; position:relative; overflow:hidden;
     display:grid; place-items:center;
-    background:linear-gradient(145deg, #f8fcf9, #e5f4ec 70%, #f7f1e4);
-    border:1px solid #e1eee7;
+    background:linear-gradient(145deg,#F2F9F4,#DDF0E5 70%,#F4EDDC); border:1px solid #D9E9DF;
   }
-  .rx-doc span { font-family:Fraunces, Georgia, serif; font-size:28px; color:var(--brand); }
+  .rx-doc span { font-family:var(--font-display); font-size:28px; color:var(--brand); font-weight:680; }
   .rx-doc::after {
-    content:""; position:absolute; top:-30%; bottom:-30%; width:40%; left:-50%;
-    background:linear-gradient(90deg, transparent, #ffffffaa, transparent);
-    transform:rotate(16deg); animation:sheen 3.6s ease-in-out infinite;
+    content:""; position:absolute; top:-30%; bottom:-30%; width:38%; left:-50%;
+    background:linear-gradient(90deg,transparent,#ffffffAA,transparent);
+    transform:rotate(16deg); animation:sheen 3.8s ease-in-out infinite;
   }
+  @keyframes sheen { 0%{left:-60%} 55%,100%{left:135%} }
   .rx-track { display:flex; gap:8px; list-style:none; padding:0; margin:12px 0 4px; }
-  .rx-track li { flex:1; font-size:11px; font-weight:800; color:#8aa097; position:relative; padding-top:12px; }
-  .rx-track li::before {
-    content:""; position:absolute; top:0; left:0; right:0; height:4px; border-radius:99px; background:#e6eeea;
-  }
+  .rx-track li { flex:1; font-size:11px; font-weight:800; color:#93ABA4; position:relative; padding-top:12px; }
+  .rx-track li::before { content:""; position:absolute; top:0; left:0; right:0; height:4px; border-radius:99px; background:#E3ECE8; }
   .rx-track li.on { color:var(--brand); }
   .rx-track li.on::before { background:var(--brand); }
-  .rx-track li.wait::before { background:linear-gradient(90deg, #0e7a62, #e6eeea); background-size:200% 100%; animation:loadbar 1.5s ease infinite; }
+  .rx-track li.wait::before { background:linear-gradient(90deg,var(--brand),#E3ECE8); background-size:200% 100%; animation:loadbar 1.5s ease infinite; }
   .rx-track li.bad { color:var(--danger); }
   .rx-track li.bad::before { background:var(--danger); }
+  @keyframes loadbar { 0%{background-position:100% 0} 100%{background-position:0 0} }
   .chip {
-    display:inline-flex; align-items:center; padding:4px 10px; border-radius:999px;
+    display:inline-flex; align-items:center; padding:5px 12px; border-radius:999px;
     font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
   }
-  .chip.status-PENDING { color:#8a5a12; background:#fff4df; animation:pulse 2.2s ease-in-out infinite; }
-  .chip.status-APPROVED { color:#0e7a62; background:#e5f6ee; }
-  .chip.status-DECLINED { color:#a33b3b; background:#fdecec; }
-  .chip.status-PLACED { color:#8a5a12; background:#fff4df; }
-  .chip.status-ACCEPTED { color:#0e7a62; background:#e5f6ee; }
-  .upload-zone {
-    border:1.5px dashed #b7d4c6; border-radius:22px; padding:22px; margin:8px 0 16px;
-    background:linear-gradient(180deg, #f7fbf8, #fff); transition:border-color .2s, transform .2s, box-shadow .2s;
-    animation:glowPulse 3.4s ease-in-out infinite;
+  .chip.status-PENDING, .chip.status-PLACED { color:var(--amber-deep); background:#FFF3DA; }
+  .chip.status-APPROVED, .chip.status-ACCEPTED { color:var(--ok); background:var(--ok-bg); }
+  .chip.status-DECLINED { color:var(--danger-deep); background:#FBEAEA; }
+  .status-APPROVED, .st-ACTIVE { color:var(--ok); font-weight:800; }
+  .status-DECLINED, .st-DECLINED { color:var(--danger); font-weight:800; }
+  .status-PENDING, .st-PENDING, .st-UNVERIFIED { color:var(--amber-deep); font-weight:800; }
+  .badge {
+    display:inline-block; padding:4px 11px; border-radius:999px; background:#DCF2E5;
+    color:#0D4A35; font-size:11.5px; font-weight:800; margin-left:6px; white-space:nowrap;
   }
-  .upload-zone:hover, .upload-zone.drag { border-color:var(--brand); transform:translateY(-2px); box-shadow:0 16px 36px #0e7a6214; }
+  .stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:18px 0; }
+  .stat {
+    background:linear-gradient(180deg,#F1F9F4,#fff); border:1px solid var(--line);
+    border-radius:16px; padding:18px; transition:transform .2s, box-shadow .2s; animation:cardIn .5s ease both;
+  }
+  .stat:nth-child(2){animation-delay:.05s} .stat:nth-child(3){animation-delay:.1s} .stat:nth-child(4){animation-delay:.15s}
+  .stat:hover { transform:translateY(-3px); box-shadow:var(--shadow-sm); }
+  .stat strong { display:block; font-size:30px; line-height:1.1; color:var(--brand); font-family:var(--font-display); font-weight:680; }
+  .stat span { font-size:12px; color:var(--muted); font-weight:600; }
+  .table-wrap { width:100%; overflow-x:auto; border-radius:14px; border:1px solid var(--line); }
+  table { width:100%; border-collapse:collapse; font-size:14px; background:#fff; min-width:560px; }
+  th, td { border-bottom:1px solid var(--line-soft); padding:12px 14px; text-align:left; }
+  tbody tr:last-child td { border-bottom:0; }
+  th { font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); background:#F1F6F3; white-space:nowrap; }
+  tbody tr { transition:background .15s; }
+  tbody tr:hover td { background:#F6FAF7; }
+  table .btn { margin:2px 4px 2px 0; padding:7px 12px; font-size:12.5px; }
+
+  .upload-zone {
+    border:2px dashed #A9CDBB; border-radius:var(--radius); padding:24px; margin:10px 0 18px;
+    background:linear-gradient(180deg,#F4FAF6,#fff);
+    transition:border-color .2s, transform .2s, box-shadow .2s;
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color:var(--brand); transform:translateY(-2px); box-shadow:0 16px 36px #0A7A5514; }
   .upload-zone h3 { margin-top:0; }
   .local-preview { margin-top:12px; }
   .local-preview img, .local-preview iframe {
-    width:100%; max-height:280px; object-fit:contain; border-radius:14px; background:#f4f1ea; border:1px solid var(--line);
+    width:100%; max-height:280px; object-fit:contain; border-radius:14px; background:#F1EFE8; border:1px solid var(--line);
   }
   .local-preview iframe { height:280px; border:0; }
-  .filter-row { display:flex; flex-wrap:wrap; gap:16px; }
+  .filter-row { display:flex; flex-wrap:wrap; gap:14px; }
   .filter-row > div { flex:1; min-width:180px; max-width:320px; }
-  .msg { margin-top:10px; padding:12px 14px; border-radius:12px; display:none; font-size:14px; }
-  .msg.ok, .msg.err { animation:msgIn .35s ease; }
-  .msg.ok { display:block; background:#e6f6ec; color:#146c2e; border:1px solid #b7e4c7; }
-  .msg.err { display:block; background:#fdecec; color:#a11; border:1px solid #f5c2c7; }
-  .banner { display:none; margin:10px 0; padding:12px; border-radius:12px; background:#fff6e5; border:1px solid #f0d69a; color:#7a5b00; font-size:14px; }
-  small.hint, .hint { color:var(--muted); }
-  .otp-row { display:flex; gap:8px; margin-top:6px; }
-  .otp-row input { width:46px; height:54px; text-align:center; font-size:22px; font-weight:800; }
-  .countdown { font-size:13px; color:var(--muted); margin-top:6px; }
-  .stepper { display:flex; gap:6px; align-items:center; font-size:13px; color:var(--muted); margin-bottom:8px; }
-  .stepper .dot { width:10px; height:10px; border-radius:50%; background:#cbd6d1; }
-  .stepper .dot.on { background:var(--brand); box-shadow:0 0 0 4px #0e7a6218; }
-  [hidden] { display:none !important; }
-  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
-  .access-note { background:#f2f8f3; border:1px solid #d7e8dc; border-radius:14px; padding:16px 20px; margin:14px 0; }
-  .access-note p { margin:5px 0 0; }
-  .badge { display:inline-block; padding:4px 10px; border-radius:999px; background:#e0f3e7; color:#164e42; font-size:12px; font-weight:800; margin-left:6px; }
-  .stats { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; margin:18px 0; }
-  .stat {
-    background:linear-gradient(180deg, #f4fbf7, #fff); border:1px solid var(--line); border-radius:16px; padding:18px;
-    transition:transform .2s, box-shadow .2s; animation:cardIn .5s ease both;
-  }
-  .stat:nth-child(2) { animation-delay:.05s; } .stat:nth-child(3) { animation-delay:.1s; } .stat:nth-child(4) { animation-delay:.15s; }
-  .stat:hover { transform:translateY(-3px); box-shadow:0 12px 24px #23473810; }
-  .stat strong { display:block; font-size:28px; line-height:1.15; color:var(--brand); font-family:Fraunces, Georgia, serif; }
-  .stat span { font-size:12px; color:var(--muted); }
-  .table-wrap { width:100%; overflow-x:auto; border-radius:14px; }
-  .site-footer { color:var(--muted); font-size:12px; padding:26px 2px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
-  .rx-empty-state { grid-column:1 / -1; text-align:center; padding:34px 12px; color:var(--muted); }
+  .access-note { background:#F0F7F3; border:1px solid #CBE7D8; border-radius:14px; padding:16px 20px; margin:14px 0; }
+  .access-note p { margin:5px 0 0; color:var(--muted); }
+  .rx-empty-state { grid-column:1 / -1; text-align:center; padding:36px 12px; color:var(--muted); }
   .rx-empty-mark {
-    display:grid; place-items:center; width:64px; height:64px; margin:0 auto 8px; border-radius:18px;
-    background:#e7f3ec; color:var(--brand); font-size:28px; animation:float 4.2s ease-in-out infinite;
+    display:grid; place-items:center; width:64px; height:64px; margin:0 auto 10px; border-radius:18px;
+    background:#E3F2E9; color:var(--brand); font-size:28px; animation:float 4.5s ease-in-out infinite;
   }
   .rx-empty { margin:24px; text-align:center; color:var(--muted); }
+  [hidden] { display:none !important; }
+  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
+
+  /* ---- prescription viewer ---- */
   .rx-viewer { position:fixed; inset:0; z-index:80; display:grid; place-items:center; padding:18px; }
-  .rx-viewer-backdrop { position:absolute; inset:0; background:rgba(10, 28, 24, .58); backdrop-filter:blur(8px); animation:fade .25s ease; }
+  .rx-viewer-backdrop { position:absolute; inset:0; background:rgba(8,25,20,.62); backdrop-filter:blur(8px); animation:fade .25s ease; }
+  @keyframes fade { from{opacity:0} to{opacity:1} }
   .rx-viewer-dialog {
-    position:relative; width:min(980px, 100%); max-height:min(92vh, 940px); overflow:auto;
-    background:#fffdfb; border-radius:26px; padding:22px; box-shadow:0 30px 80px rgba(0,0,0,.28);
-    animation:pop .4s cubic-bezier(.16,.84,.22,1);
+    position:relative; width:min(980px,100%); max-height:min(92vh,940px); overflow:auto;
+    background:#fff; border-radius:24px; padding:24px; box-shadow:0 30px 80px rgba(0,0,0,.3);
+    animation:pop .35s cubic-bezier(.16,.84,.22,1);
   }
+  @keyframes pop { from{opacity:0; transform:translateY(22px) scale(.97)} to{opacity:1; transform:none} }
   .rx-viewer-head { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; }
-  .rx-viewer-head h2 { margin:2px 0 6px; font-size:clamp(24px, 3vw, 34px); }
+  .rx-viewer-head h2 { margin:2px 0 6px; font-size:clamp(22px,3vw,30px); overflow-wrap:anywhere; }
   .rx-viewer-head p { margin:0; color:var(--muted); font-size:13px; }
-  .rx-stage {
-    margin-top:14px; min-height:240px; border-radius:18px; padding:12px; overflow:auto;
-    background:linear-gradient(180deg, #f7f4ee, #fff); border:1px solid var(--line);
-  }
-  .rx-preview-img, .rx-paper {
-    display:block; width:100%; max-height:68vh; object-fit:contain; margin:0 auto; border-radius:14px;
-    animation:fade .4s ease; background:white;
-  }
-  .rx-preview-frame { width:100%; height:68vh; border:0; border-radius:14px; background:white; }
+  .rx-stage { margin-top:14px; min-height:240px; border-radius:18px; padding:12px; overflow:auto; background:#F5F8F6; border:1px solid var(--line); }
+  .rx-preview-img, .rx-paper { display:block; width:100%; max-height:68vh; object-fit:contain; margin:0 auto; border-radius:14px; background:#fff; animation:fade .4s ease; }
+  .rx-preview-frame { width:100%; height:68vh; border:0; border-radius:14px; background:#fff; }
   .rx-paper { max-height:none; padding:22px; border:1px solid var(--line); }
   .rx-paper pre { white-space:pre-wrap; font-family:inherit; color:var(--ink); }
   .rx-skeleton {
     height:320px; border-radius:16px;
-    background:linear-gradient(90deg, #eef3f0 25%, #f8fbf9 37%, #eef3f0 63%);
+    background:linear-gradient(90deg,#EAF1ED 25%,#F7FAF8 37%,#EAF1ED 63%);
     background-size:400% 100%; animation:shimmer 1.2s ease infinite;
   }
-  .rx-viewer-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  @keyframes shimmer { 0%{background-position:100% 0} 100%{background-position:0 0} }
+  .rx-viewer-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:6px; }
   .rx-viewer-actions .btn, .rx-viewer-actions a.btn { text-decoration:none; }
   body.viewer-open { overflow:hidden; }
-  @keyframes rise { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
-  @keyframes panelIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
-  @keyframes cardIn { from { opacity:0; transform:translateY(10px) scale(.98); } to { opacity:1; transform:none; } }
-  @keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-7px); } }
-  @keyframes drift { 0%,100% { transform:translateY(0) rotate(0deg); } 50% { transform:translateY(22px) rotate(8deg); } }
-  @keyframes orb { 0%,100% { transform:translate(0,0) scale(1); } 50% { transform:translate(-24px, 18px) scale(1.08); } }
-  @keyframes mark { 0%,100% { transform:rotate(0) scale(1); } 50% { transform:rotate(-8deg) scale(1.06); } }
-  @keyframes pop { from { opacity:0; transform:translateY(22px) scale(.96); } to { opacity:1; transform:none; } }
-  @keyframes fade { from { opacity:0; } to { opacity:1; } }
-  @keyframes msgIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
-  @keyframes shimmer { 0% { background-position:100% 0; } 100% { background-position:0 0; } }
-  @keyframes pulse { 0%,100% { box-shadow:0 0 0 0 #e8b56055; } 50% { box-shadow:0 0 0 6px #e8b56000; } }
-  @keyframes sheen { 0% { left:-60%; } 55%,100% { left:130%; } }
-  @keyframes loadbar { 0% { background-position:100% 0; } 100% { background-position:0 0; } }
-  @keyframes spin { to { transform:rotate(360deg); } }
-  @keyframes toastIn { from { opacity:0; transform:translateY(10px) scale(.96); } to { opacity:1; transform:none; } }
-  @keyframes glowPulse { 0%,100% { box-shadow:0 0 0 0 #0e7a6200; } 50% { box-shadow:0 0 0 7px #0e7a620f; } }
-  @media (max-width:760px) {
-    body { padding:0 14px 28px; }
-    .hero { grid-template-columns:1fr; padding:26px; }
-    .journey { grid-template-columns:1fr; margin:-4px 0 18px; }
-    .journey-step:not(:last-child)::after { content:'↓'; right:14px; bottom:-6px; }
-    .hero-cards { grid-template-columns:1fr; }
-    .grid2 { grid-template-columns:1fr; gap:14px; }
-    .tabs button { font-size:13px; padding:9px 11px; }
-    .stats { grid-template-columns:repeat(2, 1fr); }
-  }
-  @media (max-width:520px) {
-    .topbar { padding:16px 0; } .panel, .rx-viewer-dialog { padding:18px 14px; }
-    #viewLogin .grid2 > div { padding:16px; }
-    .otp-row input { width:40px; height:48px; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after {
-      animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important;
-    }
+
+  /* ---- footer ---- */
+  .site-footer { background:var(--pine); color:#C9DED5; margin-top:10px; }
+  .footer-inner { max-width:1220px; margin:0 auto; padding:44px 24px 22px; }
+  .footer-grid { display:grid; grid-template-columns:1.3fr 1fr 1fr 1fr; gap:28px; }
+  .footer-brand { display:flex; align-items:center; gap:10px; color:#fff; font-family:var(--font-display); font-size:20px; }
+  .footer-grid p { font-size:13px; margin:10px 0; }
+  .footer-grid h4 { color:#fff; font-size:12px; letter-spacing:.12em; text-transform:uppercase; margin:0 0 12px; }
+  .footer-grid ul { list-style:none; margin:0; padding:0; display:grid; gap:8px; font-size:13.5px; }
+  .footer-grid ul button { background:none; border:0; color:#C9DED5; cursor:pointer; padding:0; font-size:13.5px; font-weight:600; text-align:left; }
+  .footer-grid ul button:hover { color:var(--lime); }
+  .network-pill { display:inline-flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color:#C9DED5; background:#ffffff12; border:1px solid #ffffff26; padding:7px 14px; border-radius:999px; }
+  .network-pill::before { content:""; width:8px; height:8px; border-radius:50%; background:#2FD08C; box-shadow:0 0 0 3px #2FD08C22; }
+  body.offline .network-pill::before { background:#FF7A7A; box-shadow:0 0 0 3px #FF7A7A22; }
+  body.offline .network-pill { color:#FFB3B3; }
+  .footer-bottom {
+    display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap;
+    border-top:1px solid #ffffff1E; margin-top:30px; padding-top:18px; font-size:12.5px; color:#93B3A8;
   }
 
+  /* ---- responsive ---- */
+  @media (max-width:1020px) {
+    .hero { grid-template-columns:1fr; gap:26px; }
+    .mock-card:nth-child(2) { margin-left:0; }
+    .journey { grid-template-columns:1fr 1fr; }
+    .journey-step:nth-child(3) { border-left:0; border-top:1px solid var(--line-soft); }
+    .journey-step:nth-child(4) { border-top:1px solid var(--line-soft); }
+    .footer-grid { grid-template-columns:1fr 1fr; }
+  }
+  @media (max-width:760px) {
+    .app-shell { padding:0 14px 8px; }
+    .header-inner { padding:10px 14px; }
+    .tabs { overflow-x:auto; scrollbar-width:none; }
+    .tabs::-webkit-scrollbar { display:none; }
+    .tabs button { flex:0 0 auto; }
+    #sessionBar { max-width:100%; }
+    .grid2 { grid-template-columns:1fr; gap:14px; }
+    .journey { grid-template-columns:1fr; }
+    .journey-step + .journey-step { border-left:0; border-top:1px solid var(--line-soft); }
+    .stats { grid-template-columns:repeat(2,1fr); }
+    .hero-actions .btn { width:100% !important; text-align:center; }
+    .footer-grid { grid-template-columns:1fr; }
+  }
+  @media (max-width:520px) {
+    .panel, .rx-viewer-dialog { padding:20px 15px; }
+    .auth-card { padding:18px; }
+    .otp-row input { width:42px; height:50px; }
+    .hero { padding:26px 22px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+    html { scroll-behavior:auto; }
+  }
 </style>
 </head>
 <body>
-<div class="app-shell">
-<header class="topbar">
-  <a class="brand" href="#" onclick="activateTab('Login');return false" aria-label="PharmaGo home">
-    <span class="brand-mark" aria-hidden="true">✚</span><span><span class="brand-name">pharma<span>go.</span></span><br><span class="brand-sub">Your care, closer</span></span>
-  </a>
-  <div id="sessionBar" class="hint" aria-live="polite"></div>
-  <button id="logoutBtn" class="btn gray" onclick="logout()" hidden>Sign out</button>
+<a class="skip" href="#main">Skip to main content</a>
+
+<div class="beta-strip" role="note">
+  <span class="pulse-dot" aria-hidden="true"></span>
+  <span><strong>PUBLIC BETA — OPEN FOR TESTING</strong> &nbsp;Please explore freely, but don’t upload real personal health data yet.</span>
+</div>
+
+<header class="site-header">
+  <div class="header-inner">
+    <a class="brand" href="#" onclick="activateTab('Login');return false" aria-label="PharmaGo home">
+      <span class="brand-mark" aria-hidden="true">✚</span>
+      <span><span class="brand-name">pharma<em>go</em></span><br><span class="brand-sub">Care, delivered <span class="beta-badge">Beta</span></span></span>
+    </a>
+    <nav class="tabs" aria-label="Main navigation">
+      <button id="tabLogin" data-show="guest" class="active" onclick="openTab(event,'login')">Account</button>
+      <button id="tabUser" data-show="user" hidden onclick="openTab(event,'user')">My prescriptions</button>
+      <button id="tabShop" data-show="all" onclick="openTab(event,'shop')">Medicines</button>
+      <button id="tabMerchant" data-show="guest,merchant" onclick="openTab(event,'merchant')">For pharmacies</button>
+      <button id="tabAdmin" data-show="all" onclick="openTab(event,'admin')">Admin</button>
+    </nav>
+    <div class="header-session">
+      <div id="sessionBar" class="hint" aria-live="polite"></div>
+      <button id="logoutBtn" class="btn gray sm" onclick="logout()" hidden>Sign out</button>
+    </div>
+  </div>
 </header>
 
+<main id="main" class="app-shell">
+
 <section class="hero" aria-label="Welcome to PharmaGo">
-  <div class="hero-copy"><span class="eyebrow">A simpler way to care</span><h1>Better health, delivered to your door.</h1>
-    <p>Find everyday medicines, manage prescriptions, and connect with trusted local pharmacies — all in one place.</p>
-    <div class="hero-actions"><button class="btn" onclick="activateTab(session && session.role === 'USER' ? 'User' : 'Shop')">Explore medicines</button><button class="btn hero-secondary" onclick="activateTab(session ? 'User' : 'Login')">Upload prescription</button></div>
-    <div class="hero-proof"><span>Private by design</span><span>Verified pharmacies</span><span>Clear status updates</span></div>
+  <div class="hero-copy">
+    <span class="eyebrow">● &nbsp;Now in public beta</span>
+    <h1>Your pharmacy, <em>reimagined</em> for home.</h1>
+    <p class="lead">Upload a prescription in seconds, order from verified local pharmacies, and follow every review step — all in one calm, secure place.</p>
+    <div class="hero-actions">
+      <button class="btn btn-lime" onclick="activateTab(session && session.role === 'USER' ? 'User' : 'Shop')">Explore medicines</button>
+      <button class="btn btn-ghostlight" onclick="activateTab(session ? 'User' : 'Login')">Upload prescription</button>
+    </div>
+    <div class="hero-proof"><span>Private by design</span><span>Verified pharmacies</span><span>Live review tracking</span></div>
   </div>
-  <div class="hero-cards">
-    <div class="hero-card"><div class="hero-icon">✚</div><div><b>Easy prescriptions</b><span>Upload once. Track every step.</span></div></div>
-    <div class="hero-card"><div class="hero-icon">◈</div><div><b>Local pharmacies</b><span>Browse medicines near you.</span></div></div>
-    <div class="hero-card"><div class="hero-icon">✓</div><div><b>Verified care</b><span>Safe, reviewed, and reliable.</span></div></div>
+  <div class="hero-visual" aria-hidden="true">
+    <div class="mock-card"><div class="mock-icon">Rx</div><div><b>Prescription approved</b><span>Green Cross Pharmacy · just now</span><div class="mock-track"><i class="done"></i><i class="done"></i><i class="done"></i></div></div></div>
+    <div class="mock-card"><div class="mock-icon">◈</div><div><b>Vitamin C · ₹149</b><span>In stock · 48 units ready</span><div class="mock-track"><i class="done"></i><i class="done"></i><i></i></div></div></div>
+    <div class="mock-card"><div class="mock-icon">✓</div><div><b>Order accepted</b><span>Arriving from Valley Medicos</span><div class="mock-track"><i class="done"></i><i class="done"></i><i class="done"></i></div></div></div>
   </div>
 </section>
+
 <section class="journey" aria-label="How PharmaGo works">
-  <div class="journey-step"><span class="journey-num">01</span><div><b>Upload or browse</b><small>Start in under a minute</small></div></div>
-  <div class="journey-step"><span class="journey-num">02</span><div><b>Get verified</b><small>Safe pharmacist review</small></div></div>
-  <div class="journey-step"><span class="journey-num">03</span><div><b>Order with confidence</b><small>Track every decision</small></div></div>
+  <div class="journey-step"><span class="journey-num">01</span><div><b>Create your account</b><small>Email code verifies you</small></div></div>
+  <div class="journey-step"><span class="journey-num">02</span><div><b>Upload or browse</b><small>Rx scan or catalogue</small></div></div>
+  <div class="journey-step"><span class="journey-num">03</span><div><b>Pharmacist review</b><small>Tracked at each step</small></div></div>
+  <div class="journey-step"><span class="journey-num">04</span><div><b>Order &amp; receive</b><small>From verified shops</small></div></div>
 </section>
+
 <div id="configBanner" class="banner" role="alert"></div>
-<nav class="tabs" aria-label="Main navigation">
-  <button id="tabLogin" data-show="guest" class="active" onclick="openTab(event,'login')">Account</button>
-  <button id="tabUser" data-show="user" hidden onclick="openTab(event,'user')">My prescriptions</button>
-  <button id="tabShop" data-show="all" onclick="openTab(event,'shop')">Browse medicines</button>
-  <button id="tabMerchant" data-show="guest,merchant" onclick="openTab(event,'merchant')">For pharmacies</button>
-  <button id="tabAdmin" data-show="all" onclick="openTab(event,'admin')">Admin</button>
-</nav>
 
 <!-- ============ LOGIN / REGISTER / VERIFY / RESET ============ -->
 <div id="login" class="panel active" data-show="guest">
 
   <!-- STEP: login + register -->
   <div id="viewLogin">
+    <span class="kicker">Get started</span>
+    <h2>Your health account</h2>
+    <p class="panel-sub">Sign in to manage prescriptions and orders — or create a free customer account in under a minute.</p>
     <div class="grid2">
-      <div>
-        <h2>Login</h2>
-        <label>ID or Email</label><input id="lId" autocomplete="username">
-        <label>Password</label><input id="lPass" type="password" autocomplete="current-password">
-        <button class="btn" onclick="doLogin()">Login</button>
+      <div class="auth-card">
+        <h2>Welcome back</h2>
+        <p class="field-note">Use your customer ID or email address.</p>
+        <label for="lId">ID or Email</label><input id="lId" autocomplete="username">
+        <label for="lPass">Password</label><input id="lPass" type="password" autocomplete="current-password">
+        <button class="btn" onclick="doLogin()">Sign in</button>
         <button class="btn link" onclick="showView('forgot')">Forgot password? Set it through email →</button>
       </div>
-      <div>
-        <h2>Register as Customer</h2>
-        <p><small class="hint">We'll email a one-time 6-digit code to verify your address. You can set your password now, or later through an emailed link.</small></p>
-        <label>Name</label><input id="rName">
-        <label>Email (unique)</label><input id="rEmail" type="email">
-        <label>Phone (unique)</label><input id="rPhone" type="tel">
-        <label>Password <small class="hint">— optional, min 6 chars</small></label>
+      <div class="auth-card featured">
+        <h2>New to PharmaGo?</h2>
+        <p class="field-note">We’ll email a one-time 6-digit code to verify your address. Set your password now, or later through an emailed link.</p>
+        <label for="rName">Full name</label><input id="rName" autocomplete="name">
+        <label for="rEmail">Email (unique)</label><input id="rEmail" type="email" autocomplete="email">
+        <label for="rPhone">Phone (unique)</label><input id="rPhone" type="tel" autocomplete="tel">
+        <label for="rPass">Password <small class="hint">— optional, min 6 chars</small></label>
         <input id="rPass" type="password" autocomplete="new-password">
-        <label>Confirm password</label>
+        <label for="rPass2">Confirm password</label>
         <input id="rPass2" type="password" autocomplete="new-password">
-        <button class="btn" onclick="doRegister()">Register → Get Email Code</button>
+        <button class="btn" onclick="doRegister()">Create account →</button>
       </div>
     </div>
   </div>
@@ -385,42 +553,45 @@
   <!-- STEP: OTP verification -->
   <div id="viewVerify" style="display:none">
     <div class="stepper"><span class="dot on"></span> Registered → <span class="dot on"></span> Verify email → <span class="dot" id="stepPwDot"></span> Set password</div>
-    <h2>Enter the code we emailed you</h2>
+    <span class="kicker">Almost there</span>
+    <h2>Enter your verification code</h2>
     <p class="hint">Sent to <strong id="vEmailShow"></strong> for account <strong id="vIdShow"></strong>. Valid 10 minutes, single use.</p>
     <div class="otp-row">
-      <input maxlength="1" class="otp" inputmode="numeric"><input maxlength="1" class="otp" inputmode="numeric"><input maxlength="1" class="otp" inputmode="numeric"><input maxlength="1" class="otp" inputmode="numeric"><input maxlength="1" class="otp" inputmode="numeric"><input maxlength="1" class="otp" inputmode="numeric">
+      <input maxlength="1" class="otp" inputmode="numeric" aria-label="Digit 1"><input maxlength="1" class="otp" inputmode="numeric" aria-label="Digit 2"><input maxlength="1" class="otp" inputmode="numeric" aria-label="Digit 3"><input maxlength="1" class="otp" inputmode="numeric" aria-label="Digit 4"><input maxlength="1" class="otp" inputmode="numeric" aria-label="Digit 5"><input maxlength="1" class="otp" inputmode="numeric" aria-label="Digit 6">
     </div>
     <div class="countdown" id="otpCountdown"></div>
-    <label>Set your password now <small class="hint">— optional, min 6 chars. Leave blank to set it later by email.</small></label>
+    <label for="vPass">Set your password now <small class="hint">— optional, min 6 chars. Leave blank to set it later by email.</small></label>
     <input id="vPass" type="password" autocomplete="new-password">
-    <label>Confirm password</label>
+    <label for="vPass2">Confirm password</label>
     <input id="vPass2" type="password" autocomplete="new-password">
-    <button class="btn" onclick="doVerify()">Verify Code</button>
+    <button class="btn" onclick="doVerify()">Verify code</button>
     <button class="btn gray" onclick="doResend()">Resend code</button>
-    <button class="btn link" onclick="showView('login')">← Back to login</button>
+    <button class="btn link" onclick="showView('login')">← Back to sign in</button>
     <div id="verifyMsg" class="msg"></div>
   </div>
 
   <!-- STEP: request password-by-mail link -->
   <div id="viewForgot" style="display:none">
     <div class="stepper"><span class="dot on"></span> Request email link → <span class="dot"></span> Open link → <span class="dot"></span> New password</div>
+    <span class="kicker">Account recovery</span>
     <h2>Set / reset password via email</h2>
-    <p><small class="hint">We'll send a one-time secure link (valid 24 h). Open it and choose your new password there.</small></p>
-    <label>Email or User ID</label><input id="fId">
+    <p><small class="hint">We’ll send a one-time secure link (valid 24 h). Open it and choose your new password there.</small></p>
+    <label for="fId">Email or User ID</label><input id="fId" autocomplete="username">
     <button class="btn" onclick="doForgot()">Email me a password link</button>
-    <button class="btn link" onclick="showView('login')">← Back to login</button>
+    <button class="btn link" onclick="showView('login')">← Back to sign in</button>
     <div id="forgotMsg" class="msg"></div>
   </div>
 
   <!-- STEP: token arrived from emailed link -> set password -->
   <div id="viewReset" style="display:none">
     <div class="stepper"><span class="dot on"></span> Link opened → <span class="dot on"></span> Enter new password</div>
+    <span class="kicker">Secure link verified</span>
     <h2>Choose your new password</h2>
     <p><small class="hint">This page was reached from your emailed link. The link works once.</small></p>
-    <label>New password (min 6 chars)</label><input id="np1" type="password" autocomplete="new-password">
-    <label>Confirm password</label><input id="np2" type="password" autocomplete="new-password">
-    <button class="btn" onclick="doReset()">Set Password</button>
-    <button class="btn link" onclick="showView('login')">← Back to login</button>
+    <label for="np1">New password (min 6 chars)</label><input id="np1" type="password" autocomplete="new-password">
+    <label for="np2">Confirm password</label><input id="np2" type="password" autocomplete="new-password">
+    <button class="btn" onclick="doReset()">Set password</button>
+    <button class="btn link" onclick="showView('login')">← Back to sign in</button>
     <div id="resetMsg" class="msg"></div>
   </div>
 
@@ -438,7 +609,7 @@
   </div>
   <div id="rxDrop" class="upload-zone">
     <h3>Upload a prescription</h3>
-    <p>PDF, JPG or PNG, up to 10 MB. Preview it here, then track every review step.</p>
+    <p class="field-note">PDF, JPG or PNG up to 10 MB — drag &amp; drop it here or choose a file. Preview it below, then track every review step.</p>
     <label for="rxFile">Prescription file (PDF/JPG/PNG, max 10 MB)</label>
     <input type="file" id="rxFile" accept=".pdf,.jpg,.jpeg,.png" onchange="previewSelectedRx()">
     <div id="rxLocalPreview" class="local-preview" hidden></div>
@@ -447,22 +618,26 @@
   <div id="userMsg" class="msg"></div>
   <div class="section-head">
     <h3>My history</h3>
-    <button class="btn gray" onclick="loadHistory()">Refresh</button>
+    <button class="btn gray sm" onclick="loadHistory()">Refresh</button>
   </div>
   <div id="rxHistory" class="rx-grid" aria-live="polite"><div class="rx-skeleton" style="height:190px" role="status" aria-label="Loading prescriptions"></div></div>
   <div class="table-wrap sr-only" aria-hidden="true"><table id="historyTbl"><tr><th>RxID</th><th>File</th><th>Status</th><th>Uploaded At</th><th>Reviewed At</th><th>Note</th></tr></table></div>
   <div class="section-head">
     <h3>My orders</h3>
-    <button class="btn gray" onclick="loadMyOrders()">Refresh</button>
+    <button class="btn gray sm" onclick="loadMyOrders()">Refresh</button>
   </div>
   <div id="orderList" class="rx-grid" aria-live="polite"></div>
 </div>
 
 <!-- ============ SHOP ============ -->
 <div id="shop" class="panel" data-show="all">
-  <label for="medSearch">Search medicines</label><input id="medSearch" placeholder="Search name, category or pharmacy" oninput="renderMedicines()">
-  <h2>Available Medicines</h2>
-  <button class="btn" onclick="loadMedicines()">Load Catalogue</button>
+  <span class="kicker">Catalogue</span>
+  <h2>Available medicines</h2>
+  <p class="panel-sub">Live stock from verified partner pharmacies. Customers need an approved prescription to place an order.</p>
+  <div class="search-row">
+    <div><label for="medSearch">Search medicines</label><input id="medSearch" placeholder="Try “vitamin”, “syrup”, or a pharmacy name…" oninput="renderMedicines()"></div>
+    <div><button class="btn" onclick="loadMedicines()">Reload catalogue</button></div>
+  </div>
   <div id="orderBar" class="card" hidden>
     <h3>Place an order</h3>
     <p id="orderItem" class="hint"></p>
@@ -473,48 +648,51 @@
     <button class="btn" onclick="submitOrder()">Place order</button>
     <button class="btn gray" onclick="cancelOrder()">Cancel</button>
   </div>
-  <div class="table-wrap"><table id="medTbl"><tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Seller</th></tr></table></div>
+  <div class="table-wrap" style="margin-top:16px"><table id="medTbl"><tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Seller</th></tr></table></div>
   <div id="shopMsg" class="msg"></div>
 </div>
 
 <!-- ============ MERCHANT PORTAL ============ -->
 <div id="merchant" class="panel">
   <div id="vendorRegister" data-show="guest">
-  <h2>New Vendor Registration</h2>
-  <p><small class="hint">All four documents are required for pharma vendor verification: GST, Drug License, Shop ID proof, PAN. A one-time email code verifies the owner address first; then an admin reviews your documents.</small></p>
+  <span class="kicker">Partner with PharmaGo</span>
+  <h2>Register your pharmacy</h2>
+  <p class="panel-sub">All four documents are required for verification: GST certificate, Drug License, Shop ID proof and PAN. A one-time email code verifies the owner address first; then an admin reviews your documents.</p>
   <div class="grid2">
-    <div>
-      <label>Owner Email (unique)</label><input id="mEmail" type="email">
-      <label>Phone (unique)</label><input id="mPhone" type="tel">
-      <label>Shop Name</label><input id="mShop">
-      <label>Address</label><input id="mAddr">
-      <label>Password <small class="hint">— optional, min 6 chars</small></label>
+    <div class="auth-card">
+      <h3 style="margin-top:0">Shop details</h3>
+      <label for="mEmail">Owner Email (unique)</label><input id="mEmail" type="email" autocomplete="email">
+      <label for="mPhone">Phone (unique)</label><input id="mPhone" type="tel" autocomplete="tel">
+      <label for="mShop">Shop Name</label><input id="mShop">
+      <label for="mAddr">Address</label><input id="mAddr">
+      <label for="mPass">Password <small class="hint">— optional, min 6 chars</small></label>
       <input id="mPass" type="password" autocomplete="new-password">
-      <label>Confirm password</label>
+      <label for="mPass2">Confirm password</label>
       <input id="mPass2" type="password" autocomplete="new-password">
     </div>
-    <div>
-      <label>GST Number</label><input id="mGst">
-      <label>Drug License Number</label><input id="mDl">
-      <label>GST Certificate *</label><input type="file" id="docGST" accept=".pdf,.jpg,.png">
-      <label>Drug License Doc *</label><input type="file" id="docDRUG_LICENSE" accept=".pdf,.jpg,.png">
-      <label>Shop ID Proof *</label><input type="file" id="docSHOP_ID" accept=".pdf,.jpg,.png">
-      <label>PAN Card *</label><input type="file" id="docPAN" accept=".pdf,.jpg,.png">
+    <div class="auth-card">
+      <h3 style="margin-top:0">Licenses &amp; documents</h3>
+      <label for="mGst">GST Number</label><input id="mGst">
+      <label for="mDl">Drug License Number</label><input id="mDl">
+      <label for="docGST">GST Certificate *</label><input type="file" id="docGST" accept=".pdf,.jpg,.png">
+      <label for="docDRUG_LICENSE">Drug License Doc *</label><input type="file" id="docDRUG_LICENSE" accept=".pdf,.jpg,.png">
+      <label for="docSHOP_ID">Shop ID Proof *</label><input type="file" id="docSHOP_ID" accept=".pdf,.jpg,.png">
+      <label for="docPAN">PAN Card *</label><input type="file" id="docPAN" accept=".pdf,.jpg,.png">
     </div>
   </div>
-  <button class="btn" onclick="registerMerchant()">Submit → Email Verification Code</button>
+  <button class="btn" onclick="registerMerchant()">Submit → Get verification code</button>
   <div class="card" id="mvCard" style="display:none">
-    <h3>Verify vendor email (one-time code)</h3>
+    <h3>Verify your pharmacy email</h3>
     <p class="hint">Code sent to <strong id="mvEmail"></strong> for vendor <strong id="mvId"></strong>.</p>
     <div class="otp-row">
-      <input maxlength="1" class="motp" inputmode="numeric"><input maxlength="1" class="motp" inputmode="numeric"><input maxlength="1" class="motp" inputmode="numeric"><input maxlength="1" class="motp" inputmode="numeric"><input maxlength="1" class="motp" inputmode="numeric"><input maxlength="1" class="motp" inputmode="numeric">
+      <input maxlength="1" class="motp" inputmode="numeric" aria-label="Digit 1"><input maxlength="1" class="motp" inputmode="numeric" aria-label="Digit 2"><input maxlength="1" class="motp" inputmode="numeric" aria-label="Digit 3"><input maxlength="1" class="motp" inputmode="numeric" aria-label="Digit 4"><input maxlength="1" class="motp" inputmode="numeric" aria-label="Digit 5"><input maxlength="1" class="motp" inputmode="numeric" aria-label="Digit 6">
     </div>
     <div class="countdown" id="motpCountdown"></div>
-    <label>Set your password now <small class="hint">— optional, min 6 chars</small></label>
+    <label for="mvPass">Set your password now <small class="hint">— optional, min 6 chars</small></label>
     <input id="mvPass" type="password" autocomplete="new-password">
-    <label>Confirm password</label>
+    <label for="mvPass2">Confirm password</label>
     <input id="mvPass2" type="password" autocomplete="new-password">
-    <button class="btn" onclick="doMerchantVerify()">Verify Code</button>
+    <button class="btn" onclick="doMerchantVerify()">Verify code</button>
     <button class="btn gray" onclick="doMerchantResend()">Resend code</button>
     <div id="mvMsg" class="msg"></div>
   </div>
@@ -522,22 +700,23 @@
   </div>
   <div id="vendorNote" class="access-note" data-show="user" hidden><b>Own a pharmacy?</b><p>Sign out of your customer account to register a pharmacy.</p></div>
   <div id="vendorTools" data-show="merchant" hidden>
-  <h2>Vendor Tools (after login &amp; approval)</h2>
-  <p><small class="hint">Log in with your vendor ID/email. If you have no password yet, use "Forgot password?" on the Login tab — the emailed link sets it for you.</small></p>
+  <span class="kicker">Seller dashboard</span>
+  <h2>My shop</h2>
+  <p class="panel-sub">Log in with your vendor ID/email. If you have no password yet, use “Forgot password?” on the Account tab — the emailed link sets it for you.</p>
   <div class="grid2">
     <div>
-      <label>Medicine Name</label><input id="nmName">
-      <label>Category</label><input id="nmCat" placeholder="e.g. Tablet, Syrup">
+      <label for="nmName">Medicine Name</label><input id="nmName">
+      <label for="nmCat">Category</label><input id="nmCat" placeholder="e.g. Tablet, Syrup">
     </div>
     <div>
-      <label>Price (₹)</label><input id="nmPrice" type="number">
-      <label>Stock</label><input id="nmStock" type="number">
+      <label for="nmPrice">Price (₹)</label><input id="nmPrice" type="number" min="0">
+      <label for="nmStock">Stock</label><input id="nmStock" type="number" min="0">
     </div>
   </div>
-  <button class="btn" onclick="addMedicine(false)">Add Medicine (as Merchant)</button>
-  <h3>My Listings <button class="btn gray" style="padding:6px 12px" onclick="loadMyListings()">Refresh</button></h3>
+  <button class="btn" onclick="addMedicine(false)">Add medicine</button>
+  <div class="section-head"><h3>My listings</h3><button class="btn gray sm" onclick="loadMyListings()">Refresh</button></div>
   <div class="table-wrap"><table id="myMedTbl"><tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th><th>Active</th><th>Actions</th></tr></table></div>
-  <h3>Incoming orders <button class="btn gray" style="padding:6px 12px" onclick="loadShopOrders()">Refresh</button></h3>
+  <div class="section-head"><h3>Incoming orders</h3><button class="btn gray sm" onclick="loadShopOrders()">Refresh</button></div>
   <div id="shopOrders" class="rx-grid"></div>
 </div>
 <div id="merchMsg" class="msg" role="status" aria-live="polite"></div>
@@ -545,6 +724,7 @@
 
 <!-- ============ ADMIN PANEL ============ -->
 <div id="admin" class="panel" data-show="all">
+  <span class="kicker">Operations</span>
   <h2>Admin console</h2>
   <div id="adminLockCard" class="card" data-show="locked">
     <p>Unlock administrator tools with your admin key. You do not need a customer account.</p>
@@ -552,10 +732,10 @@
     <button class="btn" onclick="adminAuth()">Unlock admin</button>
   </div>
   <div id="adminDashboard" data-show="admin" hidden>
-    <p>Review prescriptions, verify pharmacies and manage the catalogue. Open any file here — the same viewer the patient uses.</p>
+    <p class="panel-sub">Review prescriptions, verify pharmacies and manage the catalogue. Open any file here — the same viewer the patient uses.</p>
     <span id="adminState" class="badge">Unlocked</span>
-    <button class="btn gray" onclick="lockAdmin()">Lock admin</button>
-    <button class="btn" onclick="loadAdminOverview()">Refresh overview</button>
+    <button class="btn gray sm" onclick="lockAdmin()">Lock admin</button>
+    <button class="btn sm" onclick="loadAdminOverview()">Refresh overview</button>
     <div class="stats" aria-label="Overview statistics">
       <div class="stat"><strong id="statUsers">0</strong><span>Customers</span></div>
       <div class="stat"><strong id="statRx">0</strong><span>Pending prescriptions</span></div>
@@ -577,7 +757,7 @@
     <div id="pendingRx" class="rx-grid"></div>
     <h3>Orders</h3>
     <div id="adminOrders" class="rx-grid"></div>
-    <h3>Pharmacies & verification</h3><div id="merchantList"></div>
+    <h3>Pharmacies &amp; verification</h3><div id="merchantList"></div>
     <h3>Users</h3><div id="userList" class="table-wrap"></div>
     <h3>Catalogue management</h3><div id="adminMedicineList" class="table-wrap"></div>
     <h3>Add medicine as admin</h3>
@@ -590,8 +770,50 @@
   <div id="adminMsg" class="msg" role="status" aria-live="polite"></div>
 </div>
 
-<footer class="site-footer"><span>© PharmaGo · Care made accessible</span><span class="network-pill" id="networkState">Secure connection</span><span>Google Sheets & Drive powered · Never share your admin key</span></footer>
-</div>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand"><span class="brand-mark" style="width:36px;height:36px;font-size:20px;border-radius:11px" aria-hidden="true">✚</span> pharma<em style="font-style:normal;color:var(--lime)">go</em></div>
+        <p>Medicines and prescriptions, handled with care. This is a <strong style="color:#fff">public testing build</strong> — data may be reset and features may change without notice.</p>
+        <span class="network-pill" id="networkState">Secure connection</span>
+      </div>
+      <div>
+        <h4>Explore</h4>
+        <ul>
+          <li><button onclick="activateTab('Shop')">Browse medicines</button></li>
+          <li><button onclick="activateTab('Login')">Customer account</button></li>
+          <li><button onclick="activateTab('Merchant')">Register a pharmacy</button></li>
+          <li><button onclick="activateTab('Admin')">Admin console</button></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Testing notes</h4>
+        <ul>
+          <li>Beta v1.0.0 — feedback welcome</li>
+          <li>Use test data, not real health files</li>
+          <li>Codes arrive by email in ~1 min</li>
+          <li>Never share your admin key</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Platform</h4>
+        <ul>
+          <li>Static frontend + Apps Script API</li>
+          <li>Google Sheets &amp; Drive powered</li>
+          <li>Private files, owner-only access</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© <span id="year">2026</span> PharmaGo · Care made accessible</span>
+      <span>Public beta · v1.0.0 · All systems normal</span>
+    </div>
+  </div>
+</footer>
+
 <div id="toastRegion" aria-live="polite" aria-atomic="true"></div>
 
 <div id="rxViewer" class="rx-viewer" hidden>
@@ -604,7 +826,7 @@
         <p id="rxViewerMeta"></p>
         <p id="rxViewerNote"></p>
       </div>
-      <button id="rxViewerClose" class="btn gray" onclick="closeRxViewer()" aria-label="Close prescription viewer">Close</button>
+      <button id="rxViewerClose" class="btn gray sm" onclick="closeRxViewer()" aria-label="Close prescription viewer">Close</button>
     </header>
     <div id="rxViewerStage" class="rx-stage"></div>
     <div class="rx-viewer-actions">
@@ -1587,5 +1809,6 @@ async function loadAdminMedicines() {
   }
 })();
 </script>
+<script>document.getElementById("year").textContent = new Date().getFullYear();</script>
 </body>
 </html>

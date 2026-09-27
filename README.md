@@ -1,5 +1,9 @@
 # 💊 PharmaGo — online medicine delivery (MVP)
 
+> 🧪 **Public beta is live for testing** — the interface has been redesigned and the
+> repo is deployment-ready. See **[DEPLOY.md](DEPLOY.md)** for the 3-minute GitHub Pages
+> rollout + tester checklist.
+
 Static frontend (`index.html`, GitHub Pages) + Google Apps Script backend (`code.gs`) that uses
 **Google Sheets as the database** and **Google Drive as file storage**.
 
