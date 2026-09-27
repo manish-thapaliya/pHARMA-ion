@@ -169,40 +169,48 @@ function registerUser(data) {
   if (!isValidEmail_(email)) return fail_('That email address does not look valid.');
   if (normalizePhone_(phone).length < 7) return fail_('That phone number does not look valid.');
 
-  const sheet = getSheet_(SHEETS.USERS);
-  const rows = sheet.getDataRange().getValues();
+  // Hold the script lock through the duplicate check, allocation and append.
+  // Two simultaneous sign-ups must never receive the same sequential ID.
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) return fail_('Registration is busy. Please try again.');
+  try {
+    const sheet = getSheet_(SHEETS.USERS);
+    const rows = sheet.getDataRange().getValues();
 
-  for (let i = 1; i < rows.length; i++) {
-    if (String(rows[i][1]).toLowerCase() === email.toLowerCase())
-      return fail_('Email already registered!');
-    if (normalizePhone_(rows[i][2]) === normalizePhone_(phone))
-      return fail_('Phone number already registered!');
+    for (let i = 1; i < rows.length; i++) {
+      if (String(rows[i][1]).toLowerCase() === email.toLowerCase())
+        return fail_('Email already registered!');
+      if (normalizePhone_(rows[i][2]) === normalizePhone_(phone))
+        return fail_('Phone number already registered!');
+    }
+
+    // A password is optional here: it can also be set during verification or
+    // later through an emailed "set password" link.
+    let passwordHash = '';
+    if (data.password) {
+      const pw = String(data.password);
+      if (pw.length < 6) return fail_('Password must be at least 6 characters.');
+      if (data.password2 != null && String(data.password2) !== pw)
+        return fail_('Passwords do not match.');
+      passwordHash = hashPassword_(pw);
+    }
+
+    const userId = nextCustomerId_(rows);
+
+    // Email first: if mail cannot be sent we create no orphan account, so the
+    // visitor can simply try registering again.
+    const otpResult = issueOtpAndEmail_(email, userId, 'VERIFY');
+    if (!otpResult.ok) return fail_(otpResult.message);
+
+    sheet.appendRow([userId, email, phone, passwordHash, 'USER',
+                     String(data.name || '').trim(), 'UNVERIFIED', nowIso_()]);
+
+    return ok_('Account created. We emailed a 6-digit verification code to ' + email +
+               '. Enter it below (valid ' + OTP_TTL_MINUTES + ' minutes).',
+               { userId, otpSentTo: email, passwordSet: !!passwordHash });
+  } finally {
+    lock.releaseLock();
   }
-
-  // A password is optional here: it can also be set during verification or
-  // later through an emailed "set password" link.
-  let passwordHash = '';
-  if (data.password) {
-    const pw = String(data.password);
-    if (pw.length < 6) return fail_('Password must be at least 6 characters.');
-    if (data.password2 != null && String(data.password2) !== pw)
-      return fail_('Passwords do not match.');
-    passwordHash = hashPassword_(pw);
-  }
-
-  const userId = newId_('U', SHEETS.USERS, 0);
-
-  // Email first: if mail cannot be sent we create no orphan account, so the
-  // visitor can simply try registering again.
-  const otpResult = issueOtpAndEmail_(email, userId, 'VERIFY');
-  if (!otpResult.ok) return fail_(otpResult.message);
-
-  sheet.appendRow([userId, email, phone, passwordHash, 'USER',
-                   String(data.name || '').trim(), 'UNVERIFIED', nowIso_()]);
-
-  return ok_('Account created. We emailed a 6-digit verification code to ' + email +
-             '. Enter it below (valid ' + OTP_TTL_MINUTES + ' minutes).',
-             { userId, otpSentTo: email, passwordSet: !!passwordHash });
 }
 
 function verifyEmail(data) {
@@ -706,6 +714,22 @@ function isValidEmail_(email) {
 function safeFileName_(userId, original) {
   const clean = String(original || 'file').replace(/[^\w.\- ]+/g, '_').slice(0, 80);
   return (userId ? userId + '_' : '') + fileStamp_() + '_' + clean;
+}
+
+// Customer IDs are sequential per calendar year, starting at 0010. Scan the
+// sheet rather than trusting a row count: older/random IDs and deleted rows
+// must not cause a duplicate or reset the sequence.
+function nextCustomerId_(rows) {
+  const year = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy');
+  const prefix = 'U-' + year + '-';
+  let highest = 9;
+  for (let i = 1; i < rows.length; i++) {
+    const id = String(rows[i][0] || '');
+    if (id.indexOf(prefix) === 0 && /^\d+$/.test(id.slice(prefix.length))) {
+      highest = Math.max(highest, Number(id.slice(prefix.length)));
+    }
+  }
+  return prefix + String(highest + 1).padStart(4, '0');
 }
 
 // Unique ids — Date.now() alone collides when two writes land in the same

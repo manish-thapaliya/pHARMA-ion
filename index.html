@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PharmaGo — Online Medicine Delivery (MVP)</title>
+<title>PharmaGo | Care, delivered</title>
+<meta name="theme-color" content="#123d37">
 <style>
   :root { --brand:#0a7d5c; --brand-dark:#075e46; --danger:#d33; --warn:#e8930c; --ink:#22303a; }
   * { box-sizing: border-box; }
@@ -42,30 +43,114 @@
   .stepper .dot.on { background:var(--brand); }
   .topbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
   .banner { display:none; margin:10px 0; padding:10px; border-radius:6px; background:#fff6e5; border:1px solid #f0d69a; color:#7a5b00; font-size:14px; }
+
+  /* PharmaGo workspace */
+  :root { --brand:#116e59; --brand-dark:#104f43; --danger:#bb4949; --warn:#a86e23;
+    --ink:#17352f; --muted:#62766e; --line:#dae5df; --paper:#fffdf9; }
+  body { max-width:none; min-height:100vh; margin:0; padding:0 24px 48px;
+    background:radial-gradient(circle at 90% 8%, #e0f1e8 0, transparent 36%), #f5f7f1;
+    color:var(--ink); font-family: 'Segoe UI', system-ui, sans-serif; line-height:1.55; }
+  .app-shell { max-width:1180px; margin:auto; }
+  .topbar { padding:24px 0; border-bottom:1px solid var(--line); gap:20px; }
+  .brand { display:flex; align-items:center; gap:12px; text-decoration:none; color:var(--ink); }
+  .brand-mark { display:grid; place-items:center; width:46px; height:46px; border-radius:14px;
+    background:#164e42; color:white; font-size:25px; font-weight:700; box-shadow:0 6px 14px #164e4222; }
+  .brand-name { font-size:23px; font-weight:800; letter-spacing:-.05em; line-height:1; }
+  .brand-name span { color:var(--brand); }
+  .brand-sub { color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; }
+  #sessionBar { padding:8px 14px; border:1px solid var(--line); border-radius:30px; background:white;
+    font-size:13px; max-width:100%; overflow-wrap:anywhere; }
+  .hero { display:grid; grid-template-columns: 1.5fr 1fr; align-items:center; gap:32px;
+    margin:28px 0 24px; padding:38px 48px; border-radius:22px; overflow:hidden; position:relative;
+    background:#123e36; color:white; box-shadow:0 18px 45px #17463820; }
+  .hero:after { content:"+"; position:absolute; right:25%; top:-170px; font-size:500px; line-height:1;
+    color:#ffffff09; font-weight:900; pointer-events:none; }
+  .eyebrow { display:inline-block; color:#aee4c7; letter-spacing:.16em; text-transform:uppercase; font-size:11px; font-weight:800; }
+  .hero h1 { color:white; font-size:clamp(32px,4vw,53px); letter-spacing:-.055em; line-height:1.08;
+    max-width:610px; margin:12px 0 16px; }
+  .hero p { color:#c8e0d7; font-size:15px; margin:0; max-width:530px; }
+  .hero-cards { z-index:1; display:grid; gap:10px; }
+  .hero-card { background:#ffffff13; border:1px solid #ffffff31; border-radius:12px; padding:13px 17px;
+    display:flex; gap:14px; align-items:center; backdrop-filter:blur(8px); font-size:14px; }
+  .hero-card b { display:block; color:white; } .hero-card span { color:#c8e0d7; font-size:12px; }
+  .hero-icon { display:grid; place-items:center; flex:none; height:37px; width:37px; border-radius:10px; background:#ffffff21; font-size:19px; }
+  .tabs { display:flex; flex-wrap:wrap; align-items:center; gap:7px; border:0; margin-bottom:16px; }
+  .tabs button { font:inherit; font-weight:650; color:#456258; background:transparent; border:1px solid transparent;
+    border-radius:10px; padding:10px 17px; transition:background .15s, color .15s; }
+  .tabs button:hover { background:#e4ede6; } .tabs button.active { background:var(--brand); color:white; box-shadow:0 5px 12px #116e5928; }
+  .panel { background:var(--paper); border:1px solid var(--line); border-radius:18px;
+    padding:clamp(22px,4vw,42px); box-shadow:0 12px 36px #2347380a; min-height:340px; }
+  .panel h2 { margin:0 0 6px; font-size:clamp(22px,2.5vw,30px); letter-spacing:-.04em; }
+  .panel h3 { margin:26px 0 6px; font-size:18px; }
+  .panel p { color:var(--muted); }
+  .panel hr { border:0; border-top:1px solid var(--line); margin:30px 0; }
+  .grid2 { gap:30px; } .grid2 > div { min-width:0; }
+  #viewLogin .grid2 > div { padding:24px; border:1px solid var(--line); background:#fff; border-radius:16px; }
+  #viewLogin .grid2 > div:first-child { background:#f2f8f3; }
+  label { font-size:13px; margin-top:17px; color:#3c554c; }
+  input, select, textarea { font:inherit; background:#fff; color:var(--ink); border:1px solid #cddbd2;
+    border-radius:9px; padding:11px 12px; transition:border-color .15s,box-shadow .15s; }
+  input:focus, textarea:focus, select:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px #116e5920; }
+  .btn { font:inherit; font-size:14px; font-weight:700; border-radius:9px; padding:11px 17px;
+    transition:transform .15s, background .15s; cursor:pointer; }
+  .btn:hover { transform:translateY(-1px); } .btn:focus-visible, .tabs button:focus-visible { outline:3px solid #e8b560; outline-offset:2px; }
+  .btn.gray { background:#667c70; } .btn.green { background:var(--brand); }
+  .btn.link { text-align:left; padding:6px 0; }
+  .card { background:white; border-color:var(--line); border-radius:12px; padding:18px; }
+  .msg { border-radius:9px; padding:11px 14px; } .banner { border-radius:10px; }
+  .table-wrap { width:100%; overflow-x:auto; } table { background:white; min-width:560px; }
+  th, td { border:0; border-bottom:1px solid var(--line); padding:11px; }
+  th { font-size:12px; text-transform:uppercase; letter-spacing:.06em; text-align:left; color:var(--muted); background:#f2f7f3; }
+  [hidden] { display:none !important; }
+  .access-note { background:#f2f8f3; border:1px solid #d7e8dc; border-radius:12px; padding:16px 20px; margin:14px 0; }
+  .access-note p { margin:5px 0 0; }
+  #sessionBar .btn { margin:0 0 0 10px; padding:5px 9px; font-size:12px; }
+  .badge { display:inline-block; padding:4px 10px; border-radius:999px; background:#e0f3e7; color:#164e42; font-size:12px; font-weight:700; margin-left:6px; }
+  .stats { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; margin:20px 0; }
+  .stat { background:#f1f8f3; border:1px solid var(--line); border-radius:12px; padding:18px; }
+  .stat strong { display:block; font-size:27px; line-height:1.2; color:var(--brand); }
+  .stat span { font-size:12px; color:var(--muted); }
+  @media(max-width:680px) { .stats { grid-template-columns:repeat(2,1fr); } }
+  .site-footer { color:var(--muted); font-size:12px; padding:26px 2px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  @media(max-width:760px) {
+    body { padding:0 14px 24px; } .hero { grid-template-columns:1fr; padding:26px; }
+    .hero-cards { grid-template-columns:repeat(3,1fr); } .hero-card { flex-direction:column; align-items:flex-start; }
+    .grid2 { grid-template-columns:1fr; gap:16px; } .tabs button { font-size:13px; padding:9px 11px; }
+  }
+  @media(max-width:520px) { .hero-cards { grid-template-columns:1fr; } .hero-card { flex-direction:row; }
+    .topbar { padding:16px 0; } .panel { padding:20px 16px; } #viewLogin .grid2 > div { padding:18px; } }
 </style>
 </head>
 <body>
+<div class="app-shell">
+<header class="topbar">
+  <a class="brand" href="#" onclick="activateTab('Login');return false" aria-label="PharmaGo home">
+    <span class="brand-mark" aria-hidden="true">✚</span><span><span class="brand-name">pharma<span>go.</span></span><br><span class="brand-sub">Your care, closer</span></span>
+  </a>
+  <div id="sessionBar" class="hint" aria-live="polite"></div>
+  <button id="logoutBtn" class="btn gray" onclick="logout()" hidden>Sign out</button>
+</header>
 
-<div class="topbar">
-  <div>
-    <h1>💊 PharmaGo — Delivery MVP</h1>
-    <small class="hint">Backend: Google Apps Script API • Data: Google Sheets • Files: Google Drive • Frontend: GitHub Pages</small>
+<section class="hero" aria-label="Welcome to PharmaGo">
+  <div><span class="eyebrow">A simpler way to care</span><h1>Better health, delivered to your door.</h1>
+    <p>Find everyday medicines, manage prescriptions, and connect with trusted local pharmacies — all in one place.</p></div>
+  <div class="hero-cards">
+    <div class="hero-card"><div class="hero-icon">✚</div><div><b>Easy prescriptions</b><span>Upload once. Track every step.</span></div></div>
+    <div class="hero-card"><div class="hero-icon">◈</div><div><b>Local pharmacies</b><span>Browse medicines near you.</span></div></div>
+    <div class="hero-card"><div class="hero-icon">✓</div><div><b>Verified care</b><span>Safe, reviewed, and reliable.</span></div></div>
   </div>
-  <div id="sessionBar" class="hint"></div>
-</div>
-
-<div id="configBanner" class="banner"></div>
-
-<div class="tabs">
-  <button id="tabLogin" class="active" onclick="openTab(event,'login')">Login / Register</button>
-  <button id="tabUser" onclick="openTab(event,'user')">My Portal</button>
-  <button id="tabShop" onclick="openTab(event,'shop')">Shop (Medicines)</button>
-  <button id="tabMerchant" onclick="openTab(event,'merchant')">Vendor Portal</button>
-  <button id="tabAdmin" onclick="openTab(event,'admin')">Admin Panel</button>
-</div>
+</section>
+<div id="configBanner" class="banner" role="alert"></div>
+<nav class="tabs" aria-label="Main navigation">
+  <button id="tabLogin" data-show="guest" class="active" onclick="openTab(event,'login')">Account</button>
+  <button id="tabUser" data-show="user" hidden onclick="openTab(event,'user')">My prescriptions</button>
+  <button id="tabShop" data-show="all" onclick="openTab(event,'shop')">Browse medicines</button>
+  <button id="tabMerchant" data-show="guest,merchant" onclick="openTab(event,'merchant')">For pharmacies</button>
+  <button id="tabAdmin" data-show="all" onclick="openTab(event,'admin')">Admin</button>
+</nav>
 
 <!-- ============ LOGIN / REGISTER / VERIFY / RESET ============ -->
-<div id="login" class="panel active">
+<div id="login" class="panel active" data-show="guest">
 
   <!-- STEP: login + register -->
   <div id="viewLogin">
@@ -138,8 +223,9 @@
 </div>
 
 <!-- ============ USER PORTAL ============ -->
-<div id="user" class="panel">
-  <h2>Upload Prescription</h2>
+<div id="user" class="panel" data-show="user">
+  <h2>My prescriptions</h2>
+  <h3>Upload a prescription</h3>
   <p id="whoami" class="hint">Not logged in.</p>
   <label>Prescription file (PDF/JPG/PNG, max 10 MB)</label>
   <input type="file" id="rxFile" accept=".pdf,.jpg,.jpeg,.png">
@@ -147,19 +233,21 @@
   <div id="userMsg" class="msg"></div>
   <hr>
   <h2>My History <button class="btn gray" style="padding:6px 12px" onclick="loadHistory()">Refresh</button></h2>
-  <table id="historyTbl"><tr><th>RxID</th><th>File</th><th>Status</th><th>Uploaded At</th><th>Reviewed At</th><th>Note</th></tr></table>
+  <div class="table-wrap"><table id="historyTbl"><tr><th>RxID</th><th>File</th><th>Status</th><th>Uploaded At</th><th>Reviewed At</th><th>Note</th></tr></table></div>
 </div>
 
 <!-- ============ SHOP ============ -->
-<div id="shop" class="panel">
+<div id="shop" class="panel" data-show="all">
+  <label for="medSearch">Search medicines</label><input id="medSearch" placeholder="Search name, category or pharmacy" oninput="renderMedicines()">
   <h2>Available Medicines</h2>
   <button class="btn" onclick="loadMedicines()">Load Catalogue</button>
-  <table id="medTbl"><tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Seller</th></tr></table>
+  <div class="table-wrap"><table id="medTbl"><tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Seller</th></tr></table></div>
   <div id="shopMsg" class="msg"></div>
 </div>
 
 <!-- ============ MERCHANT PORTAL ============ -->
 <div id="merchant" class="panel">
+  <div id="vendorRegister" data-show="guest">
   <h2>New Vendor Registration</h2>
   <p><small class="hint">All four documents are required for pharma vendor verification: GST, Drug License, Shop ID proof, PAN. A one-time email code verifies the owner address first; then an admin reviews your documents.</small></p>
   <div class="grid2">
@@ -183,8 +271,6 @@
     </div>
   </div>
   <button class="btn" onclick="registerMerchant()">Submit → Email Verification Code</button>
-  <div id="merchMsg" class="msg"></div>
-
   <div class="card" id="mvCard" style="display:none">
     <h3>Verify vendor email (one-time code)</h3>
     <p class="hint">Code sent to <strong id="mvEmail"></strong> for vendor <strong id="mvId"></strong>.</p>
@@ -201,7 +287,9 @@
     <div id="mvMsg" class="msg"></div>
   </div>
 
-  <hr>
+  </div>
+  <div id="vendorNote" class="access-note" data-show="user" hidden><b>Own a pharmacy?</b><p>Sign out of your customer account to register a pharmacy.</p></div>
+  <div id="vendorTools" data-show="merchant" hidden>
   <h2>Vendor Tools (after login &amp; approval)</h2>
   <p><small class="hint">Log in with your vendor ID/email. If you have no password yet, use "Forgot password?" on the Login tab — the emailed link sets it for you.</small></p>
   <div class="grid2">
@@ -216,66 +304,98 @@
   </div>
   <button class="btn" onclick="addMedicine(false)">Add Medicine (as Merchant)</button>
   <h3>My Listings <button class="btn gray" style="padding:6px 12px" onclick="loadMyListings()">Refresh</button></h3>
-  <table id="myMedTbl"><tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th><th>Active</th></tr></table>
+  <div class="table-wrap"><table id="myMedTbl"><tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th><th>Active</th><th>Actions</th></tr></table></div>
+</div>
+<div id="merchMsg" class="msg" role="status" aria-live="polite"></div>
 </div>
 
 <!-- ============ ADMIN PANEL ============ -->
-<div id="admin" class="panel">
-  <h2>Admin Login</h2>
-  <label>Admin Key</label><input id="adminKey" type="password" placeholder="set ADMIN_KEY in code.gs">
-  <button class="btn" onclick="adminAuth()">Unlock Admin Actions</button>
-  <span id="adminState" class="hint">Locked</span>
-
-  <hr>
-  <h3>1) Prescriptions — verify user uploads</h3>
-  <button class="btn" onclick="loadPending()">Load Pending Rx</button>
-  <div id="pendingRx"></div>
-
-  <h3>2) Vendors — verify registration documents</h3>
-  <button class="btn" onclick="loadMerchants()">Load Vendors</button>
-  <div id="merchantList"></div>
-
-  <h3>3) Users</h3>
-  <button class="btn" onclick="loadUsers()">Load Users</button>
-  <div id="userList"></div>
-
-  <h3>4) Add Medicine (as Admin)</h3>
-  <div class="grid2">
-    <div>
-      <label>Name</label><input id="amName">
-      <label>Category</label><input id="amCat">
-    </div>
-    <div>
-      <label>Price (₹)</label><input id="amPrice" type="number">
-      <label>Stock</label><input id="amStock" type="number">
-    </div>
+<div id="admin" class="panel" data-show="all">
+  <h2>Admin console</h2>
+  <div id="adminLockCard" class="card" data-show="locked">
+    <p>Unlock administrator tools with your admin key. You do not need a customer account.</p>
+    <label for="adminKey">Admin key</label><input id="adminKey" type="password" autocomplete="off" placeholder="Set ADMIN_KEY in Apps Script">
+    <button class="btn" onclick="adminAuth()">Unlock admin</button>
   </div>
-  <button class="btn" onclick="addMedicine(true)">Add Medicine (Admin)</button>
-  <div id="adminMsg" class="msg"></div>
+  <div id="adminDashboard" data-show="admin" hidden>
+    <p>Review prescriptions, verify pharmacies and manage the catalogue.</p>
+    <span id="adminState" class="badge">Unlocked</span>
+    <button class="btn gray" onclick="lockAdmin()">Lock admin</button>
+    <button class="btn" onclick="loadAdminOverview()">Refresh overview</button>
+    <div class="stats" aria-label="Overview statistics">
+      <div class="stat"><strong id="statUsers">0</strong><span>Customers</span></div>
+      <div class="stat"><strong id="statRx">0</strong><span>Pending prescriptions</span></div>
+      <div class="stat"><strong id="statVendors">0</strong><span>Pending pharmacies</span></div>
+      <div class="stat"><strong id="statMedicines">0</strong><span>Active medicines</span></div>
+    </div>
+    <hr>
+    <h3>Prescription reviews</h3>
+    <label for="rxFilter">Show</label><select id="rxFilter" onchange="renderAdminRx()"><option value="PENDING">Pending</option><option value="ALL">All statuses</option></select>
+    <div id="pendingRx"></div>
+    <h3>Pharmacies & verification</h3><div id="merchantList"></div>
+    <h3>Users</h3><div id="userList" class="table-wrap"></div>
+    <h3>Catalogue management</h3><div id="adminMedicineList" class="table-wrap"></div>
+    <h3>Add medicine as admin</h3>
+    <div class="grid2">
+      <div><label for="amName">Name</label><input id="amName"><label for="amCat">Category</label><input id="amCat"></div>
+      <div><label for="amPrice">Price (₹)</label><input id="amPrice" type="number" min="0"><label for="amStock">Stock</label><input id="amStock" type="number" min="0"></div>
+    </div>
+    <button class="btn" onclick="addMedicine(true)">Add medicine</button>
+  </div>
+  <div id="adminMsg" class="msg" role="status" aria-live="polite"></div>
 </div>
 
+<footer class="site-footer"><span>© PharmaGo · Care made accessible</span><span>Google Sheets & Drive powered · Never share your admin key</span></footer>
+</div>
 <script>
 // ===== CONFIG — paste your deployed Apps Script /exec URL =====
 const API_URL = "https://script.google.com/macros/s/AKfycbwEcJiZpX29IFGWZPnB9HbGOnSeSd4jRKtZ6pbAOPayyJbqKYw3Mw-omQ2NdtaIWGYt3w/exec";
+const API_ENDPOINT = document.querySelector('meta[name="pharmago-demo"]') ? '/api' : API_URL;
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // keep in sync with MAX_UPLOAD_BYTES in code.gs
 
 let session = JSON.parse(localStorage.getItem('pharmago_session') || 'null'); // {userId, role, name}
-let adminKey = localStorage.getItem('pharmago_adminkey') || '';
+let adminKey = sessionStorage.getItem('pharmago_adminkey') || '';
 let pendingVerify = null;   // { userId, email, purpose:'VERIFY' }
 let pendingMerchant = null; // { merchantId, email, purpose:'MVERIFY' }
 let otpTimer = null;
+let catalogue = [];
+let myListings = [];
+let adminCache = { rx:[], merchants:[], users:[], medicines:[] };
 
-// ===== HELPERS =====
+// Visibility is a view concern, not authorization: the Apps Script API still
+// validates privileged actions. Admin is independent of the signed-in role.
+function applyAuthUI() {
+  const role = session && session.role === 'MERCHANT' ? 'merchant' :
+    session && session.role === 'USER' ? 'user' : 'guest';
+  const states = new Set(['all', role, adminKey ? 'admin' : 'locked']);
+  document.querySelectorAll('[data-show]').forEach(el => {
+    el.hidden = !el.dataset.show.split(',').some(token => states.has(token.trim()));
+  });
+  document.getElementById('logoutBtn').hidden = !session;
+  document.getElementById('tabMerchant').textContent = role === 'merchant' ? 'My shop' : 'For pharmacies';
+  const active = document.querySelector('.tabs button.active');
+  if (!active || active.hidden) {
+    const first = document.querySelector('.tabs button:not([hidden])');
+    if (first) first.click();
+  }
+}
 function openTab(evt, id) {
+  const button = evt.currentTarget;
+  if (button.hidden) return;
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  evt.currentTarget.classList.add('active');
-  renderSession();
+  button.classList.add('active');
+  applyAuthUI();
   if (id === 'shop') loadMedicines();
-  if (id === 'user' && session) loadHistory();
+  if (id === 'user' && session && session.role === 'USER') loadHistory();
+  if (id === 'merchant' && session && session.role === 'MERCHANT') loadMyListings();
+  if (id === 'admin' && adminKey) loadAdminOverview();
 }
-function activateTab(id) { const b = document.getElementById('tab' + id); if (b) b.click(); }
+function activateTab(id) {
+  const b = document.getElementById('tab' + id);
+  if (b && !b.hidden) b.click();
+}
 function show(elId, ok, text) {
   const el = document.getElementById(elId);
   if (!el) return;
@@ -286,7 +406,7 @@ async function callAPI(payload) {
   // text/plain keeps the request a CORS "simple request": the browser sends no
   // OPTIONS preflight, which Apps Script cannot answer.
   try {
-    const res = await fetch(API_URL, {
+    const res = await fetch(API_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
       body: JSON.stringify(payload),
@@ -315,14 +435,15 @@ function renderSession() {
   const who = document.getElementById('whoami');
   const bar = document.getElementById('sessionBar');
   if (session) {
-    const t = `Logged in as <strong>${esc(session.name || session.userId)}</strong> (${esc(session.role)}) — ID: ${esc(session.userId)}`;
-    who.innerHTML = t + ' <button class="btn gray" style="padding:4px 10px" onclick="logout()">Logout</button>';
-    bar.innerHTML = t;
+    who.textContent = 'Signed in as ' + (session.name || session.userId) + ' · ' + session.userId;
+    bar.innerHTML = '<strong>' + esc(session.name || session.userId) + '</strong> <span class="badge">' +
+      (session.role === 'MERCHANT' ? 'Pharmacy' : 'Customer') + '</span>' +
+      (adminKey ? ' <span class="badge">Admin</span>' : '');
   } else {
     who.textContent = 'Not logged in.';
-    bar.textContent = 'Not logged in.';
+    bar.innerHTML = 'Welcome, guest' + (adminKey ? ' <span class="badge">Admin</span>' : '');
   }
-  document.getElementById('adminState').textContent = adminKey ? 'Unlocked ✔' : 'Locked';
+  applyAuthUI();
 }
 function showView(v) {
   ['login','verify','forgot','reset'].forEach(x => {
@@ -395,6 +516,7 @@ async function doRegister() {
   if (res.success) {
     pendingVerify = { userId: res.data && res.data.userId, email, purpose:'VERIFY' };
     enterVerifyView();
+    if (res.data.demoOtp) show('verifyMsg', true, 'Demo verification code: ' + res.data.demoOtp);
   }
 }
 function enterVerifyView() {
@@ -437,7 +559,7 @@ async function doResend() {
   if (!pendingVerify) return;
   const res = await callAPI({ action:'resend_otp', email: pendingVerify.email });
   show('verifyMsg', res.success, res.message);
-  if (res.success) startOtpCountdown(600, 'otpCountdown');
+  if (res.success) { startOtpCountdown(600, 'otpCountdown'); if (res.data && res.data.demoOtp) show('verifyMsg', true, 'Demo verification code: ' + res.data.demoOtp); }
 }
 async function doForgot() {
   const loginId = document.getElementById('fId').value.trim();
@@ -445,6 +567,11 @@ async function doForgot() {
   show('forgotMsg', true, 'Sending email…');
   const res = await callAPI({ action:'forgot_password', loginId });
   show('forgotMsg', res.success, res.message);
+  if (res.success && res.data && res.data.demoToken) {
+    sessionStorage.setItem('pharmago_token', res.data.demoToken);
+    showView('reset');
+    show('resetMsg', true, 'Demo password link opened. Choose a new password.');
+  }
 }
 async function doReset() {
   const p1 = document.getElementById('np1').value, p2 = document.getElementById('np2').value;
@@ -466,8 +593,7 @@ async function doLogin() {
     session = res.data;
     localStorage.setItem('pharmago_session', JSON.stringify(session));
     renderSession();
-    activateTab(session.role === 'MERCHANT' ? 'Merchant' : (session.role === 'ADMIN' ? 'Admin' : 'User'));
-    if (session.role === 'MERCHANT') loadMyListings(); else loadHistory();
+    activateTab(session.role === 'MERCHANT' ? 'Merchant' : 'User');
   } else if (/verify your email first/i.test(res.message) && pendingVerify) {
     enterVerifyView();
   }
@@ -502,12 +628,18 @@ async function loadHistory() {
 async function loadMedicines() {
   const res = await callAPI({ action:'get_medicines' });
   if (!res.success) return show('shopMsg', false, res.message);
+  catalogue = res.data || [];
+  renderMedicines();
+}
+function renderMedicines() {
+  const search = document.getElementById('medSearch').value.trim().toLowerCase();
+  const rows = catalogue.filter(m => [m.Name,m.Category,m.ShopName].some(v => String(v || '').toLowerCase().includes(search)));
   let html = '<tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Seller</th></tr>';
-  (res.data||[]).forEach(m => {
+  rows.forEach(m => {
     html += `<tr><td>${esc(m.MedicineID)}</td><td>${esc(m.Name)}</td><td>${esc(m.Category)}</td><td>₹${esc(m.Price)}</td><td>${esc(m.Stock)}</td><td>${esc(m.ShopName || m.MerchantID)}</td></tr>`;
   });
   document.getElementById('medTbl').innerHTML = html;
-  show('shopMsg', true, (res.data||[]).length + ' medicine(s) listed.');
+  show('shopMsg', true, rows.length + ' medicine(s) listed.');
 }
 
 // ===== MERCHANT =====
@@ -541,6 +673,7 @@ async function registerMerchant() {
     document.querySelectorAll('.motp').forEach(b => b.value='');
     startOtpCountdown(600, 'motpCountdown');
     document.querySelector('.motp').focus();
+    if (res.data.demoOtp) show('mvMsg', true, 'Demo verification code: ' + res.data.demoOtp);
   }
 }
 async function doMerchantVerify() {
@@ -567,7 +700,7 @@ async function doMerchantResend() {
   if (!pendingMerchant) return show('mvMsg', false, 'Register first.');
   const res = await callAPI({ action:'resend_otp', email: pendingMerchant.email });
   show('mvMsg', res.success, res.message);
-  if (res.success) startOtpCountdown(600, 'motpCountdown');
+  if (res.success) { startOtpCountdown(600, 'motpCountdown'); if (res.data && res.data.demoOtp) show('mvMsg', true, 'Demo verification code: ' + res.data.demoOtp); }
 }
 async function addMedicine(asAdmin) {
   const g = id => document.getElementById(id);
@@ -587,62 +720,146 @@ async function addMedicine(asAdmin) {
   }
   const res = await callAPI(payload);
   show(asAdmin ? 'adminMsg' : 'merchMsg', res.success, res.message);
-  if (res.success && !asAdmin) {
-    ['nmName','nmCat','nmPrice','nmStock'].forEach(id => g(id).value='');
-    loadMyListings();
+  if (res.success) {
+    if (asAdmin) loadAdminMedicines();
+    else { ['nmName','nmCat','nmPrice','nmStock'].forEach(id => g(id).value=''); loadMyListings(); }
   }
 }
 async function loadMyListings() {
   if (!session || session.role !== 'MERCHANT') return;
-  const res = await callAPI({ action:'get_data', sheetName:'Medicines', merchantId: session.userId });
+  const res = await callAPI({ action:'get_data', sheetName:'Medicines', merchantId:session.userId });
   if (!res.success) return show('merchMsg', false, res.message);
-  let html = '<tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th><th>Active</th></tr>';
-  (res.data||[]).forEach(m => html += `<tr><td>${esc(m.MedicineID)}</td><td>${esc(m.Name)}</td><td>₹${esc(m.Price)}</td><td>${esc(m.Stock)}</td><td>${esc(m.Active)}</td></tr>`);
+  myListings = res.data || [];
+  let html = '<tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th><th>Active</th><th>Actions</th></tr>';
+  myListings.forEach(m => {
+    const active = m.Active === 'YES';
+    html += `<tr><td>${esc(m.MedicineID)}</td><td>${esc(m.Name)}</td><td>₹${esc(m.Price)}</td><td>${esc(m.Stock)}</td><td>${esc(m.Active)}</td>
+      <td><button class="btn gray" data-id="${esc(m.MedicineID)}" onclick="editMyMedicine(this.dataset.id)">Edit</button>
+      <button class="btn ${active ? 'red' : 'green'}" data-id="${esc(m.MedicineID)}" onclick="setMedicineActive(this.dataset.id,${!active},false)">${active ? 'Delist' : 'Relist'}</button></td></tr>`;
+  });
   document.getElementById('myMedTbl').innerHTML = html;
+}
+function medicineCredentials(asAdmin) {
+  if (asAdmin) return adminKey ? { adminKey } : null;
+  if (!session || session.role !== 'MERCHANT') return null;
+  const password = prompt('Confirm your vendor password:');
+  return password ? { merchantId:session.userId, password } : null;
+}
+async function editMyMedicine(medId, asAdmin = false) {
+  const medicine = (asAdmin ? adminCache.medicines : myListings).find(m => String(m.MedicineID) === medId);
+  if (!medicine) return;
+  const price = prompt('Price (₹)', medicine.Price);
+  if (price === null) return;
+  const stock = prompt('Stock', medicine.Stock);
+  if (stock === null) return;
+  if (price.trim() === '' || stock.trim() === '' || !Number.isFinite(Number(price)) || !Number.isInteger(Number(stock)) || Number(price) < 0 || Number(stock) < 0)
+    return show(asAdmin ? 'adminMsg' : 'merchMsg', false, 'Enter a valid non-negative price and whole-number stock.');
+  const auth = medicineCredentials(asAdmin);
+  if (!auth) return;
+  const res = await callAPI({ action:'update_medicine', medId, price:Number(price), stock:Number(stock), ...auth });
+  show(asAdmin ? 'adminMsg' : 'merchMsg', res.success, res.message);
+  if (res.success) { if (asAdmin) loadAdminMedicines(); else loadMyListings(); }
+}
+async function setMedicineActive(medId, active, asAdmin = false) {
+  const auth = medicineCredentials(asAdmin);
+  if (!auth) return;
+  const res = await callAPI({ action:'update_medicine', medId, active, ...auth });
+  show(asAdmin ? 'adminMsg' : 'merchMsg', res.success, res.message);
+  if (res.success) { if (asAdmin) loadAdminMedicines(); else loadMyListings(); }
 }
 
 // ===== ADMIN =====
-function requireAdmin(){ if(!adminKey){ show('adminMsg',false,'Enter the Admin Key first (and press “Unlock Admin Actions”).'); return false;} return true; }
-function adminAuth(){ adminKey = document.getElementById('adminKey').value.trim(); localStorage.setItem('pharmago_adminkey', adminKey); renderSession(); show('adminMsg', !!adminKey, adminKey?'Admin actions unlocked.':'Enter a key.'); }
-
+function requireAdmin() {
+  if (adminKey) return true;
+  show('adminMsg', false, 'Unlock admin actions first.');
+  return false;
+}
+function lockAdmin() {
+  adminKey = '';
+  sessionStorage.removeItem('pharmago_adminkey');
+  document.getElementById('adminKey').value = '';
+  adminCache = { rx:[], merchants:[], users:[], medicines:[] };
+  renderSession();
+  show('adminMsg', true, 'Admin console locked.');
+}
+async function adminAuth() {
+  const key = document.getElementById('adminKey').value.trim();
+  if (!key) return show('adminMsg', false, 'Enter a key.');
+  const res = await callAPI({ action:'get_data', sheetName:'Users', adminKey:key });
+  if (!res.success) return show('adminMsg', false, 'Admin key not accepted.');
+  adminKey = key;
+  sessionStorage.setItem('pharmago_adminkey', key);
+  adminCache.users = res.data || [];
+  renderSession();
+  show('adminMsg', true, 'Admin actions unlocked.');
+  await loadAdminOverview();
+}
+async function loadAdminOverview() {
+  if (!requireAdmin()) return;
+  await Promise.all([loadPending(), loadMerchants(), loadUsers(), loadAdminMedicines()]);
+  renderAdminStats();
+}
+function renderAdminStats() {
+  document.getElementById('statUsers').textContent = adminCache.users.filter(u => u.Role === 'USER').length;
+  document.getElementById('statRx').textContent = adminCache.rx.filter(rx => rx.Status === 'PENDING').length;
+  document.getElementById('statVendors').textContent = adminCache.merchants.filter(m => m.Status === 'PENDING').length;
+  document.getElementById('statMedicines').textContent = adminCache.medicines.filter(m => m.Active === 'YES').length;
+}
 async function loadPending() {
   if (!requireAdmin()) return;
   const res = await callAPI({ action:'get_data', sheetName:'Prescriptions', adminKey });
   if (!res.success) return show('adminMsg', false, res.message);
+  adminCache.rx = res.data || [];
+  renderAdminRx(); renderAdminStats();
+}
+function renderAdminRx() {
+  const filter = document.getElementById('rxFilter').value;
+  const rows = adminCache.rx.filter(rx => filter === 'ALL' || rx.Status === filter);
   let html = '';
-  res.data.filter(rx => rx.Status === 'PENDING').forEach(rx => {
-    html += `<div class="card"><strong>User:</strong> ${esc(rx.UserID)} | <strong>File:</strong> ${esc(rx.FileName)}
-      | <strong>Uploaded:</strong> ${esc(rx.Timestamp)}
-      <br><button class="btn green" style="padding:6px 12px" onclick="reviewRx('${esc(rx.RxID)}','APPROVED')">Approve → move to Approved drive</button>
-      <button class="btn red" style="padding:6px 12px" onclick="reviewRx('${esc(rx.RxID)}','DECLINED')">Decline</button></div>`;
+  rows.forEach(rx => {
+    const pending = rx.Status === 'PENDING';
+    html += `<div class="card"><strong>Rx:</strong> ${esc(rx.RxID)} · <strong>User:</strong> ${esc(rx.UserID)} · <strong>File:</strong> ${esc(rx.FileName)}
+      · <strong>Uploaded:</strong> ${esc(rx.Timestamp)} · <span class="status-${esc(rx.Status)}">${esc(rx.Status)}</span>
+      ${rx.ReviewNote ? `<p>Note: ${esc(rx.ReviewNote)}</p>` : ''}
+      ${pending ? `<br><button class="btn green" data-id="${esc(rx.RxID)}" onclick="reviewRx(this.dataset.id,'APPROVED')">Approve</button>
+      <button class="btn red" data-id="${esc(rx.RxID)}" onclick="reviewRx(this.dataset.id,'DECLINED')">Decline</button>` : ''}</div>`;
   });
-  document.getElementById('pendingRx').innerHTML = html || '<p>No pending prescriptions.</p>';
+  document.getElementById('pendingRx').innerHTML = html || '<p>No prescriptions in this view.</p>';
 }
 async function reviewRx(rxId, status) {
   if (!requireAdmin()) return;
-  const note = status==='DECLINED' ? (prompt('Reason for decline?')||'') : '';
+  const note = status === 'DECLINED' ? (prompt('Reason for decline?') || '') : '';
   const res = await callAPI({ action:'update_status', adminKey, rxId, status, note });
   show('adminMsg', res.success, res.message);
   if (res.success) loadPending();
+}
+function documentLinks(ids) {
+  return String(ids || '').split(';').map(entry => {
+    const at = entry.indexOf(':');
+    const label = entry.slice(0, at), id = entry.slice(at + 1);
+    if (at < 0 || !/^[\w-]+$/.test(id)) return '';
+    return `<a href="https://drive.google.com/file/d/${encodeURIComponent(id)}/view" target="_blank" rel="noopener noreferrer">${esc(label)}</a>`;
+  }).filter(Boolean).join(' · ');
 }
 async function loadMerchants() {
   if (!requireAdmin()) return;
   const res = await callAPI({ action:'get_data', sheetName:'Merchants', adminKey });
   if (!res.success) return show('adminMsg', false, res.message);
+  adminCache.merchants = res.data || [];
   let html = '';
-  (res.data||[]).forEach(m => {
+  adminCache.merchants.forEach(m => {
     html += `<div class="card"><strong>${esc(m.ShopName)}</strong> (${esc(m.MerchantID)}) — ${esc(m.OwnerEmail)} / ${esc(m.Phone)}<br>
-      GST: ${esc(m.GSTNumber)} | DL: ${esc(m.DrugLicenseNumber)}<br>Docs: ${esc(m.DocFileIds)}<br>
+      GST: ${esc(m.GSTNumber)} | DL: ${esc(m.DrugLicenseNumber)}<br>Documents: ${documentLinks(m.DocFileIds) || 'None'}<br>
       Status: <span class="status-${esc(m.Status)}">${esc(m.Status)}</span>
-      ${m.Status==='PENDING' ? `
-        <button class="btn green" style="padding:6px 12px" onclick="reviewMerchant('${esc(m.MerchantID)}','APPROVED')">Approve</button>
-        <button class="btn red" style="padding:6px 12px" onclick="reviewMerchant('${esc(m.MerchantID)}','DECLINED')">Decline</button>`:''}</div>`;
+      ${m.Status === 'PENDING' ? `<br><button class="btn green" data-id="${esc(m.MerchantID)}" onclick="reviewMerchant(this.dataset.id,'APPROVED')">Approve</button>
+        <button class="btn red" data-id="${esc(m.MerchantID)}" onclick="reviewMerchant(this.dataset.id,'DECLINED')">Decline</button>` : ''}</div>`;
   });
-  document.getElementById('merchantList').innerHTML = html || '<p>No vendors yet.</p>';
+  document.getElementById('merchantList').innerHTML = html || '<p>No pharmacies yet.</p>';
+  renderAdminStats();
 }
 async function reviewMerchant(mid, status) {
   if (!requireAdmin()) return;
-  const res = await callAPI({ action:'review_merchant', adminKey, merchantId: mid, status });
+  const res = await callAPI({ action:'review_merchant', adminKey, merchantId:mid, status });
   show('adminMsg', res.success, res.message);
   if (res.success) loadMerchants();
 }
@@ -650,9 +867,26 @@ async function loadUsers() {
   if (!requireAdmin()) return;
   const res = await callAPI({ action:'get_data', sheetName:'Users', adminKey });
   if (!res.success) return show('adminMsg', false, res.message);
-  let html = '<tr><th>ID</th><th>Email</th><th>Phone</th><th>Role</th><th>Status</th><th>Created</th></tr>';
-  (res.data||[]).forEach(u => html += `<tr><td>${esc(u.UserID)}</td><td>${esc(u.Email)}</td><td>${esc(u.Phone)}</td><td>${esc(u.Role)}</td><td class="st-${esc(u.Status)}">${esc(u.Status)}</td><td>${esc(u.CreatedAt)}</td></tr>`);
-  document.getElementById('userList').innerHTML = html;
+  adminCache.users = res.data || [];
+  let html = '<table><tr><th>ID</th><th>Email</th><th>Phone</th><th>Role</th><th>Status</th><th>Created</th></tr>';
+  adminCache.users.forEach(u => html += `<tr><td>${esc(u.UserID)}</td><td>${esc(u.Email)}</td><td>${esc(u.Phone)}</td><td>${esc(u.Role)}</td><td class="st-${esc(u.Status)}">${esc(u.Status)}</td><td>${esc(u.CreatedAt)}</td></tr>`);
+  document.getElementById('userList').innerHTML = html + '</table>';
+  renderAdminStats();
+}
+async function loadAdminMedicines() {
+  if (!requireAdmin()) return;
+  const res = await callAPI({ action:'get_data', sheetName:'Medicines', adminKey });
+  if (!res.success) return show('adminMsg', false, res.message);
+  adminCache.medicines = res.data || [];
+  let html = '<table><tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th><th>Active</th><th>Actions</th></tr>';
+  adminCache.medicines.forEach(m => {
+    const active = m.Active === 'YES';
+    html += `<tr><td>${esc(m.MedicineID)}</td><td>${esc(m.Name)}</td><td>₹${esc(m.Price)}</td><td>${esc(m.Stock)}</td><td>${esc(m.Active)}</td>
+      <td><button class="btn gray" data-id="${esc(m.MedicineID)}" onclick="editMyMedicine(this.dataset.id,true)">Edit</button>
+      <button class="btn ${active ? 'red' : 'green'}" data-id="${esc(m.MedicineID)}" onclick="setMedicineActive(this.dataset.id,${!active},true)">${active ? 'Delist' : 'Relist'}</button></td></tr>`;
+  });
+  document.getElementById('adminMedicineList').innerHTML = html + '</table>';
+  renderAdminStats();
 }
 
 // ===== BOOT: deep links from emailed password-reset URLs =====
@@ -670,12 +904,15 @@ async function loadUsers() {
 
   const q = new URLSearchParams(location.search);
   const token = q.get('token');
+  if (token && (q.get('page') === 'reset' || q.get('action') === 'pwreset')) {
+    session = null; localStorage.removeItem('pharmago_session');
+  }
+  renderSession();
   if ((q.get('page') === 'reset' || q.get('action') === 'pwreset') && token) {
     sessionStorage.setItem('pharmago_token', token);
     activateTab('Login');
     showView('reset');
   }
-  renderSession();
 })();
 </script>
 </body>

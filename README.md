@@ -64,13 +64,52 @@ which overrides the constant in `code.gs` — handy for keeping secrets out of G
 
 ## Tests
 
-No npm install needed — the backend runs against a mocked Apps Script runtime:
+Install the UI test dependency first. The backend runs against a mocked Apps Script runtime:
 
 ```bash
-npm test              # backend end-to-end + frontend wiring checks
-npm run test:api      # 17 scenarios / 157 checks against code.gs
-npm run test:frontend # index.html wiring (ids, handlers, OTP boxes)
+npm install
+npm test              # backend end-to-end + frontend wiring + 61 browser-like UI-state checks
+npm run test:api      # 18 scenarios / 163 checks against code.gs
+npm run test:frontend # index.html wiring + UI-state checks
 ```
+
+### UI states
+
+`index.html` uses `data-show` and `applyAuthUI()` to separate the workspaces:
+
+| Mode | Navigation | Workspace |
+|---|---|---|
+| Guest | Account, catalogue, pharmacy registration, admin | Sign up / OTP / password reset; browse medicines; register a pharmacy; enter admin key |
+| Customer | Prescriptions, catalogue, admin | Upload and track personal prescriptions |
+| Pharmacy | Catalogue, My shop, admin | Add, edit, delist and relist own medicines (password confirmed for writes) |
+| Admin unlocked | Admin tab alongside any role | Overview counts, pending/all Rx queue, KYC links, users and catalogue editing |
+
+The admin key can be unlocked and locked separately from customer/pharmacy sign-in.
+Changing roles automatically moves away from a now-hidden tab. Visibility is **not**
+a security boundary: the Apps Script backend must still verify privileged requests.
+`npm run test:frontend` checks ids, handler wiring, the state vocabulary and all
+five tab rules, then drives 61 UI-state checks with jsdom.
+
+### Interactive demo
+
+```bash
+PORT=8000 node demo/server.js
+```
+
+Visit `http://localhost:8000` locally (or use the live preview in Arena). The demo
+runs **the actual `code.gs`** against an in-memory Apps Script stub. It does not
+connect to the live spreadsheet, send email or store real patient information.
+Sample customer: `demo@pharmago.test` / `demo123`; sample approved pharmacy:
+`vendor@pharmago.test` / `demo123`; demo admin key: `changeme-admin-key`.
+Newly registered users can use the verification code shown on the page or in
+`/__mailbox`. The seeded customer has a pending sample prescription and a second
+pharmacy (Valley Medicos) is awaiting admin approval. Demo data resets on server restart. The demo serves its API at a same-origin `/api` path;
+the published static `index.html` continues to use the configured Apps Script URL.
+
+Customer IDs now increment within the script's calendar year (`U-2026-0010`,
+`U-2026-0011`, …). The allocator scans existing IDs (including after legacy rows
+or deleted entries) and locks registration so concurrent sign-ups cannot reuse one.
+Vendor, medicine and prescription IDs retain collision-resistant random IDs.
 
 `tests/spec.js` drives `doPost()` exactly as the browser does (register → OTP → password-by-email →
 login → upload → admin review → vendor approval → medicine listing), so a regression in any of those
@@ -88,7 +127,7 @@ Run against the previous revision — the first four made the app unusable end t
 | 2 | 🔴 | Emailed link opened a page stuck on *“Taking you to the set-password page…”* | `FRONTEND_URL` was the placeholder `https://USERNAME.github.io/REPO/` | Blank/placeholder ⇒ Apps Script renders its own password form (plain form POST, no CORS). Set `FRONTEND_URL` to redirect to Pages instead |
 | 3 | 🔴 | Vendor registration always failed | `MERCHANT_DOCS_FOLDER_ID` was `REPLACE_WITH_…`, and KYC files used `DOMAIN_RESTRICTED` sharing, which throws on normal (non-Workspace) Google accounts | Folder is auto-created and cached in Script Properties; documents are set `PRIVATE` with a safe fallback |
 | 4 | 🔴 | Approved vendor could never add a medicine — always *“Wrong merchant password.”* | `resolveStaffAuth_` compared against `Merchants.Password`, which was never written (the UI sends no password during OTP verification) | Passwords live in `Users` (the login sheet) as the single source of truth; the `Merchants` copy is kept in sync for old rows |
-| 5 | 🟠 | Two sign-ups/uploads in the same millisecond shared an ID: approving one prescription moved a *different* user's file, and users saw each other's history | IDs were `prefix + Date.now()` | `newId_()` adds a random suffix and verifies the ID is unused before returning |
+| 5 | 🟠 | Two sign-ups/uploads in the same millisecond shared an ID: approving one prescription moved a *different* user's file, and users saw each other's history | IDs were `prefix + Date.now()` | `newId_()` adds a random suffix for Rx/vendor/medicine IDs; customers use the locked sequential `U-YYYY-NNNN` allocator |
 | 6 | 🟠 | Anyone could call `get_data` and download every user's email/phone, all prescriptions and vendor KYC file IDs | `getData` had no authorisation | Admin lists require `adminKey`; prescriptions require `userId` (scoped to that user); medicines require `merchantId`. Password hashes are never returned |
 | 7 | 🟠 | Clicking a button sometimes did nothing at all | `fetch()` had no `try/catch` — CORS/network failures became unhandled rejections | `callAPI` reports network, non-JSON and HTTP failures in the on-screen message, and keeps `text/plain` so the browser sends no preflight (Apps Script cannot answer `OPTIONS`) |
 | 8 | 🟠 | After verifying a vendor email, “send me a password link” appeared to do nothing | It switched to the *Forgot* view, which lives on another (hidden) tab | The tab is switched before the view; the code now also lets you set the password right on the OTP screen |

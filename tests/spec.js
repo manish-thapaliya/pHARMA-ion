@@ -68,6 +68,20 @@ globalThis.runTests = function runTests() {
   });
 
   // =====================================================================
+  // =====================================================================
+  scenario('customer IDs increment from U-YYYY-0010 without reusing deleted rows', () => {
+    boot();
+    const year = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy');
+    const first = registerCustomer('seq1@example.com', '9800000091');
+    eq(first.userId, 'U-' + year + '-0010', 'first customer gets 0010');
+    const second = registerCustomer('seq2@example.com', '9800000092');
+    eq(second.userId, 'U-' + year + '-0011', 'second customer gets 0011');
+    H.sheetRows('Users').push(['ULEGACY', 'legacy@example.com']);
+    H.sheetRows('Users').push(['U-' + year + '-0040', 'high@example.com']);
+    const next = registerCustomer('seq3@example.com', '9800000093');
+    eq(next.userId, 'U-' + year + '-0041', 'sequence resumes above existing IDs');
+  });
+
   scenario('customer registration: unique email + phone, OTP verify, login', () => {
     boot();
     const u = verifiedCustomer('a@example.com', '9800000001', 'secret123');

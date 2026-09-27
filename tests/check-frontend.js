@@ -57,6 +57,33 @@ while ((m = tabRe.exec(script)) !== null) {
 });
 check(ids.has('configBanner'), 'missing #configBanner');
 
+// ---- state-driven visibility -------------------------------------------
+const allowedStates = new Set(['guest', 'user', 'merchant', 'admin', 'locked', 'all']);
+const stateCounts = Object.fromEntries([...allowedStates].map(state => [state, 0]));
+const stateRe = /\bdata-show="([^"]*)"/g;
+while ((m = stateRe.exec(html)) !== null) {
+  const tokens = m[1].split(',').map(s => s.trim());
+  check(tokens.length > 0 && tokens.every(Boolean), 'empty data-show token');
+  check(new Set(tokens).size === tokens.length, 'duplicate data-show token: ' + m[1]);
+  tokens.forEach(token => {
+    check(allowedStates.has(token), 'unknown data-show state: ' + token);
+    if (stateCounts[token] !== undefined) stateCounts[token]++;
+  });
+}
+for (const [state, count] of Object.entries(stateCounts)) {
+  check(count > 0, 'no elements use data-show="' + state + '"');
+}
+const tabs = [...html.matchAll(/<button\b[^>]*\bid="(tab[A-Za-z]+)"[^>]*>/g)];
+check(tabs.length === 5, 'expected five navigation tabs with ids');
+tabs.forEach(([tag, id]) => {
+  check(/\bdata-show="[^"]+"/.test(tag), '#' + id + ' needs data-show');
+  check(ids.has(id.slice(3).toLowerCase()), '#' + id + ' needs matching panel');
+});
+['login','user','shop','admin'].forEach(panel => {
+  const re = new RegExp('<div\\b[^>]*\\bid="' + panel + '"[^>]*>');
+  check(re.test(html) && /data-show="/.test(html.match(re)[0]), '#' + panel + ' panel needs data-show');
+});
+
 // ---- click handlers ----------------------------------------------------
 const defined = new Set();
 const fnRe = /function\s+([A-Za-z_$][\w$]*)\s*\(/g;

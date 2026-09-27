@@ -201,7 +201,9 @@ function createStub() {
     },
     getUuid: () => crypto.randomUUID(),
     sleep() {},
-    formatDate(d, tz, fmt) { return String(d); },
+    formatDate(d, tz, fmt) {
+      return fmt === 'yyyy' ? new Intl.DateTimeFormat('en-US', { timeZone:tz, year:'numeric' }).format(d) : String(d);
+    },
   };
 
   // -------------------------------------------------------------- Properties
@@ -251,6 +253,12 @@ function createStub() {
   const ContentService = {
     MimeType: { JSON: 'JSON', TEXT: 'TEXT', JAVASCRIPT: 'JAVASCRIPT' },
     createTextOutput(content) { return new TextOutput(content); },
+  };
+
+  const LockService = {
+    getScriptLock() {
+      return { tryLock: () => true, releaseLock: () => {} };
+    },
   };
 
   const Session = {
@@ -343,7 +351,7 @@ function createStub() {
   return {
     state, helpers,
     SpreadsheetApp, DriveApp, MailApp, Utilities, PropertiesService,
-    ScriptApp, HtmlService, ContentService, Session, Logger,
+    ScriptApp, HtmlService, ContentService, Session, LockService, Logger,
   };
 }
 
