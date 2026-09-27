@@ -53,12 +53,14 @@ which overrides the constant in `code.gs` — handy for keeping secrets out of G
 ## Flows at a glance
 
 * **Customer** — register → 6-digit email code → (set password now, or by emailed link) → log in →
-  upload prescription → track status.
+  upload prescription → preview the file and track status. An approved prescription can place an
+  order for a catalogue medicine; the pharmacy accepts or declines it and is emailed either way.
 * **Vendor** — register with GST + Drug License + Shop ID + PAN → email code → admin reviews the
   documents → approved vendor logs in and lists medicines (own listings only).
-* **Admin** — unlock with the admin key → approve/decline prescriptions (the file is moved between
-  the Pending/Approved/Declined folders and approved files are renamed `UserID__UploadedTime`),
-  approve/decline vendors, list users, add medicines.
+* **Admin** — unlock with the admin key → open each prescription in the same viewer the patient uses,
+  then approve/decline (the file is moved between the Pending/Approved/Declined folders and approved
+  files are renamed `UserID__UploadedTime`), approve/decline vendors, list users, add medicines.
+  From the users table, **Prescriptions** filters the review queue to that person.
 
 ---
 
@@ -68,8 +70,8 @@ Install the UI test dependency first. The backend runs against a mocked Apps Scr
 
 ```bash
 npm install
-npm test              # backend end-to-end + frontend wiring + 61 browser-like UI-state checks
-npm run test:api      # 18 scenarios / 163 checks against code.gs
+npm test              # backend end-to-end + frontend wiring + 64 browser-like UI-state checks
+npm run test:api      # 22 scenarios / 221 checks against code.gs
 npm run test:frontend # index.html wiring + UI-state checks
 ```
 
@@ -80,15 +82,18 @@ npm run test:frontend # index.html wiring + UI-state checks
 | Mode | Navigation | Workspace |
 |---|---|---|
 | Guest | Account, catalogue, pharmacy registration, admin | Sign up / OTP / password reset; browse medicines; register a pharmacy; enter admin key |
-| Customer | Prescriptions, catalogue, admin | Upload and track personal prescriptions |
+| Customer | Prescriptions, catalogue, admin | Upload, view and track personal prescriptions |
 | Pharmacy | Catalogue, My shop, admin | Add, edit, delist and relist own medicines (password confirmed for writes) |
-| Admin unlocked | Admin tab alongside any role | Overview counts, pending/all Rx queue, KYC links, users and catalogue editing |
+| Admin unlocked | Admin tab alongside any role | Overview counts, view/review prescriptions, KYC links, users and catalogue editing |
 
 The admin key can be unlocked and locked separately from customer/pharmacy sign-in.
 Changing roles automatically moves away from a now-hidden tab. Visibility is **not**
 a security boundary: the Apps Script backend must still verify privileged requests.
 `npm run test:frontend` checks ids, handler wiring, the state vocabulary and all
-five tab rules, then drives 61 UI-state checks with jsdom.
+five tab rules, then drives 64 UI-state checks with jsdom.
+Customers and admins open the same prescription viewer (`view_rx`): the owner or
+the admin key is required, and the file is shown in the page (images and PDFs)
+with a Drive fallback for older deployments.
 
 ### Interactive demo
 
@@ -102,8 +107,10 @@ connect to the live spreadsheet, send email or store real patient information.
 Sample customer: `demo@pharmago.test` / `demo123`; sample approved pharmacy:
 `vendor@pharmago.test` / `demo123`; demo admin key: `changeme-admin-key`.
 Newly registered users can use the verification code shown on the page or in
-`/__mailbox`. The seeded customer has a pending sample prescription and a second
-pharmacy (Valley Medicos) is awaiting admin approval. Demo data resets on server restart. The demo serves its API at a same-origin `/api` path;
+`/__mailbox`. The seeded customer has a pending sample prescription and an
+approved follow-up — both can be opened from **My prescriptions** and from the
+admin review queue. A second pharmacy (Valley Medicos) is awaiting admin approval.
+Demo data resets on server restart. The demo serves its API at a same-origin `/api` path;
 the published static `index.html` continues to use the configured Apps Script URL.
 
 Customer IDs now increment within the script's calendar year (`U-2026-0010`,
@@ -144,9 +151,12 @@ Run against the previous revision — the first four made the app unusable end t
 
 ## Still to do before real use
 
-* `ADMIN_KEY` is typed into the browser and kept in `localStorage` — fine for an MVP, but move admin
+* `ADMIN_KEY` is typed into the browser and kept in `sessionStorage` — fine for an MVP, but move admin
   actions behind a real Google sign-in (`Session.getActiveUser()`) before going live.
-* Passwords are unsalted SHA-256 (`hashPassword_`). Swap in a salted KDF and/or rely on Google sign-in.
-* Prescription files are shared “anyone with the link” so the admin panel can open them. Use signed
-  URLs or Drive-scoped access if real patient data is involved.
-* Add pagination / pruning — the `Otps` sheet grows forever today.
+* Customer and pharmacy actions now require a 7-day session token from `login`. Passwords are stored
+  as `s1$salt$hash`; older unsalted hashes still log in and are upgraded. The token lives in
+  `localStorage`, which a stolen browser profile can read — httpOnly cookies need a different host.
+* New prescription files are private. `view_rx` reads them as the script owner. Reviewing an older
+  link-shared file locks it down. Redeploy the Apps Script web app or the live page cannot issue tokens.
+* Orders connect an approved prescription to one catalogue medicine. There is no delivery tracking,
+  payment, or multi-item basket yet.

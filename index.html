@@ -4,121 +4,293 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PharmaGo | Care, delivered</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,680&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <meta name="theme-color" content="#123d37">
 <style>
-  :root { --brand:#0a7d5c; --brand-dark:#075e46; --danger:#d33; --warn:#e8930c; --ink:#22303a; }
+  :root {
+    --brand:#0e7a62; --brand-dark:#0b5c4a; --danger:#c44b4b; --warn:#a86e23;
+    --ink:#142824; --muted:#5d726b; --line:#e3ebe6; --paper:#fffdfb; --sand:#f6f3ec;
+    --shadow:0 18px 50px rgba(20, 60, 48, .08);
+  }
   * { box-sizing: border-box; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 920px; margin: 0 auto; padding: 16px; color:var(--ink); background:#f2f7f5; }
-  h1 { color: var(--brand); margin-bottom:2px; }
-  .tabs { display:flex; flex-wrap:wrap; gap:4px; border-bottom:2px solid #ccc; margin-bottom:16px; }
-  .tabs button { border:none; background:#e3efea; padding:10px 16px; cursor:pointer; border-radius:8px 8px 0 0; font-size:15px; }
-  .tabs button.active { background:var(--brand); color:#fff; }
-  .panel { display:none; background:#fff; padding:16px; border-radius:0 8px 8px 8px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
-  .panel.active { display:block; }
-  label { display:block; margin-top:10px; font-weight:600; font-size:14px; }
-  input, select, textarea { width:100%; padding:9px; margin-top:4px; border:1px solid #bbb; border-radius:6px; font-size:14px; }
-  .btn { display:inline-block; width:auto !important; margin-top:12px; padding:10px 18px; border:none; border-radius:6px; background:var(--brand); color:#fff; cursor:pointer; font-size:15px; }
-  .btn:hover { background:var(--brand-dark); }
-  .btn.red { background:var(--danger); } .btn.green { background:#1a9e3f; } .btn.gray { background:#777; }
-  .btn.link { background:none; color:var(--brand); text-decoration:underline; padding:6px 4px; font-size:14px; }
-  table { width:100%; border-collapse:collapse; margin-top:10px; font-size:14px; }
-  th, td { border:1px solid #ddd; padding:6px 8px; text-align:left; }
-  th { background:#eef5f2; }
-  .status-APPROVED, .st-ACTIVE { color:green; font-weight:bold; }
-  .status-DECLINED, .st-DECLINED { color:red; font-weight:bold; }
-  .status-PENDING, .st-PENDING, .st-UNVERIFIED { color:var(--warn); font-weight:bold; }
-  .card { border:1px solid #ddd; border-radius:8px; padding:12px; margin:10px 0; background:#fbfdfc; }
-  .msg { margin-top:10px; padding:10px; border-radius:6px; display:none; font-size:14px; }
+  html { scroll-behavior: smooth; }
+  body {
+    min-height:100vh; margin:0; padding:0 24px 48px; color:var(--ink);
+    font-family: Manrope, 'Segoe UI', system-ui, sans-serif; line-height:1.55;
+    background:
+      radial-gradient(900px 520px at 110% -10%, #d7f3e4 0, transparent 55%),
+      radial-gradient(680px 420px at -12% 18%, #f8e7c4 0, transparent 50%),
+      #f3f6f2;
+  }
+  body::before, body::after {
+    content:""; position:fixed; z-index:0; width:380px; height:380px; border-radius:50%;
+    filter:blur(46px); pointer-events:none; opacity:.72;
+  }
+  body::before { background:#c9efd9; top:-90px; right:-40px; animation:orb 18s ease-in-out infinite; }
+  body::after { background:#f6e2b8; bottom:8%; left:-140px; animation:orb 22s ease-in-out infinite reverse; }
+  h1, h2, .brand-name { font-family: Fraunces, Georgia, serif; font-weight:680; letter-spacing:-.04em; }
+  .app-shell { position:relative; z-index:1; max-width:1180px; margin:auto; }
+  .topbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; padding:22px 0; }
+  .brand { display:flex; align-items:center; gap:12px; text-decoration:none; color:var(--ink); }
+  .brand-mark {
+    display:grid; place-items:center; width:48px; height:48px; border-radius:16px;
+    background:linear-gradient(160deg, #1c6b59, #0e3f36); color:white; font-size:26px; font-weight:700;
+    box-shadow:0 10px 22px #164e4230; animation:mark 4.8s ease-in-out infinite;
+  }
+  .brand-name { font-size:24px; line-height:1; }
+  .brand-name span { color:var(--brand); }
+  .brand-sub { color:var(--muted); font-size:11px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+  #sessionBar {
+    padding:8px 14px; border:1px solid var(--line); border-radius:999px; background:rgba(255,255,255,.86);
+    font-size:13px; max-width:100%; overflow-wrap:anywhere; backdrop-filter:blur(8px);
+    box-shadow:0 8px 24px #2347380c;
+  }
+  #sessionBar .btn { margin:0 0 0 10px; padding:5px 9px; font-size:12px; }
+  .hero {
+    display:grid; grid-template-columns:1.5fr 1fr; align-items:center; gap:32px;
+    margin:8px 0 22px; padding:40px 48px; border-radius:28px; overflow:hidden; position:relative;
+    background:linear-gradient(135deg, #123e36 0%, #1b6a58 62%, #2f8f6e 140%);
+    color:white; box-shadow:0 22px 50px #17463828; animation:rise .7s cubic-bezier(.2,.8,.2,1) both;
+  }
+  .hero:after {
+    content:"+"; position:absolute; right:18%; top:-150px; font-size:460px; line-height:1;
+    color:#ffffff10; font-weight:900; pointer-events:none; animation:drift 16s ease-in-out infinite;
+  }
+  .eyebrow, .kicker {
+    display:inline-block; letter-spacing:.16em; text-transform:uppercase; font-size:11px; font-weight:800;
+  }
+  .eyebrow { color:#b7ebcf; }
+  .kicker { color:var(--brand); }
+  .hero h1 {
+    color:white; font-size:clamp(34px, 4.4vw, 56px); line-height:1.04; max-width:640px; margin:12px 0 16px;
+  }
+  .hero p { color:#d5ebe3; font-size:16px; margin:0; max-width:540px; }
+  .hero-cards { z-index:1; display:grid; gap:10px; }
+  .hero-card {
+    background:#ffffff16; border:1px solid #ffffff30; border-radius:16px; padding:14px 16px;
+    display:flex; gap:14px; align-items:center; backdrop-filter:blur(10px); font-size:14px;
+    animation:float 6.5s ease-in-out infinite;
+  }
+  .hero-card:nth-child(2) { animation-delay:.7s; }
+  .hero-card:nth-child(3) { animation-delay:1.3s; }
+  .hero-card b { display:block; color:white; } .hero-card span { color:#d5ebe3; font-size:12px; }
+  .hero-icon {
+    display:grid; place-items:center; flex:none; height:40px; width:40px; border-radius:12px;
+    background:#ffffff22; font-size:18px;
+  }
+  .tabs { display:flex; flex-wrap:wrap; align-items:center; gap:8px; border:0; margin:0 0 16px; }
+  .tabs button {
+    font:inherit; font-weight:700; color:#456258; background:rgba(255,255,255,.45);
+    border:1px solid transparent; border-radius:12px; padding:10px 16px; cursor:pointer;
+    transition:background .2s, color .2s, transform .2s, box-shadow .2s;
+  }
+  .tabs button:hover { background:#e7f2eb; transform:translateY(-1px); }
+  .tabs button.active { background:var(--brand); color:white; box-shadow:0 8px 18px #116e5930; }
+  .panel {
+    display:none; background:var(--paper); border:1px solid var(--line); border-radius:24px;
+    padding:clamp(22px, 4vw, 40px); box-shadow:var(--shadow); min-height:340px;
+  }
+  .panel.active { display:block; animation:panelIn .45s cubic-bezier(.2,.8,.2,1); }
+  .panel h2 { margin:0 0 6px; font-size:clamp(26px, 3vw, 36px); }
+  .panel h3 { margin:22px 0 6px; font-size:18px; font-family:Fraunces, Georgia, serif; }
+  .panel p { color:var(--muted); }
+  .panel hr { border:0; border-top:1px solid var(--line); margin:28px 0; }
+  .section-head { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; flex-wrap:wrap; margin:4px 0 12px; }
+  .section-head h2, .section-head h3 { margin:0; }
+  .section-head .btn, .topbar .btn { margin-top:0; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+  .grid2 > div { min-width:0; }
+  #viewLogin .grid2 > div { padding:24px; border:1px solid var(--line); background:#fff; border-radius:18px; transition:transform .2s, box-shadow .2s; }
+  #viewLogin .grid2 > div:hover { transform:translateY(-3px); box-shadow:0 14px 30px #23473810; }
+  #viewLogin .grid2 > div:first-child { background:linear-gradient(180deg, #f3faf6, #fff); }
+  label { display:block; margin-top:14px; font-weight:700; font-size:13px; color:#3c554c; }
+  input, select, textarea {
+    width:100%; padding:12px 13px; margin-top:5px; border:1px solid #cddbd2; border-radius:12px;
+    font:inherit; font-size:14px; background:#fff; color:var(--ink);
+    transition:border-color .15s, box-shadow .15s, transform .15s;
+  }
+  input:focus, textarea:focus, select:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 4px #116e5922; }
+  .btn {
+    display:inline-block; width:auto !important; margin-top:12px; margin-right:6px; padding:11px 16px;
+    border:none; border-radius:12px; background:var(--brand); color:#fff; cursor:pointer;
+    font:inherit; font-size:14px; font-weight:800;
+    transition:transform .18s, background .18s, box-shadow .18s;
+  }
+  .btn:hover { background:var(--brand-dark); transform:translateY(-2px); box-shadow:0 10px 18px #116e5928; }
+  .btn:active { transform:translateY(0); }
+  .btn:focus-visible, .tabs button:focus-visible { outline:3px solid #e8b560; outline-offset:2px; }
+  .btn.red { background:var(--danger); } .btn.green { background:#148a62; } .btn.gray { background:#667c70; }
+  .btn.link { background:none; color:var(--brand); text-decoration:underline; padding:6px 0; box-shadow:none; text-align:left; }
+  .btn.link:hover { background:none; transform:none; box-shadow:none; }
+  table { width:100%; border-collapse:collapse; margin-top:10px; font-size:14px; background:white; min-width:560px; }
+  th, td { border:0; border-bottom:1px solid var(--line); padding:12px; text-align:left; }
+  th { font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); background:#f4f8f5; }
+  tr { transition:background .16s; }
+  tbody tr:hover, table tr:hover td { background:#f7fbf8; }
+  .status-APPROVED, .st-ACTIVE { color:#0e7a62; font-weight:800; }
+  .status-DECLINED, .st-DECLINED { color:#c44b4b; font-weight:800; }
+  .status-PENDING, .st-PENDING, .st-UNVERIFIED { color:var(--warn); font-weight:800; }
+  .card, .rx-card {
+    border:1px solid var(--line); border-radius:18px; padding:16px; margin:10px 0; background:#fff;
+    box-shadow:0 10px 28px #2347380a; transition:transform .2s, box-shadow .2s;
+  }
+  .card:hover, .rx-card:hover { transform:translateY(-4px); box-shadow:0 18px 36px #23473816; }
+  .rx-card { margin:0; animation:cardIn .55s cubic-bezier(.2,.8,.2,1) both; }
+  .rx-card h3, .rx-viewer-head h2 { margin:8px 0 4px; font-size:18px; color:var(--ink); overflow-wrap:anywhere; }
+  .rx-viewer-head h2 { font-size:clamp(24px, 3vw, 34px); margin:2px 0 6px; }
+  .rx-card p { margin:4px 0; font-size:13px; }
+  .rx-card-top { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .rx-id { color:var(--muted); font-size:12px; font-weight:700; }
+  .rx-note { color:#3c554c !important; }
+  .rx-actions { display:flex; flex-wrap:wrap; gap:6px; }
+  .rx-actions .btn { margin-top:8px; }
+  .rx-grid, #pendingRx {
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr)); gap:14px; margin-top:8px;
+  }
+  .rx-doc {
+    height:88px; margin:12px 0 8px; border-radius:14px; position:relative; overflow:hidden;
+    display:grid; place-items:center;
+    background:linear-gradient(145deg, #f8fcf9, #e5f4ec 70%, #f7f1e4);
+    border:1px solid #e1eee7;
+  }
+  .rx-doc span { font-family:Fraunces, Georgia, serif; font-size:28px; color:var(--brand); }
+  .rx-doc::after {
+    content:""; position:absolute; top:-30%; bottom:-30%; width:40%; left:-50%;
+    background:linear-gradient(90deg, transparent, #ffffffaa, transparent);
+    transform:rotate(16deg); animation:sheen 3.6s ease-in-out infinite;
+  }
+  .rx-track { display:flex; gap:8px; list-style:none; padding:0; margin:12px 0 4px; }
+  .rx-track li { flex:1; font-size:11px; font-weight:800; color:#8aa097; position:relative; padding-top:12px; }
+  .rx-track li::before {
+    content:""; position:absolute; top:0; left:0; right:0; height:4px; border-radius:99px; background:#e6eeea;
+  }
+  .rx-track li.on { color:var(--brand); }
+  .rx-track li.on::before { background:var(--brand); }
+  .rx-track li.wait::before { background:linear-gradient(90deg, #0e7a62, #e6eeea); background-size:200% 100%; animation:loadbar 1.5s ease infinite; }
+  .rx-track li.bad { color:var(--danger); }
+  .rx-track li.bad::before { background:var(--danger); }
+  .chip {
+    display:inline-flex; align-items:center; padding:4px 10px; border-radius:999px;
+    font-size:11px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+  }
+  .chip.status-PENDING { color:#8a5a12; background:#fff4df; animation:pulse 2.2s ease-in-out infinite; }
+  .chip.status-APPROVED { color:#0e7a62; background:#e5f6ee; }
+  .chip.status-DECLINED { color:#a33b3b; background:#fdecec; }
+  .chip.status-PLACED { color:#8a5a12; background:#fff4df; }
+  .chip.status-ACCEPTED { color:#0e7a62; background:#e5f6ee; }
+  .upload-zone {
+    border:1.5px dashed #b7d4c6; border-radius:22px; padding:22px; margin:8px 0 16px;
+    background:linear-gradient(180deg, #f7fbf8, #fff); transition:border-color .2s, transform .2s, box-shadow .2s;
+    animation:glowPulse 3.4s ease-in-out infinite;
+  }
+  .upload-zone:hover, .upload-zone.drag { border-color:var(--brand); transform:translateY(-2px); box-shadow:0 16px 36px #0e7a6214; }
+  .upload-zone h3 { margin-top:0; }
+  .local-preview { margin-top:12px; }
+  .local-preview img, .local-preview iframe {
+    width:100%; max-height:280px; object-fit:contain; border-radius:14px; background:#f4f1ea; border:1px solid var(--line);
+  }
+  .local-preview iframe { height:280px; border:0; }
+  .filter-row { display:flex; flex-wrap:wrap; gap:16px; }
+  .filter-row > div { flex:1; min-width:180px; max-width:320px; }
+  .msg { margin-top:10px; padding:12px 14px; border-radius:12px; display:none; font-size:14px; }
+  .msg.ok, .msg.err { animation:msgIn .35s ease; }
   .msg.ok { display:block; background:#e6f6ec; color:#146c2e; border:1px solid #b7e4c7; }
   .msg.err { display:block; background:#fdecec; color:#a11; border:1px solid #f5c2c7; }
-  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-  @media (max-width:640px){ .grid2{grid-template-columns:1fr;} }
-  small.hint { color:#667; }
-  /* OTP input boxes */
+  .banner { display:none; margin:10px 0; padding:12px; border-radius:12px; background:#fff6e5; border:1px solid #f0d69a; color:#7a5b00; font-size:14px; }
+  small.hint, .hint { color:var(--muted); }
   .otp-row { display:flex; gap:8px; margin-top:6px; }
-  .otp-row input { width:44px; height:52px; text-align:center; font-size:22px; font-weight:700; }
-  .countdown { font-size:13px; color:#667; margin-top:6px; }
-  .stepper { display:flex; gap:6px; align-items:center; font-size:13px; color:#667; margin-bottom:8px; }
+  .otp-row input { width:46px; height:54px; text-align:center; font-size:22px; font-weight:800; }
+  .countdown { font-size:13px; color:var(--muted); margin-top:6px; }
+  .stepper { display:flex; gap:6px; align-items:center; font-size:13px; color:var(--muted); margin-bottom:8px; }
   .stepper .dot { width:10px; height:10px; border-radius:50%; background:#cbd6d1; }
-  .stepper .dot.on { background:var(--brand); }
-  .topbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
-  .banner { display:none; margin:10px 0; padding:10px; border-radius:6px; background:#fff6e5; border:1px solid #f0d69a; color:#7a5b00; font-size:14px; }
-
-  /* PharmaGo workspace */
-  :root { --brand:#116e59; --brand-dark:#104f43; --danger:#bb4949; --warn:#a86e23;
-    --ink:#17352f; --muted:#62766e; --line:#dae5df; --paper:#fffdf9; }
-  body { max-width:none; min-height:100vh; margin:0; padding:0 24px 48px;
-    background:radial-gradient(circle at 90% 8%, #e0f1e8 0, transparent 36%), #f5f7f1;
-    color:var(--ink); font-family: 'Segoe UI', system-ui, sans-serif; line-height:1.55; }
-  .app-shell { max-width:1180px; margin:auto; }
-  .topbar { padding:24px 0; border-bottom:1px solid var(--line); gap:20px; }
-  .brand { display:flex; align-items:center; gap:12px; text-decoration:none; color:var(--ink); }
-  .brand-mark { display:grid; place-items:center; width:46px; height:46px; border-radius:14px;
-    background:#164e42; color:white; font-size:25px; font-weight:700; box-shadow:0 6px 14px #164e4222; }
-  .brand-name { font-size:23px; font-weight:800; letter-spacing:-.05em; line-height:1; }
-  .brand-name span { color:var(--brand); }
-  .brand-sub { color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; }
-  #sessionBar { padding:8px 14px; border:1px solid var(--line); border-radius:30px; background:white;
-    font-size:13px; max-width:100%; overflow-wrap:anywhere; }
-  .hero { display:grid; grid-template-columns: 1.5fr 1fr; align-items:center; gap:32px;
-    margin:28px 0 24px; padding:38px 48px; border-radius:22px; overflow:hidden; position:relative;
-    background:#123e36; color:white; box-shadow:0 18px 45px #17463820; }
-  .hero:after { content:"+"; position:absolute; right:25%; top:-170px; font-size:500px; line-height:1;
-    color:#ffffff09; font-weight:900; pointer-events:none; }
-  .eyebrow { display:inline-block; color:#aee4c7; letter-spacing:.16em; text-transform:uppercase; font-size:11px; font-weight:800; }
-  .hero h1 { color:white; font-size:clamp(32px,4vw,53px); letter-spacing:-.055em; line-height:1.08;
-    max-width:610px; margin:12px 0 16px; }
-  .hero p { color:#c8e0d7; font-size:15px; margin:0; max-width:530px; }
-  .hero-cards { z-index:1; display:grid; gap:10px; }
-  .hero-card { background:#ffffff13; border:1px solid #ffffff31; border-radius:12px; padding:13px 17px;
-    display:flex; gap:14px; align-items:center; backdrop-filter:blur(8px); font-size:14px; }
-  .hero-card b { display:block; color:white; } .hero-card span { color:#c8e0d7; font-size:12px; }
-  .hero-icon { display:grid; place-items:center; flex:none; height:37px; width:37px; border-radius:10px; background:#ffffff21; font-size:19px; }
-  .tabs { display:flex; flex-wrap:wrap; align-items:center; gap:7px; border:0; margin-bottom:16px; }
-  .tabs button { font:inherit; font-weight:650; color:#456258; background:transparent; border:1px solid transparent;
-    border-radius:10px; padding:10px 17px; transition:background .15s, color .15s; }
-  .tabs button:hover { background:#e4ede6; } .tabs button.active { background:var(--brand); color:white; box-shadow:0 5px 12px #116e5928; }
-  .panel { background:var(--paper); border:1px solid var(--line); border-radius:18px;
-    padding:clamp(22px,4vw,42px); box-shadow:0 12px 36px #2347380a; min-height:340px; }
-  .panel h2 { margin:0 0 6px; font-size:clamp(22px,2.5vw,30px); letter-spacing:-.04em; }
-  .panel h3 { margin:26px 0 6px; font-size:18px; }
-  .panel p { color:var(--muted); }
-  .panel hr { border:0; border-top:1px solid var(--line); margin:30px 0; }
-  .grid2 { gap:30px; } .grid2 > div { min-width:0; }
-  #viewLogin .grid2 > div { padding:24px; border:1px solid var(--line); background:#fff; border-radius:16px; }
-  #viewLogin .grid2 > div:first-child { background:#f2f8f3; }
-  label { font-size:13px; margin-top:17px; color:#3c554c; }
-  input, select, textarea { font:inherit; background:#fff; color:var(--ink); border:1px solid #cddbd2;
-    border-radius:9px; padding:11px 12px; transition:border-color .15s,box-shadow .15s; }
-  input:focus, textarea:focus, select:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px #116e5920; }
-  .btn { font:inherit; font-size:14px; font-weight:700; border-radius:9px; padding:11px 17px;
-    transition:transform .15s, background .15s; cursor:pointer; }
-  .btn:hover { transform:translateY(-1px); } .btn:focus-visible, .tabs button:focus-visible { outline:3px solid #e8b560; outline-offset:2px; }
-  .btn.gray { background:#667c70; } .btn.green { background:var(--brand); }
-  .btn.link { text-align:left; padding:6px 0; }
-  .card { background:white; border-color:var(--line); border-radius:12px; padding:18px; }
-  .msg { border-radius:9px; padding:11px 14px; } .banner { border-radius:10px; }
-  .table-wrap { width:100%; overflow-x:auto; } table { background:white; min-width:560px; }
-  th, td { border:0; border-bottom:1px solid var(--line); padding:11px; }
-  th { font-size:12px; text-transform:uppercase; letter-spacing:.06em; text-align:left; color:var(--muted); background:#f2f7f3; }
+  .stepper .dot.on { background:var(--brand); box-shadow:0 0 0 4px #0e7a6218; }
   [hidden] { display:none !important; }
-  .access-note { background:#f2f8f3; border:1px solid #d7e8dc; border-radius:12px; padding:16px 20px; margin:14px 0; }
+  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
+  .access-note { background:#f2f8f3; border:1px solid #d7e8dc; border-radius:14px; padding:16px 20px; margin:14px 0; }
   .access-note p { margin:5px 0 0; }
-  #sessionBar .btn { margin:0 0 0 10px; padding:5px 9px; font-size:12px; }
-  .badge { display:inline-block; padding:4px 10px; border-radius:999px; background:#e0f3e7; color:#164e42; font-size:12px; font-weight:700; margin-left:6px; }
-  .stats { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; margin:20px 0; }
-  .stat { background:#f1f8f3; border:1px solid var(--line); border-radius:12px; padding:18px; }
-  .stat strong { display:block; font-size:27px; line-height:1.2; color:var(--brand); }
-  .stat span { font-size:12px; color:var(--muted); }
-  @media(max-width:680px) { .stats { grid-template-columns:repeat(2,1fr); } }
-  .site-footer { color:var(--muted); font-size:12px; padding:26px 2px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
-  @media(max-width:760px) {
-    body { padding:0 14px 24px; } .hero { grid-template-columns:1fr; padding:26px; }
-    .hero-cards { grid-template-columns:repeat(3,1fr); } .hero-card { flex-direction:column; align-items:flex-start; }
-    .grid2 { grid-template-columns:1fr; gap:16px; } .tabs button { font-size:13px; padding:9px 11px; }
+  .badge { display:inline-block; padding:4px 10px; border-radius:999px; background:#e0f3e7; color:#164e42; font-size:12px; font-weight:800; margin-left:6px; }
+  .stats { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; margin:18px 0; }
+  .stat {
+    background:linear-gradient(180deg, #f4fbf7, #fff); border:1px solid var(--line); border-radius:16px; padding:18px;
+    transition:transform .2s, box-shadow .2s; animation:cardIn .5s ease both;
   }
-  @media(max-width:520px) { .hero-cards { grid-template-columns:1fr; } .hero-card { flex-direction:row; }
-    .topbar { padding:16px 0; } .panel { padding:20px 16px; } #viewLogin .grid2 > div { padding:18px; } }
+  .stat:nth-child(2) { animation-delay:.05s; } .stat:nth-child(3) { animation-delay:.1s; } .stat:nth-child(4) { animation-delay:.15s; }
+  .stat:hover { transform:translateY(-3px); box-shadow:0 12px 24px #23473810; }
+  .stat strong { display:block; font-size:28px; line-height:1.15; color:var(--brand); font-family:Fraunces, Georgia, serif; }
+  .stat span { font-size:12px; color:var(--muted); }
+  .table-wrap { width:100%; overflow-x:auto; border-radius:14px; }
+  .site-footer { color:var(--muted); font-size:12px; padding:26px 2px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  .rx-empty-state { grid-column:1 / -1; text-align:center; padding:34px 12px; color:var(--muted); }
+  .rx-empty-mark {
+    display:grid; place-items:center; width:64px; height:64px; margin:0 auto 8px; border-radius:18px;
+    background:#e7f3ec; color:var(--brand); font-size:28px; animation:float 4.2s ease-in-out infinite;
+  }
+  .rx-empty { margin:24px; text-align:center; color:var(--muted); }
+  .rx-viewer { position:fixed; inset:0; z-index:80; display:grid; place-items:center; padding:18px; }
+  .rx-viewer-backdrop { position:absolute; inset:0; background:rgba(10, 28, 24, .58); backdrop-filter:blur(8px); animation:fade .25s ease; }
+  .rx-viewer-dialog {
+    position:relative; width:min(980px, 100%); max-height:min(92vh, 940px); overflow:auto;
+    background:#fffdfb; border-radius:26px; padding:22px; box-shadow:0 30px 80px rgba(0,0,0,.28);
+    animation:pop .4s cubic-bezier(.16,.84,.22,1);
+  }
+  .rx-viewer-head { display:flex; justify-content:space-between; gap:16px; align-items:flex-start; }
+  .rx-viewer-head h2 { margin:2px 0 6px; font-size:clamp(24px, 3vw, 34px); }
+  .rx-viewer-head p { margin:0; color:var(--muted); font-size:13px; }
+  .rx-stage {
+    margin-top:14px; min-height:240px; border-radius:18px; padding:12px; overflow:auto;
+    background:linear-gradient(180deg, #f7f4ee, #fff); border:1px solid var(--line);
+  }
+  .rx-preview-img, .rx-paper {
+    display:block; width:100%; max-height:68vh; object-fit:contain; margin:0 auto; border-radius:14px;
+    animation:fade .4s ease; background:white;
+  }
+  .rx-preview-frame { width:100%; height:68vh; border:0; border-radius:14px; background:white; }
+  .rx-paper { max-height:none; padding:22px; border:1px solid var(--line); }
+  .rx-paper pre { white-space:pre-wrap; font-family:inherit; color:var(--ink); }
+  .rx-skeleton {
+    height:320px; border-radius:16px;
+    background:linear-gradient(90deg, #eef3f0 25%, #f8fbf9 37%, #eef3f0 63%);
+    background-size:400% 100%; animation:shimmer 1.2s ease infinite;
+  }
+  .rx-viewer-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+  .rx-viewer-actions .btn, .rx-viewer-actions a.btn { text-decoration:none; }
+  body.viewer-open { overflow:hidden; }
+  @keyframes rise { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+  @keyframes panelIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:none; } }
+  @keyframes cardIn { from { opacity:0; transform:translateY(10px) scale(.98); } to { opacity:1; transform:none; } }
+  @keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-7px); } }
+  @keyframes drift { 0%,100% { transform:translateY(0) rotate(0deg); } 50% { transform:translateY(22px) rotate(8deg); } }
+  @keyframes orb { 0%,100% { transform:translate(0,0) scale(1); } 50% { transform:translate(-24px, 18px) scale(1.08); } }
+  @keyframes mark { 0%,100% { transform:rotate(0) scale(1); } 50% { transform:rotate(-8deg) scale(1.06); } }
+  @keyframes pop { from { opacity:0; transform:translateY(22px) scale(.96); } to { opacity:1; transform:none; } }
+  @keyframes fade { from { opacity:0; } to { opacity:1; } }
+  @keyframes msgIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
+  @keyframes shimmer { 0% { background-position:100% 0; } 100% { background-position:0 0; } }
+  @keyframes pulse { 0%,100% { box-shadow:0 0 0 0 #e8b56055; } 50% { box-shadow:0 0 0 6px #e8b56000; } }
+  @keyframes sheen { 0% { left:-60%; } 55%,100% { left:130%; } }
+  @keyframes loadbar { 0% { background-position:100% 0; } 100% { background-position:0 0; } }
+  @keyframes glowPulse { 0%,100% { box-shadow:0 0 0 0 #0e7a6200; } 50% { box-shadow:0 0 0 7px #0e7a620f; } }
+  @media (max-width:760px) {
+    body { padding:0 14px 28px; }
+    .hero { grid-template-columns:1fr; padding:26px; }
+    .hero-cards { grid-template-columns:1fr; }
+    .grid2 { grid-template-columns:1fr; gap:14px; }
+    .tabs button { font-size:13px; padding:9px 11px; }
+    .stats { grid-template-columns:repeat(2, 1fr); }
+  }
+  @media (max-width:520px) {
+    .topbar { padding:16px 0; } .panel, .rx-viewer-dialog { padding:18px 14px; }
+    #viewLogin .grid2 > div { padding:16px; }
+    .otp-row input { width:40px; height:48px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important;
+    }
+  }
+
 </style>
 </head>
 <body>
@@ -224,16 +396,33 @@
 
 <!-- ============ USER PORTAL ============ -->
 <div id="user" class="panel" data-show="user">
-  <h2>My prescriptions</h2>
-  <h3>Upload a prescription</h3>
-  <p id="whoami" class="hint">Not logged in.</p>
-  <label>Prescription file (PDF/JPG/PNG, max 10 MB)</label>
-  <input type="file" id="rxFile" accept=".pdf,.jpg,.jpeg,.png">
-  <button class="btn" onclick="uploadRx()">Upload → Status: Pending</button>
+  <div class="section-head">
+    <div>
+      <span class="kicker">Your care file</span>
+      <h2>My prescriptions</h2>
+      <p id="whoami" class="hint">Not logged in.</p>
+    </div>
+  </div>
+  <div id="rxDrop" class="upload-zone">
+    <h3>Upload a prescription</h3>
+    <p>PDF, JPG or PNG, up to 10 MB. Preview it here, then track every review step.</p>
+    <label for="rxFile">Prescription file (PDF/JPG/PNG, max 10 MB)</label>
+    <input type="file" id="rxFile" accept=".pdf,.jpg,.jpeg,.png" onchange="previewSelectedRx()">
+    <div id="rxLocalPreview" class="local-preview" hidden></div>
+    <button class="btn" onclick="uploadRx()">Upload → Status: Pending</button>
+  </div>
   <div id="userMsg" class="msg"></div>
-  <hr>
-  <h2>My History <button class="btn gray" style="padding:6px 12px" onclick="loadHistory()">Refresh</button></h2>
-  <div class="table-wrap"><table id="historyTbl"><tr><th>RxID</th><th>File</th><th>Status</th><th>Uploaded At</th><th>Reviewed At</th><th>Note</th></tr></table></div>
+  <div class="section-head">
+    <h3>My history</h3>
+    <button class="btn gray" onclick="loadHistory()">Refresh</button>
+  </div>
+  <div id="rxHistory" class="rx-grid" aria-live="polite"><div class="rx-skeleton" style="height:190px" role="status" aria-label="Loading prescriptions"></div></div>
+  <div class="table-wrap sr-only" aria-hidden="true"><table id="historyTbl"><tr><th>RxID</th><th>File</th><th>Status</th><th>Uploaded At</th><th>Reviewed At</th><th>Note</th></tr></table></div>
+  <div class="section-head">
+    <h3>My orders</h3>
+    <button class="btn gray" onclick="loadMyOrders()">Refresh</button>
+  </div>
+  <div id="orderList" class="rx-grid" aria-live="polite"></div>
 </div>
 
 <!-- ============ SHOP ============ -->
@@ -241,6 +430,16 @@
   <label for="medSearch">Search medicines</label><input id="medSearch" placeholder="Search name, category or pharmacy" oninput="renderMedicines()">
   <h2>Available Medicines</h2>
   <button class="btn" onclick="loadMedicines()">Load Catalogue</button>
+  <div id="orderBar" class="card" hidden>
+    <h3>Place an order</h3>
+    <p id="orderItem" class="hint"></p>
+    <label for="orderRx">Approved prescription</label>
+    <select id="orderRx"></select>
+    <label for="orderQty">Quantity</label>
+    <input id="orderQty" type="number" min="1" max="99" value="1">
+    <button class="btn" onclick="submitOrder()">Place order</button>
+    <button class="btn gray" onclick="cancelOrder()">Cancel</button>
+  </div>
   <div class="table-wrap"><table id="medTbl"><tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Seller</th></tr></table></div>
   <div id="shopMsg" class="msg"></div>
 </div>
@@ -305,6 +504,8 @@
   <button class="btn" onclick="addMedicine(false)">Add Medicine (as Merchant)</button>
   <h3>My Listings <button class="btn gray" style="padding:6px 12px" onclick="loadMyListings()">Refresh</button></h3>
   <div class="table-wrap"><table id="myMedTbl"><tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th><th>Active</th><th>Actions</th></tr></table></div>
+  <h3>Incoming orders <button class="btn gray" style="padding:6px 12px" onclick="loadShopOrders()">Refresh</button></h3>
+  <div id="shopOrders" class="rx-grid"></div>
 </div>
 <div id="merchMsg" class="msg" role="status" aria-live="polite"></div>
 </div>
@@ -318,7 +519,7 @@
     <button class="btn" onclick="adminAuth()">Unlock admin</button>
   </div>
   <div id="adminDashboard" data-show="admin" hidden>
-    <p>Review prescriptions, verify pharmacies and manage the catalogue.</p>
+    <p>Review prescriptions, verify pharmacies and manage the catalogue. Open any file here — the same viewer the patient uses.</p>
     <span id="adminState" class="badge">Unlocked</span>
     <button class="btn gray" onclick="lockAdmin()">Lock admin</button>
     <button class="btn" onclick="loadAdminOverview()">Refresh overview</button>
@@ -330,8 +531,19 @@
     </div>
     <hr>
     <h3>Prescription reviews</h3>
-    <label for="rxFilter">Show</label><select id="rxFilter" onchange="renderAdminRx()"><option value="PENDING">Pending</option><option value="ALL">All statuses</option></select>
-    <div id="pendingRx"></div>
+    <div class="filter-row">
+      <div>
+        <label for="rxFilter">Show</label>
+        <select id="rxFilter" onchange="renderAdminRx()"><option value="PENDING">Pending</option><option value="ALL">All statuses</option></select>
+      </div>
+      <div>
+        <label for="rxUserFilter">Patient</label>
+        <select id="rxUserFilter" onchange="renderAdminRx()"><option value="">All patients</option></select>
+      </div>
+    </div>
+    <div id="pendingRx" class="rx-grid"></div>
+    <h3>Orders</h3>
+    <div id="adminOrders" class="rx-grid"></div>
     <h3>Pharmacies & verification</h3><div id="merchantList"></div>
     <h3>Users</h3><div id="userList" class="table-wrap"></div>
     <h3>Catalogue management</h3><div id="adminMedicineList" class="table-wrap"></div>
@@ -347,6 +559,28 @@
 
 <footer class="site-footer"><span>© PharmaGo · Care made accessible</span><span>Google Sheets & Drive powered · Never share your admin key</span></footer>
 </div>
+
+<div id="rxViewer" class="rx-viewer" hidden>
+  <div class="rx-viewer-backdrop" onclick="closeRxViewer()"></div>
+  <div class="rx-viewer-dialog" role="dialog" aria-modal="true" aria-labelledby="rxViewerTitle">
+    <header class="rx-viewer-head">
+      <div>
+        <span class="kicker">Prescription</span>
+        <h2 id="rxViewerTitle">Prescription</h2>
+        <p id="rxViewerMeta"></p>
+        <p id="rxViewerNote"></p>
+      </div>
+      <button id="rxViewerClose" class="btn gray" onclick="closeRxViewer()" aria-label="Close prescription viewer">Close</button>
+    </header>
+    <div id="rxViewerStage" class="rx-stage"></div>
+    <div class="rx-viewer-actions">
+      <button class="btn" onclick="downloadCurrentRx()">Download</button>
+      <a id="rxViewerDrive" class="btn gray" href="#" target="_blank" rel="noopener noreferrer" hidden>Open in Drive</a>
+      <button id="rxViewerApprove" class="btn green" onclick="reviewFromViewer('APPROVED')" hidden>Approve</button>
+      <button id="rxViewerDecline" class="btn red" onclick="reviewFromViewer('DECLINED')" hidden>Decline</button>
+    </div>
+  </div>
+</div>
 <script>
 // ===== CONFIG — paste your deployed Apps Script /exec URL =====
 const API_URL = "https://script.google.com/macros/s/AKfycbwEcJiZpX29IFGWZPnB9HbGOnSeSd4jRKtZ6pbAOPayyJbqKYw3Mw-omQ2NdtaIWGYt3w/exec";
@@ -360,7 +594,12 @@ let pendingMerchant = null; // { merchantId, email, purpose:'MVERIFY' }
 let otpTimer = null;
 let catalogue = [];
 let myListings = [];
+let historyCache = [];
 let adminCache = { rx:[], merchants:[], users:[], medicines:[] };
+let rxViewerUrl = '';
+let rxViewerName = 'prescription';
+let rxViewerId = '';
+let rxLocalUrl = '';
 
 // Visibility is a view concern, not authorization: the Apps Script API still
 // validates privileged actions. Admin is independent of the signed-in role.
@@ -388,8 +627,8 @@ function openTab(evt, id) {
   button.classList.add('active');
   applyAuthUI();
   if (id === 'shop') loadMedicines();
-  if (id === 'user' && session && session.role === 'USER') loadHistory();
-  if (id === 'merchant' && session && session.role === 'MERCHANT') loadMyListings();
+  if (id === 'user' && session && session.role === 'USER') { loadHistory(); loadMyOrders(); }
+  if (id === 'merchant' && session && session.role === 'MERCHANT') { loadMyListings(); loadShopOrders(); }
   if (id === 'admin' && adminKey) loadAdminOverview();
 }
 function activateTab(id) {
@@ -405,16 +644,24 @@ function show(elId, ok, text) {
 async function callAPI(payload) {
   // text/plain keeps the request a CORS "simple request": the browser sends no
   // OPTIONS preflight, which Apps Script cannot answer.
+  const body = Object.assign({}, payload);
+  if (session && session.sessionToken && !body.sessionToken) body.sessionToken = session.sessionToken;
   try {
     const res = await fetch(API_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(body),
       redirect: 'follow' // Apps Script 302s to script.googleusercontent.com
     });
     const text = await res.text();
     try {
-      return JSON.parse(text);
+      const parsed = JSON.parse(text);
+      if (parsed && /please sign in again/i.test(parsed.message || '') && session) {
+        localStorage.removeItem('pharmago_session');
+        session = null;
+        renderSession();
+      }
+      return parsed;
     } catch (parseErr) {
       return { success: false, message: 'The API did not return JSON. Make sure the web app is deployed with "Execute as: me" and access "Anyone". Response started with: ' + String(text).slice(0, 120) };
     }
@@ -598,7 +845,15 @@ async function doLogin() {
     enterVerifyView();
   }
 }
-function logout(){ localStorage.removeItem('pharmago_session'); session=null; renderSession(); showView('login'); activateTab('Login'); }
+function logout() {
+  const token = session && session.sessionToken;
+  localStorage.removeItem('pharmago_session');
+  session = null;
+  renderSession();
+  showView('login');
+  activateTab('Login');
+  if (token) callAPI({ action:'logout', sessionToken: token });
+}
 
 // ===== USER: PRESCRIPTIONS =====
 async function uploadRx() {
@@ -609,20 +864,115 @@ async function uploadRx() {
   show('userMsg', true, 'Uploading…');
   const res = await callAPI({ action:'upload_rx', userId: session.userId, fileName: f.name, fileType: f.type, fileBase64: await fileToBase64(f) });
   show('userMsg', res.success, res.message);
-  if (res.success) { document.getElementById('rxFile').value=''; loadHistory(); }
+  if (res.success) {
+    document.getElementById('rxFile').value = '';
+    const box = document.getElementById('rxLocalPreview');
+    if (box) { box.hidden = true; box.innerHTML = ''; }
+    if (rxLocalUrl) { URL.revokeObjectURL(rxLocalUrl); rxLocalUrl = ''; }
+    loadHistory();
+  }
 }
 async function loadHistory() {
   if (!session) return;
   const res = await callAPI({ action:'get_data', sheetName:'Prescriptions', userId: session.userId });
-  if (!res.success) return show('userMsg', false, res.message);
-  let html = '<tr><th>RxID</th><th>File</th><th>Status</th><th>Uploaded At</th><th>Reviewed At</th><th>Note</th></tr>';
-  (res.data||[]).forEach(rx => {
-    html += `<tr><td>${esc(rx.RxID)}</td><td>${esc(rx.FileName)}</td>
+  if (!res.success) {
+    const grid = document.getElementById('rxHistory');
+    if (grid) grid.innerHTML = '';
+    return show('userMsg', false, res.message);
+  }
+  historyCache = res.data || [];
+  renderHistory();
+}
+function renderHistory() {
+  let table = '<tr><th>RxID</th><th>File</th><th>Status</th><th>Uploaded At</th><th>Reviewed At</th><th>Note</th></tr>';
+  historyCache.forEach(rx => {
+    table += `<tr><td>${esc(rx.RxID)}</td><td>${esc(rx.FileName)}</td>
       <td class="status-${esc(rx.Status)}">${esc(rx.Status)}</td>
       <td>${esc(rx.Timestamp)}</td><td>${esc(rx.ReviewedAt||'')}</td><td>${esc(rx.ReviewNote||'')}</td></tr>`;
   });
-  document.getElementById('historyTbl').innerHTML = html;
+  document.getElementById('historyTbl').innerHTML = table;
+  const grid = document.getElementById('rxHistory');
+  if (!grid) return;
+  grid.innerHTML = historyCache.map((rx, i) => rxCardHtml(rx, 'user', i)).join('')
+    || '<div class="rx-empty-state"><span class="rx-empty-mark">✚</span><p>No prescriptions yet. Upload one to start tracking it.</p></div>';
 }
+function prettyFileName(name) {
+  const raw = String(name || 'Prescription');
+  const cut = raw.replace(/^[^_]+_\d{4}-\d{2}-\d{2}T[^_]+_/, '');
+  return cut || raw;
+}
+function prettyWhen(value) {
+  const raw = String(value || '');
+  if (!raw) return '—';
+  const date = new Date(raw);
+  if (Number.isNaN(date.getTime())) return raw;
+  try { return date.toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' }); }
+  catch (err) { return date.toLocaleString(); }
+}
+function rxCardHtml(rx, source, index) {
+  const status = String(rx.Status || 'PENDING');
+  const reviewed = status !== 'PENDING';
+  const delay = Math.min(index || 0, 8) * 55;
+  return `<article class="rx-card" style="animation-delay:${delay}ms">
+    <div class="rx-card-top"><span class="chip status-${esc(status)}">${esc(status)}</span><span class="rx-id">${esc(rx.RxID)}</span></div>
+    <div class="rx-doc" aria-hidden="true"><span>Rx</span></div>
+    <h3>${esc(prettyFileName(rx.FileName))}</h3>
+    <p>${source === 'admin' ? 'Patient ' + esc(rx.UserID) + ' · ' : ''}Uploaded ${esc(prettyWhen(rx.Timestamp))}</p>
+    ${rx.ReviewNote ? `<p class="rx-note">${esc(rx.ReviewNote)}</p>` : ''}
+    <ol class="rx-track" aria-label="Review progress">
+      <li class="on">Uploaded</li>
+      <li class="${reviewed ? 'on' : 'wait'}">${reviewed ? 'Reviewed' : 'In review'}</li>
+      <li class="${status === 'APPROVED' ? 'on' : status === 'DECLINED' ? 'bad' : ''}">${status === 'DECLINED' ? 'Declined' : 'Approved'}</li>
+    </ol>
+    <div class="rx-actions">
+      <button class="btn" data-id="${esc(rx.RxID)}" onclick="openRxViewer(this.dataset.id,'${source}')">View prescription</button>
+      ${source === 'admin' && status === 'PENDING' ? `<button class="btn green" data-id="${esc(rx.RxID)}" onclick="reviewRx(this.dataset.id,'APPROVED')">Approve</button>
+      <button class="btn red" data-id="${esc(rx.RxID)}" onclick="reviewRx(this.dataset.id,'DECLINED')">Decline</button>` : ''}
+    </div>
+  </article>`;
+}
+function previewSelectedRx() {
+  const input = document.getElementById('rxFile');
+  const box = document.getElementById('rxLocalPreview');
+  if (!box) return;
+  if (rxLocalUrl) { URL.revokeObjectURL(rxLocalUrl); rxLocalUrl = ''; }
+  box.innerHTML = '';
+  const file = input.files && input.files[0];
+  if (!file) { box.hidden = true; return; }
+  box.hidden = false;
+  const label = document.createElement('p');
+  label.textContent = file.name + ' · ' + Math.max(1, Math.round(file.size / 1024)) + ' KB — ready to upload';
+  box.appendChild(label);
+  if (file.type.indexOf('image/') === 0 || file.type === 'application/pdf') {
+    rxLocalUrl = URL.createObjectURL(file);
+    const node = file.type === 'application/pdf' ? document.createElement('iframe') : document.createElement('img');
+    node.src = rxLocalUrl;
+    node.alt = node.title = 'Selected prescription preview';
+    box.appendChild(node);
+  }
+}
+function wireRxDrop() {
+  const zone = document.getElementById('rxDrop');
+  const input = document.getElementById('rxFile');
+  if (!zone || !input) return;
+  ['dragenter', 'dragover'].forEach(name => zone.addEventListener(name, event => {
+    event.preventDefault();
+    zone.classList.add('drag');
+  }));
+  ['dragleave', 'drop'].forEach(name => zone.addEventListener(name, event => {
+    event.preventDefault();
+    zone.classList.remove('drag');
+  }));
+  zone.addEventListener('drop', event => {
+    const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+    if (!file || typeof DataTransfer === 'undefined') return;
+    const transfer = new DataTransfer();
+    transfer.items.add(file);
+    input.files = transfer.files;
+    previewSelectedRx();
+  });
+}
+
 
 // ===== SHOP =====
 async function loadMedicines() {
@@ -634,12 +984,101 @@ async function loadMedicines() {
 function renderMedicines() {
   const search = document.getElementById('medSearch').value.trim().toLowerCase();
   const rows = catalogue.filter(m => [m.Name,m.Category,m.ShopName].some(v => String(v || '').toLowerCase().includes(search)));
-  let html = '<tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Seller</th></tr>';
+  const canOrder = session && session.role === 'USER';
+  let html = '<tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Seller</th>' + (canOrder ? '<th></th>' : '') + '</tr>';
   rows.forEach(m => {
-    html += `<tr><td>${esc(m.MedicineID)}</td><td>${esc(m.Name)}</td><td>${esc(m.Category)}</td><td>₹${esc(m.Price)}</td><td>${esc(m.Stock)}</td><td>${esc(m.ShopName || m.MerchantID)}</td></tr>`;
+    html += `<tr><td>${esc(m.MedicineID)}</td><td>${esc(m.Name)}</td><td>${esc(m.Category)}</td><td>₹${esc(m.Price)}</td><td>${esc(m.Stock)}</td><td>${esc(m.ShopName || m.MerchantID)}</td>` +
+      (canOrder ? `<td><button class="btn" data-id="${esc(m.MedicineID)}" onclick="startOrder(this.dataset.id)">Order</button></td>` : '') + '</tr>';
   });
   document.getElementById('medTbl').innerHTML = html;
   show('shopMsg', true, rows.length + ' medicine(s) listed.');
+}
+let orderDraft = null;
+function startOrder(medId) {
+  if (!session || session.role !== 'USER') return show('shopMsg', false, 'Sign in as a customer to order.');
+  const med = catalogue.find(m => String(m.MedicineID) === String(medId));
+  if (!med) return;
+  orderDraft = med;
+  document.getElementById('orderItem').textContent = med.Name + ' · ₹' + med.Price + ' · ' + (med.ShopName || 'Pharmacy');
+  document.getElementById('orderQty').value = '1';
+  document.getElementById('orderQty').max = Math.max(1, Number(med.Stock) || 99);
+  document.getElementById('orderBar').hidden = false;
+  fillOrderPrescriptions();
+}
+function cancelOrder() {
+  orderDraft = null;
+  const bar = document.getElementById('orderBar');
+  if (bar) bar.hidden = true;
+}
+async function fillOrderPrescriptions() {
+  const sel = document.getElementById('orderRx');
+  const approved = historyCache.filter(rx => rx.Status === 'APPROVED');
+  if (!approved.length) {
+    const res = await callAPI({ action:'get_data', sheetName:'Prescriptions' });
+    if (res.success) historyCache = res.data || [];
+  }
+  const rows = historyCache.filter(rx => rx.Status === 'APPROVED');
+  sel.innerHTML = rows.length
+    ? rows.map(rx => `<option value="${esc(rx.RxID)}">${esc(prettyFileName(rx.FileName))} · ${esc(rx.RxID)}</option>`).join('')
+    : '<option value="">No approved prescription yet</option>';
+}
+async function submitOrder() {
+  if (!orderDraft) return;
+  const qty = Number(document.getElementById('orderQty').value);
+  const rxId = document.getElementById('orderRx').value;
+  if (!rxId) return show('shopMsg', false, 'An approved prescription is required before you can order.');
+  const res = await callAPI({ action:'place_order', medicineId: orderDraft.MedicineID, qty, rxId });
+  show('shopMsg', res.success, res.message);
+  if (res.success) { cancelOrder(); loadMedicines(); loadMyOrders(); }
+}
+async function loadMyOrders() {
+  if (!session || session.role !== 'USER') return;
+  const res = await callAPI({ action:'list_orders' });
+  const box = document.getElementById('orderList');
+  if (!box) return;
+  if (!res.success) { box.innerHTML = '<p>' + esc(res.message) + '</p>'; return; }
+  box.innerHTML = (res.data || []).map(order => orderCardHtml(order, false)).join('')
+    || '<div class="rx-empty-state"><span class="rx-empty-mark">✚</span><p>No orders yet. An approved prescription can be sent to a pharmacy from the catalogue.</p></div>';
+}
+async function loadShopOrders() {
+  if (!session || session.role !== 'MERCHANT') return;
+  const res = await callAPI({ action:'list_orders' });
+  const box = document.getElementById('shopOrders');
+  if (!box) return;
+  if (!res.success) { box.innerHTML = '<p>' + esc(res.message) + '</p>'; return; }
+  box.innerHTML = (res.data || []).map(order => orderCardHtml(order, true)).join('') || '<p>No orders yet.</p>';
+}
+async function loadAdminOrders() {
+  if (!adminKey) return;
+  const res = await callAPI({ action:'list_orders', adminKey });
+  const box = document.getElementById('adminOrders');
+  if (!box) return;
+  if (!res.success) { box.innerHTML = '<p>' + esc(res.message) + '</p>'; return; }
+  box.innerHTML = (res.data || []).map(order => orderCardHtml(order, true, true)).join('') || '<p>No orders yet.</p>';
+}
+function orderCardHtml(order, canReview, asAdmin) {
+  const status = String(order.Status || 'PLACED');
+  return `<article class="rx-card">
+    <div class="rx-card-top"><span class="chip status-${esc(status)}">${esc(status)}</span><span class="rx-id">${esc(order.OrderID)}</span></div>
+    <h3>${esc(order.MedicineName || 'Medicine')}</h3>
+    <p>${esc(order.Qty)} × ₹${esc(order.Price)} · Rx ${esc(order.RxID)}</p>
+    <p>${asAdmin ? 'Patient ' + esc(order.UserID) + ' · ' : ''}${esc(prettyWhen(order.CreatedAt))}</p>
+    ${order.Note ? `<p class="rx-note">${esc(order.Note)}</p>` : ''}
+    ${canReview && status === 'PLACED' ? `<div class="rx-actions">
+      <button class="btn green" data-id="${esc(order.OrderID)}" onclick="reviewShopOrder(this.dataset.id,'ACCEPTED',${asAdmin ? 'true' : 'false'})">Accept</button>
+      <button class="btn red" data-id="${esc(order.OrderID)}" onclick="reviewShopOrder(this.dataset.id,'DECLINED',${asAdmin ? 'true' : 'false'})">Decline</button>
+    </div>` : ''}
+  </article>`;
+}
+async function reviewShopOrder(orderId, status, asAdmin) {
+  if (asAdmin && !requireAdmin()) return;
+  const note = status === 'DECLINED' ? (prompt('Reason for decline?') || '') : '';
+  const res = await callAPI(Object.assign({ action:'review_order', orderId, status, note }, asAdmin ? { adminKey } : {}));
+  show(asAdmin ? 'adminMsg' : 'merchMsg', res.success, res.message);
+  if (res.success) {
+    if (asAdmin) loadAdminOrders();
+    else { loadShopOrders(); loadMyListings(); }
+  }
 }
 
 // ===== MERCHANT =====
@@ -796,7 +1235,7 @@ async function adminAuth() {
 }
 async function loadAdminOverview() {
   if (!requireAdmin()) return;
-  await Promise.all([loadPending(), loadMerchants(), loadUsers(), loadAdminMedicines()]);
+  await Promise.all([loadPending(), loadMerchants(), loadUsers(), loadAdminMedicines(), loadAdminOrders()]);
   renderAdminStats();
 }
 function renderAdminStats() {
@@ -812,26 +1251,200 @@ async function loadPending() {
   adminCache.rx = res.data || [];
   renderAdminRx(); renderAdminStats();
 }
-function renderAdminRx() {
+function renderAdminRx(forceUser) {
   const filter = document.getElementById('rxFilter').value;
-  const rows = adminCache.rx.filter(rx => filter === 'ALL' || rx.Status === filter);
-  let html = '';
-  rows.forEach(rx => {
-    const pending = rx.Status === 'PENDING';
-    html += `<div class="card"><strong>Rx:</strong> ${esc(rx.RxID)} · <strong>User:</strong> ${esc(rx.UserID)} · <strong>File:</strong> ${esc(rx.FileName)}
-      · <strong>Uploaded:</strong> ${esc(rx.Timestamp)} · <span class="status-${esc(rx.Status)}">${esc(rx.Status)}</span>
-      ${rx.ReviewNote ? `<p>Note: ${esc(rx.ReviewNote)}</p>` : ''}
-      ${pending ? `<br><button class="btn green" data-id="${esc(rx.RxID)}" onclick="reviewRx(this.dataset.id,'APPROVED')">Approve</button>
-      <button class="btn red" data-id="${esc(rx.RxID)}" onclick="reviewRx(this.dataset.id,'DECLINED')">Decline</button>` : ''}</div>`;
-  });
-  document.getElementById('pendingRx').innerHTML = html || '<p>No prescriptions in this view.</p>';
+  const sel = document.getElementById('rxUserFilter');
+  const ids = [];
+  adminCache.rx.forEach(rx => { if (ids.indexOf(String(rx.UserID)) === -1) ids.push(String(rx.UserID)); });
+  const current = forceUser != null ? String(forceUser) : (sel ? sel.value : '');
+  if (sel) {
+    if (current && ids.indexOf(current) === -1) ids.push(current);
+    sel.innerHTML = '<option value="">All patients</option>' + ids.map(id => `<option value="${esc(id)}">${esc(patientLabel(id))}</option>`).join('');
+    sel.value = current && ids.indexOf(current) !== -1 ? current : '';
+  }
+  const userFilter = sel ? sel.value : '';
+  const rows = adminCache.rx.filter(rx => (filter === 'ALL' || rx.Status === filter) && (!userFilter || String(rx.UserID) === userFilter));
+  document.getElementById('pendingRx').innerHTML = rows.map((rx, i) => rxCardHtml(rx, 'admin', i)).join('')
+    || '<div class="rx-empty-state"><span class="rx-empty-mark">✚</span><p>No prescriptions in this view.</p></div>';
+}
+function patientLabel(id) {
+  const user = adminCache.users.find(u => String(u.UserID) === String(id));
+  return user && user.Email ? id + ' · ' + user.Email : id;
+}
+function filterRxByUser(userId) {
+  const status = document.getElementById('rxFilter');
+  if (status) status.value = 'ALL';
+  renderAdminRx(userId);
+  const list = document.getElementById('pendingRx');
+  if (list && list.scrollIntoView) list.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 async function reviewRx(rxId, status) {
   if (!requireAdmin()) return;
   const note = status === 'DECLINED' ? (prompt('Reason for decline?') || '') : '';
   const res = await callAPI({ action:'update_status', adminKey, rxId, status, note });
   show('adminMsg', res.success, res.message);
-  if (res.success) loadPending();
+  if (res.success) await loadPending();
+}
+function closeRxViewer() {
+  const overlay = document.getElementById('rxViewer');
+  if (overlay) overlay.hidden = true;
+  document.body.classList.remove('viewer-open');
+  if (rxViewerUrl) { URL.revokeObjectURL(rxViewerUrl); rxViewerUrl = ''; }
+}
+async function openRxViewer(rxId, source) {
+  rxViewerId = rxId;
+  const asAdmin = source === 'admin';
+  const overlay = document.getElementById('rxViewer');
+  overlay.hidden = false;
+  document.body.classList.add('viewer-open');
+  document.getElementById('rxViewerTitle').textContent = 'Opening prescription';
+  document.getElementById('rxViewerMeta').textContent = 'Fetching the file…';
+  document.getElementById('rxViewerNote').textContent = '';
+  document.getElementById('rxViewerStage').innerHTML = '<div class="rx-skeleton" role="status" aria-label="Loading prescription"></div>';
+  document.getElementById('rxViewerApprove').hidden = true;
+  document.getElementById('rxViewerDecline').hidden = true;
+  document.getElementById('rxViewerDrive').hidden = true;
+  const closeBtn = document.getElementById('rxViewerClose');
+  if (closeBtn) closeBtn.focus();
+  const payload = { action:'view_rx', rxId };
+  if (asAdmin) {
+    if (!adminKey) { show('adminMsg', false, 'Unlock admin actions first.'); closeRxViewer(); return; }
+    payload.adminKey = adminKey;
+  } else {
+    if (!session) { show('userMsg', false, 'Please log in first.'); closeRxViewer(); return; }
+    payload.userId = session.userId;
+  }
+  const res = await callAPI(payload);
+  if (overlay.hidden || rxViewerId !== rxId) return;
+  if (!res.success) {
+    const cached = findRxRecord(rxId);
+    const fileId = cached && String(cached.FileId || '');
+    if (/^[A-Za-z0-9_-]{20,}$/.test(fileId)) { paintDriveFallback(cached, fileId, asAdmin); return; }
+    document.getElementById('rxViewerTitle').textContent = 'Could not open prescription';
+    document.getElementById('rxViewerMeta').textContent = '';
+    document.getElementById('rxViewerStage').innerHTML = '<p class="rx-empty">' + esc(res.message) + '</p>';
+    return;
+  }
+  paintRxViewer(res.data || {}, asAdmin);
+}
+function findRxRecord(rxId) {
+  return historyCache.concat(adminCache.rx).find(rx => String(rx.RxID) === String(rxId)) || null;
+}
+function paintDriveFallback(rx, fileId, asAdmin) {
+  document.getElementById('rxViewerTitle').textContent = prettyFileName(rx && rx.FileName);
+  document.getElementById('rxViewerMeta').textContent = [rx && rx.RxID, rx && rx.Status, asAdmin && rx && rx.UserID ? 'Patient ' + rx.UserID : ''].filter(Boolean).join('  ·  ');
+  document.getElementById('rxViewerNote').textContent = rx && rx.ReviewNote ? 'Note: ' + rx.ReviewNote : '';
+  const drive = document.getElementById('rxViewerDrive');
+  drive.hidden = false;
+  drive.href = 'https://drive.google.com/file/d/' + encodeURIComponent(fileId) + '/view';
+  const frame = document.createElement('iframe');
+  frame.className = 'rx-preview-frame';
+  frame.title = 'Prescription preview';
+  frame.src = 'https://drive.google.com/file/d/' + encodeURIComponent(fileId) + '/preview';
+  const stage = document.getElementById('rxViewerStage');
+  const hint = document.createElement('p');
+  hint.className = 'rx-empty';
+  hint.textContent = 'If the preview stays blank, use Open in Drive.';
+  stage.innerHTML = '';
+  stage.appendChild(frame);
+  stage.appendChild(hint);
+}
+function paintRxViewer(file, asAdmin) {
+  const name = file.fileName || 'Prescription';
+  rxViewerName = name;
+  document.getElementById('rxViewerTitle').textContent = prettyFileName(name);
+  const bits = [file.rxId, file.status, asAdmin && file.userId ? 'Patient ' + file.userId : '', file.timestamp ? 'Uploaded ' + prettyWhen(file.timestamp) : '', file.reviewedAt ? 'Reviewed ' + prettyWhen(file.reviewedAt) : ''].filter(Boolean);
+  document.getElementById('rxViewerMeta').textContent = bits.join('  ·  ');
+  document.getElementById('rxViewerNote').textContent = file.reviewNote ? 'Note: ' + file.reviewNote : '';
+  const pending = asAdmin && String(file.status || '') === 'PENDING';
+  document.getElementById('rxViewerApprove').hidden = !pending;
+  document.getElementById('rxViewerDecline').hidden = !pending;
+  const drive = document.getElementById('rxViewerDrive');
+  const fileId = String(file.fileId || '');
+  if (/^[A-Za-z0-9_-]{20,}$/.test(fileId)) {
+    drive.hidden = false;
+    drive.href = 'https://drive.google.com/file/d/' + encodeURIComponent(fileId) + '/view';
+  } else drive.hidden = true;
+  const stage = document.getElementById('rxViewerStage');
+  stage.innerHTML = '';
+  if (rxViewerUrl) { URL.revokeObjectURL(rxViewerUrl); rxViewerUrl = ''; }
+  const bytes = decodeB64(file.fileBase64 || '');
+  if (!bytes || !bytes.length) {
+    stage.innerHTML = '<p class="rx-empty">This prescription has no file data to preview.</p>';
+    return;
+  }
+  const type = sniffType(bytes, file.fileType, name);
+  rxViewerUrl = URL.createObjectURL(new Blob([bytes], { type: type }));
+  if (type.indexOf('image/') === 0) {
+    const img = document.createElement('img');
+    img.className = 'rx-preview-img';
+    img.alt = 'Prescription ' + name;
+    img.src = rxViewerUrl;
+    stage.appendChild(img);
+  } else if (type === 'application/pdf') {
+    const frame = document.createElement('iframe');
+    frame.className = 'rx-preview-frame';
+    frame.title = 'Prescription PDF';
+    frame.src = rxViewerUrl;
+    stage.appendChild(frame);
+  } else if (looksText(bytes)) {
+    const paper = document.createElement('article');
+    paper.className = 'rx-paper';
+    const heading = document.createElement('h3');
+    heading.textContent = 'Prescription file';
+    const pre = document.createElement('pre');
+    pre.textContent = new TextDecoder().decode(bytes);
+    paper.appendChild(heading);
+    paper.appendChild(pre);
+    stage.appendChild(paper);
+  } else {
+    stage.innerHTML = '<p class="rx-empty">Preview is not available for this file type. Download it to open locally.</p>';
+  }
+}
+function decodeB64(b64) {
+  try {
+    const bin = atob(String(b64).replace(/\s/g, ''));
+    const out = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  } catch (err) { return null; }
+}
+function sniffType(bytes, declared, name) {
+  const stated = String(declared || '').toLowerCase();
+  if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return 'image/png';
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8) return 'image/jpeg';
+  if (bytes.length >= 4 && bytes[0] === 0x25 && bytes[1] === 0x50 && bytes[2] === 0x44 && bytes[3] === 0x46) return 'application/pdf';
+  if (stated.indexOf('image/') === 0 || stated === 'application/pdf') return stated;
+  if (/\.png$/i.test(name)) return 'image/png';
+  if (/\.jpe?g$/i.test(name)) return 'image/jpeg';
+  if (/\.pdf$/i.test(name)) return 'application/pdf';
+  return stated || 'application/octet-stream';
+}
+function looksText(bytes) {
+  const n = Math.min(bytes.length, 240);
+  if (!n) return false;
+  let printable = 0;
+  for (let i = 0; i < n; i++) {
+    const c = bytes[i];
+    if (c === 9 || c === 10 || c === 13 || (c >= 32 && c < 127)) printable++;
+  }
+  return printable / n > 0.9;
+}
+function downloadCurrentRx() {
+  if (!rxViewerUrl) return;
+  const link = document.createElement('a');
+  link.href = rxViewerUrl;
+  link.download = rxViewerName || 'prescription';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+async function reviewFromViewer(status) {
+  if (!rxViewerId) return;
+  const id = rxViewerId;
+  await reviewRx(id, status);
+  if (document.getElementById('rxViewer').hidden) return;
+  await openRxViewer(id, 'admin');
 }
 function documentLinks(ids) {
   return String(ids || '').split(';').map(entry => {
@@ -868,8 +1481,8 @@ async function loadUsers() {
   const res = await callAPI({ action:'get_data', sheetName:'Users', adminKey });
   if (!res.success) return show('adminMsg', false, res.message);
   adminCache.users = res.data || [];
-  let html = '<table><tr><th>ID</th><th>Email</th><th>Phone</th><th>Role</th><th>Status</th><th>Created</th></tr>';
-  adminCache.users.forEach(u => html += `<tr><td>${esc(u.UserID)}</td><td>${esc(u.Email)}</td><td>${esc(u.Phone)}</td><td>${esc(u.Role)}</td><td class="st-${esc(u.Status)}">${esc(u.Status)}</td><td>${esc(u.CreatedAt)}</td></tr>`);
+  let html = '<table><tr><th>ID</th><th>Email</th><th>Phone</th><th>Role</th><th>Status</th><th>Created</th><th>Prescriptions</th></tr>';
+  adminCache.users.forEach(u => html += `<tr><td>${esc(u.UserID)}</td><td>${esc(u.Email)}</td><td>${esc(u.Phone)}</td><td>${esc(u.Role)}</td><td class="st-${esc(u.Status)}">${esc(u.Status)}</td><td>${esc(u.CreatedAt)}</td><td><button class="btn gray" data-id="${esc(u.UserID)}" onclick="filterRxByUser(this.dataset.id)">Prescriptions</button></td></tr>`);
   document.getElementById('userList').innerHTML = html + '</table>';
   renderAdminStats();
 }
@@ -893,6 +1506,10 @@ async function loadAdminMedicines() {
 (function init() {
   wireOtpBoxes('.otp');
   wireOtpBoxes('.motp');
+  wireRxDrop();
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !document.getElementById('rxViewer').hidden) closeRxViewer();
+  });
 
   if (!API_URL || /PASTE_YOUR|REPLACE_WITH|^$/.test(API_URL)) {
     const b = document.getElementById('configBanner');
