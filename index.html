@@ -344,7 +344,7 @@
   .rx-note { color:var(--ink-2) !important; background:var(--line-2); border-radius:8px; padding:7px 9px; margin-top:6px !important; }
   .rx-actions { display:flex; flex-wrap:wrap; gap:6px; margin-top:auto; padding-top:10px; }
   .rx-actions .btn { margin:8px 0 0; }
-  .rx-grid, #pendingRx { display:grid; grid-template-columns:repeat(auto-fill, minmax(258px, 1fr)); gap:12px; margin-top:10px; }
+  .rx-grid, #pendingRx { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 258px), 1fr)); gap:12px; margin-top:10px; }
   .rx-doc {
     position:relative; height:82px; margin:12px 0 6px; border-radius:12px; overflow:hidden;
     display:grid; place-items:center; background:linear-gradient(150deg, #f8fbff, #eef4fd 62%, #f4f8fd);
@@ -592,8 +592,74 @@
     .hero { padding:18px; }
     #toastRegion { right:12px; left:12px; bottom:104px; width:auto; }
   }
+  /* Shared responsive polish: native controls and subtle, compositor-friendly motion. */
+  :root { --ease-out:cubic-bezier(.22,1,.36,1); }
+  input, select, textarea { min-width:0; max-width:100%; }
+  textarea { resize:vertical; min-height:86px; }
+  button, a, input, select, textarea, summary { -webkit-tap-highlight-color:transparent; touch-action:manipulation; }
+  input, textarea, select { scroll-margin-block:110px; }
+  .btn { min-height:44px; }
+  .btn:active:not(:disabled) { transform:translateY(1px); }
+  .btn:disabled { cursor:wait; }
+  .rx-card, .stat, .hero-card { min-width:0; }
+  .rx-card h3, .section-head, .rx-id { overflow-wrap:anywhere; }
+  #userList, #adminMedicineList, #merchantList, #myMedicineList { max-width:100%; overflow-x:auto; }
+  .delivery-intro { margin:24px 0 18px; }
+  .delivery-section { min-width:0; margin:0 0 18px; padding:18px; border:1px solid var(--line); border-radius:14px; background:var(--surface); animation:cardIn .4s var(--ease-out) both; }
+  .delivery-section:nth-of-type(2) { animation-delay:60ms; }
+  .delivery-section:nth-of-type(3) { animation-delay:120ms; }
+  .delivery-section legend { padding:0 8px; font-weight:700; color:var(--ink); font-size:14px; }
+  .step-number { display:inline-grid; place-items:center; width:26px; height:26px; margin-right:6px; border-radius:50%; background:var(--brand-tint); color:var(--brand-dark); font-size:12px; }
+  .delivery-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px; }
+  .delivery-grid > div { min-width:0; }
+  .delivery-grid .full-width { grid-column:1 / -1; }
+  .delivery-section .hint { margin:6px 0 0; font-size:12px; }
+  .optional { font-weight:400; color:var(--muted); }
+  .delivery-submit { display:flex; align-items:center; gap:24px; padding-top:4px; }
+  .delivery-submit p { flex:1; }
+  .delivery-submit .btn { flex-shrink:0; margin:0; }
+  .upload-progress { margin-top:16px !important; padding:12px; border-radius:10px; background:var(--brand-tint); color:var(--brand-dark) !important; animation:msgIn .2s ease; }
+  .delivery-details { margin:12px 0; border:1px solid var(--line); border-radius:10px; background:#f8fbff; }
+  .delivery-details summary { padding:12px; cursor:pointer; font-weight:600; color:var(--brand-dark); }
+  summary:focus-visible { outline:2px solid var(--brand); outline-offset:2px; border-radius:8px; }
+  .delivery-details[open] > .delivery-detail-body { animation:panelIn .22s var(--ease-out); }
+  .delivery-detail-body { padding:0 12px 10px; }
+  .delivery-detail-body p { white-space:pre-wrap; overflow-wrap:anywhere; }
+  @media (hover:hover) and (pointer:fine) {
+    .delivery-section { transition:border-color .2s, box-shadow .2s; }
+    .delivery-section:focus-within { border-color:var(--brand-line); box-shadow:var(--shadow-sm); }
+    .delivery-details summary:hover { background:var(--brand-tint); }
+  }
+  @supports (height:100dvh) {
+    .sidebar { height:100dvh; }
+    .rx-viewer-dialog { max-height:calc(100dvh - 36px); }
+  }
+  @media (max-width:900px) {
+    .sidebar { height:auto; }
+    .rx-viewer-dialog { height:100dvh; max-height:100dvh; }
+    input, select, textarea, .command-bar input { font-size:16px; }
+    .tabs button { min-height:48px; }
+    .topbar { background:#fff; }
+  }
+  @media (max-width:600px) {
+    .delivery-grid { grid-template-columns:minmax(0,1fr); gap:16px; }
+    .delivery-submit { flex-direction:column; align-items:stretch; gap:12px; }
+    .delivery-section { padding:14px; }
+    .upload-zone { padding:14px; }
+    .delivery-submit .btn { width:100%; }
+    .panel { padding:16px; }
+    .filter-row > div { min-width:0; flex-basis:100%; max-width:none; }
+    .sidebar .account { padding:4px; border:0; background:transparent; }
+    .sidebar #sessionBar { display:none; }
+    .sidebar .tabs button { padding:7px 9px; }
+    .topbar-title { flex:1 1 160px; }
+    .command-bar { gap:6px; padding-left:10px; }
+    .command-bar .btn { padding:8px; }
+    body { background-attachment:scroll; }
+  }
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after {
+      animation-delay:0ms !important; transition-delay:0ms !important;
       animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important;
       scroll-behavior:auto !important;
     }
@@ -818,7 +884,49 @@
     <label for="rxFile">Prescription file (PDF/JPG/PNG, max 10 MB)</label>
     <input type="file" id="rxFile" accept=".pdf,.jpg,.jpeg,.png" onchange="previewSelectedRx()">
     <div id="rxLocalPreview" class="local-preview" hidden></div>
-    <button class="btn" onclick="uploadRx()">Upload → Status: Pending</button>
+    <form id="rxDeliveryForm" onsubmit="event.preventDefault(); uploadRx()">
+      <div class="delivery-intro"><span class="kicker">Before you submit</span>
+        <h3>Where should we deliver?</h3>
+        <p>Tell us who to call and where to bring your medicines. All fields are required unless marked optional.</p>
+      </div>
+      <fieldset class="delivery-section">
+        <legend><span class="step-number" aria-hidden="true">1</span> Patient &amp; receiver</legend>
+        <div class="delivery-grid">
+          <div><label for="rxPatientName">Patient full name</label>
+            <input id="rxPatientName" name="patientName" autocomplete="section-patient name" type="text" maxlength="120" required placeholder="Name on the prescription"></div>
+          <div><label for="rxReceiverName">Receiver full name</label>
+            <input id="rxReceiverName" name="receiverName" autocomplete="section-receiver shipping name" type="text" maxlength="120" required placeholder="Person receiving the delivery"></div>
+          <div><label for="rxConfirmationPhone">Confirmation calling number</label>
+            <input id="rxConfirmationPhone" name="confirmationPhone" type="tel" autocomplete="section-patient tel" maxlength="30" required placeholder="e.g. +977 9800000001" aria-describedby="rxConfirmationHelp">
+            <p id="rxConfirmationHelp" class="hint">We’ll call to confirm prescription and order details.</p></div>
+          <div><label for="rxReceiverPhone">Receiver calling number</label>
+            <input id="rxReceiverPhone" name="receiverPhone" type="tel" autocomplete="section-receiver shipping tel" maxlength="30" required placeholder="Number to call on arrival" aria-describedby="rxReceiverHelp">
+            <p id="rxReceiverHelp" class="hint">Use the same number if you’re receiving the delivery.</p>
+            <button class="btn gray sm" type="button" onclick="copyConfirmationPhone()">Use confirmation number</button></div>
+        </div>
+      </fieldset>
+      <fieldset class="delivery-section">
+        <legend><span class="step-number" aria-hidden="true">2</span> Delivery location</legend>
+        <div class="delivery-grid">
+          <div class="full-width"><label for="rxDeliveryAddress">Delivery address (house / street / ward)</label>
+            <textarea id="rxDeliveryAddress" name="deliveryAddress" autocomplete="shipping street-address" rows="2" maxlength="500" required placeholder="House or building, street / tole, and ward number"></textarea></div>
+          <div><label for="rxDeliveryCity">City / municipality / district</label>
+            <input id="rxDeliveryCity" name="deliveryCity" autocomplete="shipping address-level2" type="text" maxlength="120" required placeholder="e.g. Kathmandu, Bagmati"></div>
+          <div><label for="rxLandmark">Nearby landmark <span class="optional">(optional)</span></label>
+            <input id="rxLandmark" name="landmark" type="text" maxlength="200" placeholder="e.g. opposite the health post"></div>
+        </div>
+      </fieldset>
+      <fieldset class="delivery-section">
+        <legend><span class="step-number" aria-hidden="true">3</span> Anything else?</legend>
+        <label for="rxDeliveryInstructions">Delivery instructions <span class="optional">(optional)</span></label>
+        <textarea id="rxDeliveryInstructions" name="deliveryInstructions" rows="2" maxlength="500" placeholder="Access instructions or a preferred time to call"></textarea>
+      </fieldset>
+      <div class="delivery-submit">
+        <p class="hint">Shared with reviewers and the pharmacy fulfilling your order. Uploading sends your prescription for review; it does not place an order.</p>
+        <button id="rxUploadBtn" class="btn" type="submit">Submit prescription →</button>
+      </div>
+      <p id="rxUploadProgress" class="upload-progress" role="status" hidden>Uploading your prescription. Please keep this page open…</p>
+    </form>
   </div>
   <div id="userMsg" class="msg"></div>
   <div class="section-head">
@@ -1359,6 +1467,7 @@ async function doLogin() {
   }
 }
 function logout() {
+  document.getElementById('rxDeliveryForm').reset();
   const token = session && session.sessionToken;
   localStorage.removeItem('pharmago_session');
   session = null;
@@ -1369,20 +1478,62 @@ function logout() {
 }
 
 // ===== USER: PRESCRIPTIONS =====
+let rxUploading = false;
+function copyConfirmationPhone() {
+  const source = document.getElementById('rxConfirmationPhone');
+  const receiver = document.getElementById('rxReceiverPhone');
+  receiver.value = source.value.trim();
+  receiver.focus();
+}
 async function uploadRx() {
+  if (rxUploading) return;
   if (!session) return show('userMsg', false, 'Please log in first.');
   const f = document.getElementById('rxFile').files[0];
   if (!f) return show('userMsg', false, 'Select a file.');
   if (f.size > MAX_UPLOAD_BYTES) return show('userMsg', false, 'File is larger than 10 MB — please upload a smaller scan.');
-  show('userMsg', true, 'Uploading…');
-  const res = await callAPI({ action:'upload_rx', userId: session.userId, fileName: f.name, fileType: f.type, fileBase64: await fileToBase64(f) });
-  show('userMsg', res.success, res.message);
-  if (res.success) {
-    document.getElementById('rxFile').value = '';
-    const box = document.getElementById('rxLocalPreview');
-    if (box) { box.hidden = true; box.innerHTML = ''; }
-    if (rxLocalUrl) { URL.revokeObjectURL(rxLocalUrl); rxLocalUrl = ''; }
-    loadHistory();
+  const form = document.getElementById('rxDeliveryForm');
+  for (const input of form.querySelectorAll('[name]')) input.value = input.value.trim();
+  if (!form.reportValidity()) return;
+  const delivery = Object.fromEntries(new FormData(form));
+  for (const key of ['confirmationPhone', 'receiverPhone']) {
+    const value = delivery[key];
+    if (!/^\+?[0-9 ()-]+$/.test(value) || value.replace(/\D/g, '').length < 7 || value.replace(/\D/g, '').length > 15) {
+      return show('userMsg', false, 'Enter valid confirmation and receiver calling numbers (7–15 digits, optional country code).');
+    }
+  }
+  const button = document.getElementById('rxUploadBtn');
+  const progress = document.getElementById('rxUploadProgress');
+  const uploadSession = session;
+  rxUploading = true;
+  setBusy(button, true);
+  button.textContent = 'Uploading…';
+  form.setAttribute('aria-busy', 'true');
+  progress.hidden = false;
+  const controls = [...form.querySelectorAll('input, textarea, button'), document.getElementById('rxFile')];
+  controls.forEach(control => { control.disabled = true; });
+  try {
+    const fileBase64 = await fileToBase64(f);
+    if (session !== uploadSession) return;
+    const res = await callAPI({ action:'upload_rx', ...delivery, userId: uploadSession.userId, fileName: f.name, fileType: f.type, fileBase64 });
+    if (session !== uploadSession) return;
+    show('userMsg', res.success, res.message);
+    if (res.success) {
+      form.reset();
+      document.getElementById('rxFile').value = '';
+      const box = document.getElementById('rxLocalPreview');
+      if (box) { box.hidden = true; box.innerHTML = ''; }
+      if (rxLocalUrl) { URL.revokeObjectURL(rxLocalUrl); rxLocalUrl = ''; }
+      await loadHistory();
+    }
+  } catch (err) {
+    if (session === uploadSession) show('userMsg', false, 'Could not upload the prescription. Your details are kept here; please try again.');
+  } finally {
+    rxUploading = false;
+    controls.forEach(control => { control.disabled = false; });
+    setBusy(button, false);
+    button.textContent = 'Submit prescription →';
+    form.removeAttribute('aria-busy');
+    progress.hidden = true;
   }
 }
 async function loadHistory() {
@@ -1424,6 +1575,16 @@ function prettyWhen(value) {
   try { return date.toLocaleString(undefined, { dateStyle:'medium', timeStyle:'short' }); }
   catch (err) { return date.toLocaleString(); }
 }
+function deliveryDetailsHtml(record) {
+  const fields = [['PatientName','Patient'], ['ReceiverName','Receiver'],
+    ['ConfirmationPhone','Confirmation calling number'], ['ReceiverPhone','Receiver calling number'],
+    ['DeliveryAddress','Delivery address'], ['DeliveryCity','City / municipality / district'],
+    ['Landmark','Landmark'], ['DeliveryInstructions','Delivery instructions']];
+  const details = fields.filter(([key]) => record[key]).map(([key, label]) =>
+    `<p><b>${label}:</b> ${esc(record[key])}</p>`).join('');
+  return details ? `<details class="delivery-details"><summary>Delivery &amp; contact details</summary><div class="delivery-detail-body">${details}</div></details>`
+    : '<p class="hint">Delivery details were not recorded for this prescription.</p>';
+}
 function rxCardHtml(rx, source, index) {
   const status = String(rx.Status || 'PENDING');
   const reviewed = status !== 'PENDING';
@@ -1434,6 +1595,7 @@ function rxCardHtml(rx, source, index) {
     <h3>${esc(prettyFileName(rx.FileName))}</h3>
     <p>${source === 'admin' ? 'Patient ' + esc(rx.UserID) + ' · ' : ''}Uploaded ${esc(prettyWhen(rx.Timestamp))}</p>
     ${rx.ReviewNote ? `<p class="rx-note">${esc(rx.ReviewNote)}</p>` : ''}
+    ${deliveryDetailsHtml(rx)}
     <ol class="rx-track" aria-label="Review progress">
       <li class="on">Uploaded</li>
       <li class="${reviewed ? 'on' : 'wait'}">${reviewed ? 'Reviewed' : 'In review'}</li>
@@ -1479,6 +1641,7 @@ function wireRxDrop() {
     zone.classList.remove('drag');
   }));
   zone.addEventListener('drop', event => {
+    if (rxUploading) return;
     const file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
     if (!file || typeof DataTransfer === 'undefined') return;
     const transfer = new DataTransfer();
@@ -1581,6 +1744,7 @@ function orderCardHtml(order, canReview, asAdmin) {
     <h3>${esc(order.MedicineName || 'Medicine')}</h3>
     <p>${esc(order.Qty)} × NPR ${esc(order.Price)} · Rx ${esc(order.RxID)}</p>
     <p>${asAdmin ? 'Patient ' + esc(order.UserID) + ' · ' : ''}${esc(prettyWhen(order.CreatedAt))}</p>
+    ${deliveryDetailsHtml(order)}
     ${order.Note ? `<p class="rx-note">${esc(order.Note)}</p>` : ''}
     ${canReview && status === 'PLACED' ? `<div class="rx-actions">
       <button class="btn green" data-id="${esc(order.OrderID)}" onclick="reviewShopOrder(this.dataset.id,'ACCEPTED',${asAdmin ? 'true' : 'false'})">Accept</button>

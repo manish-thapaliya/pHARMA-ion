@@ -219,3 +219,34 @@ Run against the previous revision — the first four made the app unusable end t
   link-shared file locks it down. Redeploy the Apps Script web app or the live page cannot issue tokens.
 * Orders connect an approved prescription to one catalogue medicine. There is no delivery tracking,
   payment, or multi-item basket yet.
+
+### Prescription delivery details
+
+New prescription uploads require patient name, receiver name, confirmation calling
+number, receiver calling number, delivery address (house/street/ward), and
+city/municipality/district. Landmark and delivery instructions are optional. Both
+phone fields accept 7–15 digits with an optional country code, spaces, parentheses,
+and hyphens; the same number may be entered for both contacts.
+
+Details are saved with the prescription and shown in customer history and admin
+review. The pharmacy fulfilling a placed order can see the linked delivery details
+in its order queue; unrelated customers and pharmacies cannot access them. Uploading
+a prescription still does not place an order.
+
+Deploy both `index.html` and the updated Apps Script backend together. Existing
+`Prescriptions` sheets automatically receive eight appended columns on setup or
+first access; existing rows and file references remain unchanged. Older records
+show “Delivery details were not recorded” and remain usable. New API clients must
+send `patientName`, `receiverName`, `confirmationPhone`, `receiverPhone`,
+`deliveryAddress`, and `deliveryCity` with `upload_rx`; optional fields are
+`landmark` and `deliveryInstructions`.
+
+### Responsive UI and motion
+
+The prescription form groups contact, location, and optional instructions into
+numbered sections, with two columns on desktop and a single column on small
+screens. Phone copying, autofill hints, touch-sized buttons, dynamic-height
+viewers, and scrollable admin tables support mobile use. Uploads show a busy
+indicator, prevent duplicate submissions, and preserve the form after a failure.
+Section entrances and delivery-detail expansion use short animations; the system
+`prefers-reduced-motion` setting disables animation delays and reduces transitions.
