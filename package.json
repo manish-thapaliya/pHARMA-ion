@@ -4,9 +4,13 @@
   "private": true,
   "description": "PharmaGo MVP — Google Apps Script backend (code.gs) + static frontend (index.html)",
   "scripts": {
-    "test": "node tests/run-tests.js && node tests/check-frontend.js",
+    "test": "node tests/run-tests.js && node tests/check-frontend.js && node tests/check-ui-state.js",
     "test:api": "node tests/run-tests.js",
-    "test:frontend": "node tests/check-frontend.js"
+    "test:frontend": "node tests/check-frontend.js && node tests/check-ui-state.js",
+    "demo": "node demo/server.js"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "jsdom": "^26.1.0"
+  }
 }

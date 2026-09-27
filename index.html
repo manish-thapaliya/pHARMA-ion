@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PharmaGo — Online Medicine Delivery (MVP)</title>
+<title>PharmaGo | Care, delivered</title>
+<meta name="theme-color" content="#123d37">
 <style>
   :root { --brand:#0a7d5c; --brand-dark:#075e46; --danger:#d33; --warn:#e8930c; --ink:#22303a; }
   * { box-sizing: border-box; }
@@ -42,27 +43,104 @@
   .stepper .dot.on { background:var(--brand); }
   .topbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
   .banner { display:none; margin:10px 0; padding:10px; border-radius:6px; background:#fff6e5; border:1px solid #f0d69a; color:#7a5b00; font-size:14px; }
+
+  /* PharmaGo workspace */
+  :root { --brand:#116e59; --brand-dark:#104f43; --danger:#bb4949; --warn:#a86e23;
+    --ink:#17352f; --muted:#62766e; --line:#dae5df; --paper:#fffdf9; }
+  body { max-width:none; min-height:100vh; margin:0; padding:0 24px 48px;
+    background:radial-gradient(circle at 90% 8%, #e0f1e8 0, transparent 36%), #f5f7f1;
+    color:var(--ink); font-family: 'Segoe UI', system-ui, sans-serif; line-height:1.55; }
+  .app-shell { max-width:1180px; margin:auto; }
+  .topbar { padding:24px 0; border-bottom:1px solid var(--line); gap:20px; }
+  .brand { display:flex; align-items:center; gap:12px; text-decoration:none; color:var(--ink); }
+  .brand-mark { display:grid; place-items:center; width:46px; height:46px; border-radius:14px;
+    background:#164e42; color:white; font-size:25px; font-weight:700; box-shadow:0 6px 14px #164e4222; }
+  .brand-name { font-size:23px; font-weight:800; letter-spacing:-.05em; line-height:1; }
+  .brand-name span { color:var(--brand); }
+  .brand-sub { color:var(--muted); font-size:11px; font-weight:700; letter-spacing:.13em; text-transform:uppercase; }
+  #sessionBar { padding:8px 14px; border:1px solid var(--line); border-radius:30px; background:white;
+    font-size:13px; max-width:100%; overflow-wrap:anywhere; }
+  .hero { display:grid; grid-template-columns: 1.5fr 1fr; align-items:center; gap:32px;
+    margin:28px 0 24px; padding:38px 48px; border-radius:22px; overflow:hidden; position:relative;
+    background:#123e36; color:white; box-shadow:0 18px 45px #17463820; }
+  .hero:after { content:"+"; position:absolute; right:25%; top:-170px; font-size:500px; line-height:1;
+    color:#ffffff09; font-weight:900; pointer-events:none; }
+  .eyebrow { display:inline-block; color:#aee4c7; letter-spacing:.16em; text-transform:uppercase; font-size:11px; font-weight:800; }
+  .hero h1 { color:white; font-size:clamp(32px,4vw,53px); letter-spacing:-.055em; line-height:1.08;
+    max-width:610px; margin:12px 0 16px; }
+  .hero p { color:#c8e0d7; font-size:15px; margin:0; max-width:530px; }
+  .hero-cards { z-index:1; display:grid; gap:10px; }
+  .hero-card { background:#ffffff13; border:1px solid #ffffff31; border-radius:12px; padding:13px 17px;
+    display:flex; gap:14px; align-items:center; backdrop-filter:blur(8px); font-size:14px; }
+  .hero-card b { display:block; color:white; } .hero-card span { color:#c8e0d7; font-size:12px; }
+  .hero-icon { display:grid; place-items:center; flex:none; height:37px; width:37px; border-radius:10px; background:#ffffff21; font-size:19px; }
+  .tabs { display:flex; flex-wrap:wrap; align-items:center; gap:7px; border:0; margin-bottom:16px; }
+  .tabs button { font:inherit; font-weight:650; color:#456258; background:transparent; border:1px solid transparent;
+    border-radius:10px; padding:10px 17px; transition:background .15s, color .15s; }
+  .tabs button:hover { background:#e4ede6; } .tabs button.active { background:var(--brand); color:white; box-shadow:0 5px 12px #116e5928; }
+  .panel { background:var(--paper); border:1px solid var(--line); border-radius:18px;
+    padding:clamp(22px,4vw,42px); box-shadow:0 12px 36px #2347380a; min-height:340px; }
+  .panel h2 { margin:0 0 6px; font-size:clamp(22px,2.5vw,30px); letter-spacing:-.04em; }
+  .panel h3 { margin:26px 0 6px; font-size:18px; }
+  .panel p { color:var(--muted); }
+  .panel hr { border:0; border-top:1px solid var(--line); margin:30px 0; }
+  .grid2 { gap:30px; } .grid2 > div { min-width:0; }
+  #viewLogin .grid2 > div { padding:24px; border:1px solid var(--line); background:#fff; border-radius:16px; }
+  #viewLogin .grid2 > div:first-child { background:#f2f8f3; }
+  label { font-size:13px; margin-top:17px; color:#3c554c; }
+  input, select, textarea { font:inherit; background:#fff; color:var(--ink); border:1px solid #cddbd2;
+    border-radius:9px; padding:11px 12px; transition:border-color .15s,box-shadow .15s; }
+  input:focus, textarea:focus, select:focus { outline:none; border-color:var(--brand); box-shadow:0 0 0 3px #116e5920; }
+  .btn { font:inherit; font-size:14px; font-weight:700; border-radius:9px; padding:11px 17px;
+    transition:transform .15s, background .15s; cursor:pointer; }
+  .btn:hover { transform:translateY(-1px); } .btn:focus-visible, .tabs button:focus-visible { outline:3px solid #e8b560; outline-offset:2px; }
+  .btn.gray { background:#667c70; } .btn.green { background:var(--brand); }
+  .btn.link { text-align:left; padding:6px 0; }
+  .card { background:white; border-color:var(--line); border-radius:12px; padding:18px; }
+  .msg { border-radius:9px; padding:11px 14px; } .banner { border-radius:10px; }
+  .table-wrap { width:100%; overflow-x:auto; } table { background:white; min-width:560px; }
+  th, td { border:0; border-bottom:1px solid var(--line); padding:11px; }
+  th { font-size:12px; text-transform:uppercase; letter-spacing:.06em; text-align:left; color:var(--muted); background:#f2f7f3; }
+  [hidden] { display:none !important; }
+  .access-note { background:#f2f8f3; border:1px solid #d7e8dc; border-radius:12px; padding:16px 20px; margin:14px 0; }
+  .access-note p { margin:5px 0 0; }
+  #sessionBar .btn { margin:0 0 0 10px; padding:5px 9px; font-size:12px; }
+  .site-footer { color:var(--muted); font-size:12px; padding:26px 2px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+  @media(max-width:760px) {
+    body { padding:0 14px 24px; } .hero { grid-template-columns:1fr; padding:26px; }
+    .hero-cards { grid-template-columns:repeat(3,1fr); } .hero-card { flex-direction:column; align-items:flex-start; }
+    .grid2 { grid-template-columns:1fr; gap:16px; } .tabs button { font-size:13px; padding:9px 11px; }
+  }
+  @media(max-width:520px) { .hero-cards { grid-template-columns:1fr; } .hero-card { flex-direction:row; }
+    .topbar { padding:16px 0; } .panel { padding:20px 16px; } #viewLogin .grid2 > div { padding:18px; } }
 </style>
 </head>
 <body>
+<div class="app-shell">
+<header class="topbar">
+  <a class="brand" href="#" onclick="activateTab('Login');return false" aria-label="PharmaGo home">
+    <span class="brand-mark" aria-hidden="true">✚</span><span><span class="brand-name">pharma<span>go.</span></span><br><span class="brand-sub">Your care, closer</span></span>
+  </a>
+  <div id="sessionBar" class="hint" aria-live="polite"></div>
+</header>
 
-<div class="topbar">
-  <div>
-    <h1>💊 PharmaGo — Delivery MVP</h1>
-    <small class="hint">Backend: Google Apps Script API • Data: Google Sheets • Files: Google Drive • Frontend: GitHub Pages</small>
+<section class="hero" aria-label="Welcome to PharmaGo">
+  <div><span class="eyebrow">A simpler way to care</span><h1>Better health, delivered to your door.</h1>
+    <p>Find everyday medicines, manage prescriptions, and connect with trusted local pharmacies — all in one place.</p></div>
+  <div class="hero-cards">
+    <div class="hero-card"><div class="hero-icon">✚</div><div><b>Easy prescriptions</b><span>Upload once. Track every step.</span></div></div>
+    <div class="hero-card"><div class="hero-icon">◈</div><div><b>Local pharmacies</b><span>Browse medicines near you.</span></div></div>
+    <div class="hero-card"><div class="hero-icon">✓</div><div><b>Verified care</b><span>Safe, reviewed, and reliable.</span></div></div>
   </div>
-  <div id="sessionBar" class="hint"></div>
-</div>
-
-<div id="configBanner" class="banner"></div>
-
-<div class="tabs">
-  <button id="tabLogin" class="active" onclick="openTab(event,'login')">Login / Register</button>
-  <button id="tabUser" onclick="openTab(event,'user')">My Portal</button>
-  <button id="tabShop" onclick="openTab(event,'shop')">Shop (Medicines)</button>
-  <button id="tabMerchant" onclick="openTab(event,'merchant')">Vendor Portal</button>
-  <button id="tabAdmin" onclick="openTab(event,'admin')">Admin Panel</button>
-</div>
+</section>
+<div id="configBanner" class="banner" role="alert"></div>
+<nav class="tabs" aria-label="Main navigation">
+  <button id="tabLogin" class="active" onclick="openTab(event,'login')">Account</button>
+  <button id="tabUser" onclick="openTab(event,'user')">My prescriptions</button>
+  <button id="tabShop" onclick="openTab(event,'shop')">Browse medicines</button>
+  <button id="tabMerchant" onclick="openTab(event,'merchant')">For pharmacies</button>
+  <button id="tabAdmin" onclick="openTab(event,'admin')">Admin</button>
+</nav>
 
 <!-- ============ LOGIN / REGISTER / VERIFY / RESET ============ -->
 <div id="login" class="panel active">
@@ -139,7 +217,10 @@
 
 <!-- ============ USER PORTAL ============ -->
 <div id="user" class="panel">
-  <h2>Upload Prescription</h2>
+  <h2>My prescriptions</h2>
+  <div class="access-note" data-show="guest,merchant" hidden><b>Sign in as a customer to manage prescriptions.</b><p>Your uploads and their review status will appear here once you sign in.</p><button class="btn" onclick="activateTab('Login')">Go to sign in</button></div>
+  <div data-show="user">
+  <h3>Upload a prescription</h3>
   <p id="whoami" class="hint">Not logged in.</p>
   <label>Prescription file (PDF/JPG/PNG, max 10 MB)</label>
   <input type="file" id="rxFile" accept=".pdf,.jpg,.jpeg,.png">
@@ -147,14 +228,16 @@
   <div id="userMsg" class="msg"></div>
   <hr>
   <h2>My History <button class="btn gray" style="padding:6px 12px" onclick="loadHistory()">Refresh</button></h2>
-  <table id="historyTbl"><tr><th>RxID</th><th>File</th><th>Status</th><th>Uploaded At</th><th>Reviewed At</th><th>Note</th></tr></table>
+  <div class="table-wrap"><table id="historyTbl"><tr><th>RxID</th><th>File</th><th>Status</th><th>Uploaded At</th><th>Reviewed At</th><th>Note</th></tr></table></div>
+</div>
+
 </div>
 
 <!-- ============ SHOP ============ -->
 <div id="shop" class="panel">
   <h2>Available Medicines</h2>
   <button class="btn" onclick="loadMedicines()">Load Catalogue</button>
-  <table id="medTbl"><tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Seller</th></tr></table>
+  <div class="table-wrap"><table id="medTbl"><tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Seller</th></tr></table></div>
   <div id="shopMsg" class="msg"></div>
 </div>
 
@@ -202,6 +285,8 @@
   </div>
 
   <hr>
+  <div class="access-note" data-show="guest,user" hidden><b>Already a pharmacy partner?</b><p>Sign in with your vendor account to manage listings after approval.</p></div>
+  <div data-show="merchant">
   <h2>Vendor Tools (after login &amp; approval)</h2>
   <p><small class="hint">Log in with your vendor ID/email. If you have no password yet, use "Forgot password?" on the Login tab — the emailed link sets it for you.</small></p>
   <div class="grid2">
@@ -216,7 +301,9 @@
   </div>
   <button class="btn" onclick="addMedicine(false)">Add Medicine (as Merchant)</button>
   <h3>My Listings <button class="btn gray" style="padding:6px 12px" onclick="loadMyListings()">Refresh</button></h3>
-  <table id="myMedTbl"><tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th><th>Active</th></tr></table>
+  <div class="table-wrap"><table id="myMedTbl"><tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th><th>Active</th></tr></table></div>
+</div>
+
 </div>
 
 <!-- ============ ADMIN PANEL ============ -->
@@ -225,7 +312,9 @@
   <label>Admin Key</label><input id="adminKey" type="password" placeholder="set ADMIN_KEY in code.gs">
   <button class="btn" onclick="adminAuth()">Unlock Admin Actions</button>
   <span id="adminState" class="hint">Locked</span>
+  <button class="btn link" onclick="lockAdmin()">Lock admin</button>
 
+  <div data-show="admin" hidden>
   <hr>
   <h3>1) Prescriptions — verify user uploads</h3>
   <button class="btn" onclick="loadPending()">Load Pending Rx</button>
@@ -251,16 +340,20 @@
     </div>
   </div>
   <button class="btn" onclick="addMedicine(true)">Add Medicine (Admin)</button>
-  <div id="adminMsg" class="msg"></div>
+  </div>
+  <div id="adminMsg" class="msg" role="status" aria-live="polite"></div>
 </div>
 
+<footer class="site-footer"><span>© PharmaGo · Care made accessible</span><span>Google Sheets & Drive powered · Never share your admin key</span></footer>
+</div>
 <script>
 // ===== CONFIG — paste your deployed Apps Script /exec URL =====
 const API_URL = "https://script.google.com/macros/s/AKfycbwEcJiZpX29IFGWZPnB9HbGOnSeSd4jRKtZ6pbAOPayyJbqKYw3Mw-omQ2NdtaIWGYt3w/exec";
+const API_ENDPOINT = document.querySelector('meta[name="pharmago-demo"]') ? '/api' : API_URL;
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // keep in sync with MAX_UPLOAD_BYTES in code.gs
 
 let session = JSON.parse(localStorage.getItem('pharmago_session') || 'null'); // {userId, role, name}
-let adminKey = localStorage.getItem('pharmago_adminkey') || '';
+let adminKey = sessionStorage.getItem('pharmago_adminkey') || '';
 let pendingVerify = null;   // { userId, email, purpose:'VERIFY' }
 let pendingMerchant = null; // { merchantId, email, purpose:'MVERIFY' }
 let otpTimer = null;
@@ -273,7 +366,7 @@ function openTab(evt, id) {
   evt.currentTarget.classList.add('active');
   renderSession();
   if (id === 'shop') loadMedicines();
-  if (id === 'user' && session) loadHistory();
+  if (id === 'user' && session && session.role === 'USER') loadHistory();
 }
 function activateTab(id) { const b = document.getElementById('tab' + id); if (b) b.click(); }
 function show(elId, ok, text) {
@@ -286,7 +379,7 @@ async function callAPI(payload) {
   // text/plain keeps the request a CORS "simple request": the browser sends no
   // OPTIONS preflight, which Apps Script cannot answer.
   try {
-    const res = await fetch(API_URL, {
+    const res = await fetch(API_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
       body: JSON.stringify(payload),
@@ -317,12 +410,21 @@ function renderSession() {
   if (session) {
     const t = `Logged in as <strong>${esc(session.name || session.userId)}</strong> (${esc(session.role)}) — ID: ${esc(session.userId)}`;
     who.innerHTML = t + ' <button class="btn gray" style="padding:4px 10px" onclick="logout()">Logout</button>';
-    bar.innerHTML = t;
+    bar.innerHTML = t + ' <button class="btn gray" onclick="logout()">Sign out</button>';
   } else {
     who.textContent = 'Not logged in.';
     bar.textContent = 'Not logged in.';
   }
   document.getElementById('adminState').textContent = adminKey ? 'Unlocked ✔' : 'Locked';
+  renderAccess();
+}
+function renderAccess() {
+  const role = session && session.role === 'MERCHANT' ? 'merchant' :
+    session && session.role === 'USER' ? 'user' : 'guest';
+  document.querySelectorAll('[data-show]').forEach(el => {
+    const allowed = el.dataset.show.split(',');
+    el.hidden = !allowed.includes(role) && !(allowed.includes('admin') && !!adminKey);
+  });
 }
 function showView(v) {
   ['login','verify','forgot','reset'].forEach(x => {
@@ -395,6 +497,7 @@ async function doRegister() {
   if (res.success) {
     pendingVerify = { userId: res.data && res.data.userId, email, purpose:'VERIFY' };
     enterVerifyView();
+    if (res.data.demoOtp) show('verifyMsg', true, 'Demo verification code: ' + res.data.demoOtp);
   }
 }
 function enterVerifyView() {
@@ -437,7 +540,7 @@ async function doResend() {
   if (!pendingVerify) return;
   const res = await callAPI({ action:'resend_otp', email: pendingVerify.email });
   show('verifyMsg', res.success, res.message);
-  if (res.success) startOtpCountdown(600, 'otpCountdown');
+  if (res.success) { startOtpCountdown(600, 'otpCountdown'); if (res.data && res.data.demoOtp) show('verifyMsg', true, 'Demo verification code: ' + res.data.demoOtp); }
 }
 async function doForgot() {
   const loginId = document.getElementById('fId').value.trim();
@@ -445,6 +548,11 @@ async function doForgot() {
   show('forgotMsg', true, 'Sending email…');
   const res = await callAPI({ action:'forgot_password', loginId });
   show('forgotMsg', res.success, res.message);
+  if (res.success && res.data && res.data.demoToken) {
+    sessionStorage.setItem('pharmago_token', res.data.demoToken);
+    showView('reset');
+    show('resetMsg', true, 'Demo password link opened. Choose a new password.');
+  }
 }
 async function doReset() {
   const p1 = document.getElementById('np1').value, p2 = document.getElementById('np2').value;
@@ -472,7 +580,7 @@ async function doLogin() {
     enterVerifyView();
   }
 }
-function logout(){ localStorage.removeItem('pharmago_session'); session=null; renderSession(); showView('login'); activateTab('Login'); }
+function logout(){ localStorage.removeItem('pharmago_session'); session=null; lockAdmin(); renderSession(); showView('login'); activateTab('Login'); }
 
 // ===== USER: PRESCRIPTIONS =====
 async function uploadRx() {
@@ -541,6 +649,7 @@ async function registerMerchant() {
     document.querySelectorAll('.motp').forEach(b => b.value='');
     startOtpCountdown(600, 'motpCountdown');
     document.querySelector('.motp').focus();
+    if (res.data.demoOtp) show('mvMsg', true, 'Demo verification code: ' + res.data.demoOtp);
   }
 }
 async function doMerchantVerify() {
@@ -567,7 +676,7 @@ async function doMerchantResend() {
   if (!pendingMerchant) return show('mvMsg', false, 'Register first.');
   const res = await callAPI({ action:'resend_otp', email: pendingMerchant.email });
   show('mvMsg', res.success, res.message);
-  if (res.success) startOtpCountdown(600, 'motpCountdown');
+  if (res.success) { startOtpCountdown(600, 'motpCountdown'); if (res.data && res.data.demoOtp) show('mvMsg', true, 'Demo verification code: ' + res.data.demoOtp); }
 }
 async function addMedicine(asAdmin) {
   const g = id => document.getElementById(id);
@@ -603,7 +712,22 @@ async function loadMyListings() {
 
 // ===== ADMIN =====
 function requireAdmin(){ if(!adminKey){ show('adminMsg',false,'Enter the Admin Key first (and press “Unlock Admin Actions”).'); return false;} return true; }
-function adminAuth(){ adminKey = document.getElementById('adminKey').value.trim(); localStorage.setItem('pharmago_adminkey', adminKey); renderSession(); show('adminMsg', !!adminKey, adminKey?'Admin actions unlocked.':'Enter a key.'); }
+function lockAdmin() {
+  adminKey = '';
+  sessionStorage.removeItem('pharmago_adminkey');
+  document.getElementById('adminKey').value = '';
+  renderSession();
+}
+async function adminAuth() {
+  const key = document.getElementById('adminKey').value.trim();
+  if (!key) return show('adminMsg', false, 'Enter a key.');
+  const res = await callAPI({ action:'get_data', sheetName:'Users', adminKey:key });
+  if (!res.success) return show('adminMsg', false, 'Admin key not accepted.');
+  adminKey = key;
+  sessionStorage.setItem('pharmago_adminkey', key);
+  renderSession();
+  show('adminMsg', true, 'Admin actions unlocked.');
+}
 
 async function loadPending() {
   if (!requireAdmin()) return;

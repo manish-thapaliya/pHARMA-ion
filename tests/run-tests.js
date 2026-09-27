@@ -27,6 +27,7 @@ const sandbox = {
   HtmlService: stub.HtmlService,
   ContentService: stub.ContentService,
   Session: stub.Session,
+  LockService: stub.LockService,
   Logger: stub.Logger,
 };
 sandbox.globalThis = sandbox;
