@@ -1,158 +1,568 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pharma MVP</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; }
-        .tab { overflow: hidden; border-bottom: 1px solid #ccc; }
-        .tab button { background-color: inherit; float: left; border: none; outline: none; cursor: pointer; padding: 14px 16px; font-size: 16px; }
-        .tab button.active { background-color: #ddd; }
-        .tabcontent { display: none; padding: 20px 0; }
-        input, select, button { padding: 8px; margin: 5px 0; width: 100%; box-sizing: border-box; }
-        button { background-color: #007bff; color: white; border: none; cursor: pointer; }
-        button:hover { background-color: #0056b3; }
-        .status-approved { color: green; font-weight: bold; }
-        .status-declined { color: red; font-weight: bold; }
-        .status-pending { color: orange; font-weight: bold; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PharmaGo — Online Medicine Delivery (MVP)</title>
+<style>
+  :root { --brand:#0a7d5c; --brand-dark:#075e46; --danger:#d33; --warn:#e8930c; --ink:#22303a; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; max-width: 920px; margin: 0 auto; padding: 16px; color:var(--ink); background:#f2f7f5; }
+  h1 { color: var(--brand); margin-bottom:2px; }
+  .tabs { display:flex; flex-wrap:wrap; gap:4px; border-bottom:2px solid #ccc; margin-bottom:16px; }
+  .tabs button { border:none; background:#e3efea; padding:10px 16px; cursor:pointer; border-radius:8px 8px 0 0; font-size:15px; }
+  .tabs button.active { background:var(--brand); color:#fff; }
+  .panel { display:none; background:#fff; padding:16px; border-radius:0 8px 8px 8px; box-shadow:0 1px 4px rgba(0,0,0,.08); }
+  .panel.active { display:block; }
+  label { display:block; margin-top:10px; font-weight:600; font-size:14px; }
+  input, select, textarea { width:100%; padding:9px; margin-top:4px; border:1px solid #bbb; border-radius:6px; font-size:14px; }
+  .btn { display:inline-block; width:auto !important; margin-top:12px; padding:10px 18px; border:none; border-radius:6px; background:var(--brand); color:#fff; cursor:pointer; font-size:15px; }
+  .btn:hover { background:var(--brand-dark); }
+  .btn.red { background:var(--danger); } .btn.green { background:#1a9e3f; } .btn.gray { background:#777; }
+  .btn.link { background:none; color:var(--brand); text-decoration:underline; padding:6px 4px; font-size:14px; }
+  table { width:100%; border-collapse:collapse; margin-top:10px; font-size:14px; }
+  th, td { border:1px solid #ddd; padding:6px 8px; text-align:left; }
+  th { background:#eef5f2; }
+  .status-APPROVED, .st-ACTIVE { color:green; font-weight:bold; }
+  .status-DECLINED, .st-DECLINED { color:red; font-weight:bold; }
+  .status-PENDING, .st-PENDING, .st-UNVERIFIED { color:var(--warn); font-weight:bold; }
+  .card { border:1px solid #ddd; border-radius:8px; padding:12px; margin:10px 0; background:#fbfdfc; }
+  .msg { margin-top:10px; padding:10px; border-radius:6px; display:none; font-size:14px; }
+  .msg.ok { display:block; background:#e6f6ec; color:#146c2e; border:1px solid #b7e4c7; }
+  .msg.err { display:block; background:#fdecec; color:#a11; border:1px solid #f5c2c7; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:640px){ .grid2{grid-template-columns:1fr;} }
+  small.hint { color:#667; }
+  /* OTP input boxes */
+  .otp-row { display:flex; gap:8px; margin-top:6px; }
+  .otp-row input { width:44px; height:52px; text-align:center; font-size:22px; font-weight:700; }
+  .countdown { font-size:13px; color:#667; margin-top:6px; }
+  .stepper { display:flex; gap:6px; align-items:center; font-size:13px; color:#667; margin-bottom:8px; }
+  .stepper .dot { width:10px; height:10px; border-radius:50%; background:#cbd6d1; }
+  .stepper .dot.on { background:var(--brand); }
+  .topbar { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+</style>
 </head>
 <body>
 
-    <h1>Pharma Delivery MVP</h1>
+<div class="topbar">
+  <div>
+    <h1>💊 PharmaGo — Delivery MVP</h1>
+    <small class="hint">Backend: Google Apps Script API • Data: Google Sheets • Files: Google Drive • Frontend: GitHub Pages</small>
+  </div>
+  <div id="sessionBar" class="hint"></div>
+</div>
 
-    <!-- Tabs -->
-    <div class="tab">
-        <button class="tablinks active" onclick="openTab(event, 'UserTab')">User Portal</button>
-        <button class="tablinks" onclick="openTab(event, 'AdminTab')">Admin Portal</button>
+<div class="tabs">
+  <button class="active" onclick="openTab(event,'login')">Login / Register</button>
+  <button onclick="openTab(event,'user')">My Portal</button>
+  <button onclick="openTab(event,'shop')">Shop (Medicines)</button>
+  <button onclick="openTab(event,'merchant')">Vendor Portal</button>
+  <button onclick="openTab(event,'admin')">Admin Panel</button>
+</div>
+
+<!-- ============ LOGIN / REGISTER / VERIFY / RESET ============ -->
+<div id="login" class="panel active">
+
+  <!-- STEP: login + register -->
+  <div id="viewLogin">
+    <div class="grid2">
+      <div>
+        <h2>Login</h2>
+        <label>ID or Email</label><input id="lId" autocomplete="username">
+        <label>Password</label><input id="lPass" type="password" autocomplete="current-password">
+        <button class="btn" onclick="doLogin()">Login</button>
+        <button class="btn link" onclick="showView('forgot')">Forgot password? Set it through email →</button>
+      </div>
+      <div>
+        <h2>Register as Customer</h2>
+        <p><small class="hint">We'll email a one-time 6-digit code to verify your address. Password is set after verification.</small></p>
+        <label>Name</label><input id="rName">
+        <label>Email (unique)</label><input id="rEmail" type="email">
+        <label>Phone (unique)</label><input id="rPhone" type="tel">
+        <button class="btn" onclick="doRegister()">Register → Get Email Code</button>
+      </div>
     </div>
+  </div>
 
-    <!-- USER TAB -->
-    <div id="UserTab" class="tabcontent" style="display:block;">
-        <h2>Register / Login</h2>
-        <input type="email" id="uEmail" placeholder="Email">
-        <input type="text" id="uPhone" placeholder="Phone">
-        <input type="password" id="uPass" placeholder="Password">
-        <button onclick="registerUser()">Register</button>
-        <p id="userIdDisplay"></p>
-
-        <hr>
-        <h2>Upload Prescription</h2>
-        <input type="file" id="rxFile" accept=".pdf,.jpg,.png">
-        <button onclick="uploadRx()">Upload</button>
-
-        <hr>
-        <h2>My Prescription History</h2>
-        <button onclick="getMyHistory()">Refresh History</button>
-        <div id="historyList"></div>
+  <!-- STEP: OTP verification -->
+  <div id="viewVerify" style="display:none">
+    <div class="stepper"><span class="dot on"></span> Registered → <span class="dot on"></span> Verify email → <span class="dot" id="stepPwDot"></span> Set password</div>
+    <h2>Enter the code we emailed you</h2>
+    <p class="hint">Sent to <strong id="vEmailShow"></strong> for account <strong id="vIdShow"></strong>. Valid 10 minutes, single use.</p>
+    <div class="otp-row">
+      <input maxlength="1" class="otp" inputmode="numeric"><input maxlength="1" class="otp" inputmode="numeric"><input maxlength="1" class="otp" inputmode="numeric"><input maxlength="1" class="otp" inputmode="numeric"><input maxlength="1" class="otp" inputmode="numeric"><input maxlength="1" class="otp" inputmode="numeric">
     </div>
+    <div class="countdown" id="otpCountdown"></div>
+    <button class="btn" onclick="doVerify()">Verify Code</button>
+    <button class="btn gray" onclick="doResend()">Resend code</button>
+    <button class="btn link" onclick="showView('login')">← Back to login</button>
+    <div id="verifyMsg" class="msg"></div>
+  </div>
 
-    <!-- ADMIN TAB -->
-    <div id="AdminTab" class="tabcontent">
-        <h2>Admin: Pending Prescriptions</h2>
-        <button onclick="getPendingRx()">Load Pending</button>
-        <div id="pendingList"></div>
+  <!-- STEP: request password-by-mail link -->
+  <div id="viewForgot" style="display:none">
+    <div class="stepper"><span class="dot on"></span> Request email link → <span class="dot"></span> Open link → <span class="dot"></span> New password</div>
+    <h2>Set / reset password via email</h2>
+    <p><small class="hint">We'll send a one-time secure link (valid 24 h). Open it and choose your new password there.</small></p>
+    <label>Email or User ID</label><input id="fId">
+    <button class="btn" onclick="doForgot()">Email me a password link</button>
+    <button class="btn link" onclick="showView('login')">← Back to login</button>
+    <div id="forgotMsg" class="msg"></div>
+  </div>
+
+  <!-- STEP: token arrived from emailed link -> set password -->
+  <div id="viewReset" style="display:none">
+    <div class="stepper"><span class="dot on"></span> Link opened → <span class="dot on"></span> Enter new password</div>
+    <h2>Choose your new password</h2>
+    <p><small class="hint">This page was reached from your emailed link. The link works once.</small></p>
+    <label>New password (min 6 chars)</label><input id="np1" type="password" autocomplete="new-password">
+    <label>Confirm password</label><input id="np2" type="password" autocomplete="new-password">
+    <button class="btn" onclick="doReset()">Set Password</button>
+    <button class="btn link" onclick="showView('login')">← Back to login</button>
+    <div id="resetMsg" class="msg"></div>
+  </div>
+
+  <div id="loginMsg" class="msg"></div>
+</div>
+
+<!-- ============ USER PORTAL ============ -->
+<div id="user" class="panel">
+  <h2>Upload Prescription</h2>
+  <p id="whoami" class="hint">Not logged in.</p>
+  <label>Prescription file (PDF/JPG/PNG)</label>
+  <input type="file" id="rxFile" accept=".pdf,.jpg,.jpeg,.png">
+  <button class="btn" onclick="uploadRx()">Upload → Status: Pending</button>
+  <div id="userMsg" class="msg"></div>
+  <hr>
+  <h2>My History <button class="btn gray" style="padding:6px 12px" onclick="loadHistory()">Refresh</button></h2>
+  <table id="historyTbl"><tr><th>RxID</th><th>File</th><th>Status</th><th>Uploaded At</th><th>Reviewed At</th><th>Note</th></tr></table>
+</div>
+
+<!-- ============ SHOP ============ -->
+<div id="shop" class="panel">
+  <h2>Available Medicines</h2>
+  <button class="btn" onclick="loadMedicines()">Load Catalogue</button>
+  <table id="medTbl"><tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Seller</th></tr></table>
+</div>
+
+<!-- ============ MERCHANT PORTAL ============ -->
+<div id="merchant" class="panel">
+  <h2>New Vendor Registration</h2>
+  <p><small class="hint">All four documents are required for pharma vendor verification: GST, Drug License, Shop ID proof, PAN. A one-time email code verifies the owner address first; then an admin reviews your documents.</small></p>
+  <div class="grid2">
+    <div>
+      <label>Owner Email (unique)</label><input id="mEmail" type="email">
+      <label>Phone (unique)</label><input id="mPhone" type="tel">
+      <label>Shop Name</label><input id="mShop">
+      <label>Address</label><input id="mAddr">
     </div>
+    <div>
+      <label>GST Number</label><input id="mGst">
+      <label>Drug License Number</label><input id="mDl">
+      <label>GST Certificate *</label><input type="file" id="docGST" accept=".pdf,.jpg,.png">
+      <label>Drug License Doc *</label><input type="file" id="docDRUG_LICENSE" accept=".pdf,.jpg,.png">
+      <label>Shop ID Proof *</label><input type="file" id="docSHOP_ID" accept=".pdf,.jpg,.png">
+      <label>PAN Card *</label><input type="file" id="docPAN" accept=".pdf,.jpg,.png">
+    </div>
+  </div>
+  <button class="btn" onclick="registerMerchant()">Submit → Email Verification Code</button>
+  <div id="merchMsg" class="msg"></div>
 
-    <script>
-        // --- CONFIGURATION ---
-        // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
-        const API_URL = "https://script.google.com/macros/s/AKfycbwEcJiZpX29IFGWZPnB9HbGOnSeSd4jRKtZ6pbAOPayyJbqKYw3Mw-omQ2NdtaIWGYt3w/exec"; 
-        let currentUserId = ""; // In a real app, store this in localStorage/session
+  <div class="card" id="mvCard" style="display:none">
+    <h3>Verify vendor email (one-time code)</h3>
+    <p class="hint">Code sent to <strong id="mvEmail"></strong> for vendor <strong id="mvId"></strong>.</p>
+    <div class="otp-row">
+      <input maxlength="1" class="motp" inputmode="numeric"><input maxlength="1" class="motp" inputmode="numeric"><input maxlength="1" class="motp" inputmode="numeric"><input maxlength="1" class="motp" inputmode="numeric"><input maxlength="1" class="motp" inputmode="numeric"><input maxlength="1" class="motp" inputmode="numeric">
+    </div>
+    <button class="btn" onclick="doMerchantVerify()">Verify Code</button>
+    <div id="mvMsg" class="msg"></div>
+  </div>
 
-        // --- UI LOGIC ---
-        function openTab(evt, tabName) {
-            document.querySelectorAll(".tabcontent").forEach(el => el.style.display = "none");
-            document.querySelectorAll(".tablinks").forEach(el => el.classList.remove("active"));
-            document.getElementById(tabName).style.display = "block";
-            evt.currentTarget.classList.add("active");
-        }
+  <hr>
+  <h2>Vendor Tools (after login & approval)</h2>
+  <p><small class="hint">Log in with your vendor ID/email (set your password via "Forgot password?" email), then add medicines below.</small></p>
+  <div class="grid2">
+    <div>
+      <label>Medicine Name</label><input id="nmName">
+      <label>Category</label><input id="nmCat" placeholder="e.g. Tablet, Syrup">
+    </div>
+    <div>
+      <label>Price (₹)</label><input id="nmPrice" type="number">
+      <label>Stock</label><input id="nmStock" type="number">
+    </div>
+  </div>
+  <button class="btn" onclick="addMedicine(false)">Add Medicine (as Merchant)</button>
+  <h3>My Listings <button class="btn gray" style="padding:6px 12px" onclick="loadMyListings()">Refresh</button></h3>
+  <table id="myMedTbl"><tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th></tr></table>
+</div>
 
-        // --- API CALLS ---
-        async function callAPI(payload) {
-            const res = await fetch(API_URL, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            });
-            return await res.json();
-        }
+<!-- ============ ADMIN PANEL ============ -->
+<div id="admin" class="panel">
+  <h2>Admin Login</h2>
+  <label>Admin Key</label><input id="adminKey" type="password" placeholder="set ADMIN_KEY in code.gs">
+  <button class="btn" onclick="adminAuth()">Unlock Admin Actions</button>
+  <span id="adminState" class="hint">Locked</span>
 
-        // 1. Register User
-        async function registerUser() {
-            const email = document.getElementById('uEmail').value;
-            const phone = document.getElementById('uPhone').value;
-            const pass = document.getElementById('uPass').value;
-            
-            const res = await callAPI({ action: 'register', email, phone, password: pass });
-            if (res.success) {
-                currentUserId = res.data.userId;
-                document.getElementById('userIdDisplay').innerText = `Registered! Your ID: ${currentUserId}`;
-            } else {
-                alert(res.message);
-            }
-        }
+  <hr>
+  <h3>1) Prescriptions — verify user uploads</h3>
+  <button class="btn" onclick="loadPending()">Load Pending Rx</button>
+  <div id="pendingRx"></div>
 
-        // 2. Upload Prescription
-        async function uploadRx() {
-            if (!currentUserId) return alert("Please register first!");
-            const fileInput = document.getElementById('rxFile');
-            if (!fileInput.files[0]) return alert("Select a file!");
+  <h3>2) Vendors — verify registration documents</h3>
+  <button class="btn" onclick="loadMerchants()">Load Vendors</button>
+  <div id="merchantList"></div>
 
-            const file = fileInput.files[0];
-            const reader = new FileReader();
-            
-            reader.onload = async function(e) {
-                const base64 = e.target.result.split(',')[1]; // Get pure base64
-                const res = await callAPI({
-                    action: 'upload_rx',
-                    userId: currentUserId,
-                    fileName: file.name,
-                    fileType: file.type,
-                    fileBase64: base64
-                });
-                alert(res.message);
-            };
-            reader.readAsDataURL(file);
-        }
+  <h3>3) Users</h3>
+  <button class="btn" onclick="loadUsers()">Load Users</button>
+  <div id="userList"></div>
 
-        // 3. Get User History
-        async function getMyHistory() {
-            if (!currentUserId) return alert("Please register first!");
-            const res = await callAPI({ action: 'get_data', sheetName: 'Prescriptions', userId: currentUserId });
-            const list = document.getElementById('historyList');
-            list.innerHTML = '';
-            
-            res.data.forEach(rx => {
-                const statusClass = `status-${rx.Status.toLowerCase()}`;
-                list.innerHTML += `<p><strong>${rx.FileName}</strong> - <span class="${statusClass}">${rx.Status}</span> (${rx.Timestamp})</p>`;
-            });
-        }
+  <h3>4) Add Medicine (as Admin)</h3>
+  <div class="grid2">
+    <div>
+      <label>Name</label><input id="amName">
+      <label>Category</label><input id="amCat">
+    </div>
+    <div>
+      <label>Price (₹)</label><input id="amPrice" type="number">
+      <label>Stock</label><input id="amStock" type="number">
+    </div>
+  </div>
+  <button class="btn" onclick="addMedicine(true)">Add Medicine (Admin)</button>
+  <div id="adminMsg" class="msg"></div>
+</div>
 
-        // 4. Admin: Get Pending & Approve/Decline
-        async function getPendingRx() {
-            const res = await callAPI({ action: 'get_data', sheetName: 'Prescriptions' });
-            const list = document.getElementById('pendingList');
-            list.innerHTML = '';
-            
-            res.data.forEach(rx => {
-                if (rx.Status === 'PENDING') {
-                    list.innerHTML += `
-                        <div style="border:1px solid #ccc; padding:10px; margin:10px 0;">
-                            <p><strong>User:</strong> ${rx.UserID} | <strong>File:</strong> ${rx.FileName}</p>
-                            <button onclick="updateStatus('${rx.RxID}', 'APPROVED')" style="background:green;">Approve</button>
-                            <button onclick="updateStatus('${rx.RxID}', 'DECLINED')" style="background:red;">Decline</button>
-                        </div>
-                    `;
-                }
-            });
-        }
+<script>
+// ===== CONFIG — paste your deployed Apps Script /exec URL =====
+const API_URL = "https://script.google.com/macros/s/AKfycbwEcJiZpX29IFGWZPnB9HbGOnSeSd4jRKtZ6pbAOPayyJbqKYw3Mw-omQ2NdtaIWGYt3w/exec";
 
-        async function updateStatus(rxId, status) {
-            const res = await callAPI({ action: 'update_status', rxId, status });
-            alert(res.message);
-            getPendingRx(); // Refresh list
-        }
-    </script>
+let session = JSON.parse(localStorage.getItem('pharmago_session') || 'null'); // {userId, role, name}
+let adminKey = localStorage.getItem('pharmago_adminkey') || '';
+let pendingVerify = null;   // { userId, email, purpose:'VERIFY'|'MVERIFY' }
+let otpTimer = null;
+
+// ===== HELPERS =====
+function openTab(evt, id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  evt.currentTarget.classList.add('active');
+  renderSession();
+}
+function show(elId, ok, text) {
+  const el = document.getElementById(elId);
+  el.className = 'msg ' + (ok ? 'ok' : 'err');
+  el.textContent = text;
+}
+async function callAPI(payload) {
+  // redirect:'follow' handles the Apps Script 302 to googleusercontent.com
+  const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload), redirect: 'follow' });
+  return await res.json();
+}
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result.split(',')[1]);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+function esc(s){ return String(s ?? '').replace(/[<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function renderSession() {
+  const who = document.getElementById('whoami');
+  const bar = document.getElementById('sessionBar');
+  if (session) {
+    const t = `Logged in as <strong>${esc(session.name || session.userId)}</strong> (${esc(session.role)}) — ID: ${esc(session.userId)}`;
+    who.innerHTML = t + ' <button class="btn gray" style="padding:4px 10px" onclick="logout()">Logout</button>';
+    bar.innerHTML = t;
+  } else {
+    who.textContent = 'Not logged in.';
+    bar.textContent = 'Not logged in.';
+  }
+  document.getElementById('adminState').textContent = adminKey ? 'Unlocked ✔' : 'Locked';
+}
+function showView(v) {
+  ['login','verify','forgot','reset'].forEach(x => {
+    const cap = x[0].toUpperCase() + x.slice(1);
+    const el = document.getElementById('view' + cap);
+    if (el) el.style.display = (x === v ? '' : 'none');
+  });
+}
+
+// ===== OTP BOX WIDGET (auto-advance, paste, backspace) =====
+function wireOtpBoxes(selector) {
+  document.querySelectorAll(selector).forEach((box, i, arr) => {
+    box.addEventListener('input', () => {
+      box.value = box.value.replace(/\D/g,'').slice(0,1);
+      if (box.value && i < arr.length - 1) arr[i+1].focus();
+    });
+    box.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !box.value && i > 0) arr[i-1].focus();
+    });
+    box.addEventListener('paste', e => {
+      e.preventDefault();
+      const d = (e.clipboardData.getData('text') || '').replace(/\D/g,'').slice(0, arr.length);
+      arr.forEach((b, j) => b.value = d[j] || '');
+      if (d.length) arr[Math.min(d.length, arr.length-1)].focus();
+    });
+  });
+}
+function readOtp(selector) {
+  return Array.from(document.querySelectorAll(selector)).map(b => b.value).join('');
+}
+function startOtpCountdown(seconds) {
+  clearInterval(otpTimer);
+  const el = document.getElementById('otpCountdown');
+  let left = seconds;
+  const tick = () => {
+    const m = Math.floor(left/60), s = String(left%60).padStart(2,'0');
+    el.textContent = left > 0 ? `Code expires in ${m}:${s}` : 'Code expired — resend a new one.';
+    left--;
+  };
+  tick(); otpTimer = setInterval(tick, 1000);
+}
+function stopCountdown(){ clearInterval(otpTimer); const el=document.getElementById('otpCountdown'); if(el) el.textContent=''; }
+
+// ===== AUTH FLOW =====
+async function doRegister() {
+  const email = document.getElementById('rEmail').value.trim(), phone = document.getElementById('rPhone').value.trim();
+  if (!email || !phone) return show('loginMsg', false, 'Fill email and phone.');
+  show('loginMsg', true, 'Creating account & emailing your code…');
+  const res = await callAPI({ action:'register', name:document.getElementById('rName').value.trim(), email, phone });
+  show('loginMsg', res.success, res.message);
+  if (res.success) {
+    pendingVerify = { userId: res.data.userId, email, purpose:'VERIFY' };
+    enterVerifyView();
+  }
+}
+function enterVerifyView() {
+  showView('verify');
+  document.getElementById('vEmailShow').textContent = pendingVerify.email;
+  document.getElementById('vIdShow').textContent = pendingVerify.userId;
+  document.querySelectorAll('.otp').forEach(b => b.value='');
+  const first = document.querySelector('.otp'); if (first) first.focus();
+  startOtpCountdown(600);
+}
+async function doVerify() {
+  if (!pendingVerify) return show('verifyMsg', false, 'Nothing to verify — register first.');
+  const otp = readOtp('.otp');
+  if (otp.length !== 6) return show('verifyMsg', false, 'Enter all 6 digits.');
+  const res = await callAPI({ action:'verify_email', userId: pendingVerify.userId, otp });
+  show('verifyMsg', res.success, res.message);
+  if (res.success) {
+    stopCountdown();
+    // Password set through mail: offer to send the one-time link right away
+    if (confirm('Email verified! Receive a "set password" link on ' + pendingVerify.email + ' now?')) {
+      document.getElementById('fId').value = pendingVerify.userId;
+      showView('forgot');
+      doForgot();
+    } else {
+      showView('login');
+      document.getElementById('lId').value = pendingVerify.email;
+    }
+  }
+}
+async function doResend() {
+  if (!pendingVerify) return;
+  const res = await callAPI({ action:'resend_otp', email: pendingVerify.email });
+  show('verifyMsg', res.success, res.message);
+  if (res.success) startOtpCountdown(600);
+}
+async function doForgot() {
+  const loginId = document.getElementById('fId').value.trim();
+  if (!loginId) return show('forgotMsg', false, 'Enter your email or user ID.');
+  show('forgotMsg', true, 'Sending email…');
+  const res = await callAPI({ action:'forgot_password', loginId });
+  show('forgotMsg', res.success, res.message);
+}
+async function doReset() {
+  const p1 = document.getElementById('np1').value, p2 = document.getElementById('np2').value;
+  if (p1.length < 6) return show('resetMsg', false, 'Password must be at least 6 characters.');
+  if (p1 !== p2)     return show('resetMsg', false, 'Passwords do not match.');
+  const token = new URLSearchParams(location.search).get('token') || sessionStorage.getItem('pharmago_token');
+  if (!token) return show('resetMsg', false, 'No reset token found — please use the link from your email.');
+  const res = await callAPI({ action:'reset_password', token, password: p1 });
+  show('resetMsg', res.success, res.message);
+  if (res.success) {
+    sessionStorage.removeItem('pharmago_token');
+    setTimeout(() => { history.replaceState(null,'',location.pathname); showView('login'); }, 1500);
+  }
+}
+async function doLogin() {
+  const res = await callAPI({ action:'login', loginId:document.getElementById('lId').value.trim(), password:document.getElementById('lPass').value.trim() });
+  show('loginMsg', res.success, res.message);
+  if (res.success) {
+    session = res.data;
+    localStorage.setItem('pharmago_session', JSON.stringify(session));
+    renderSession();
+    const tabBtns = document.querySelectorAll('.tabs button');
+    (session.role === 'ADMIN' ? tabBtns[4] : session.role === 'MERCHANT' ? tabBtns[3] : tabBtns[1]).click();
+    if (session.role !== 'MERCHANT') loadHistory();
+    else loadMyListings();
+  } else if (/verify your email first/i.test(res.message) && pendingVerify) {
+    enterVerifyView();
+  }
+}
+function logout(){ localStorage.removeItem('pharmago_session'); session=null; renderSession(); showView('login'); }
+
+// ===== USER: PRESCRIPTIONS =====
+async function uploadRx() {
+  if (!session) return show('userMsg', false, 'Please log in first.');
+  const f = document.getElementById('rxFile').files[0];
+  if (!f) return show('userMsg', false, 'Select a file.');
+  show('userMsg', true, 'Uploading…');
+  const res = await callAPI({ action:'upload_rx', userId: session.userId, fileName: f.name, fileType: f.type, fileBase64: await fileToBase64(f) });
+  show('userMsg', res.success, res.message);
+  if (res.success) loadHistory();
+}
+async function loadHistory() {
+  if (!session) return;
+  const res = await callAPI({ action:'get_data', sheetName:'Prescriptions', userId: session.userId });
+  if (!res.success) return;
+  let html = '<tr><th>RxID</th><th>File</th><th>Status</th><th>Uploaded At</th><th>Reviewed At</th><th>Note</th></tr>';
+  res.data.forEach(rx => {
+    html += `<tr><td>${esc(rx.RxID)}</td><td>${esc(rx.FileName)}</td>
+      <td class="status-${esc(rx.Status)}">${esc(rx.Status)}</td>
+      <td>${esc(rx.Timestamp)}</td><td>${esc(rx.ReviewedAt||'')}</td><td>${esc(rx.ReviewNote||'')}</td></tr>`;
+  });
+  document.getElementById('historyTbl').innerHTML = html;
+}
+
+// ===== SHOP =====
+async function loadMedicines() {
+  const res = await callAPI({ action:'get_medicines' });
+  let html = '<tr><th>ID</th><th>Name</th><th>Category</th><th>Price</th><th>Stock</th><th>Seller</th></tr>';
+  (res.data||[]).forEach(m => {
+    html += `<tr><td>${esc(m.MedicineID)}</td><td>${esc(m.Name)}</td><td>${esc(m.Category)}</td><td>₹${esc(m.Price)}</td><td>${esc(m.Stock)}</td><td>${esc(m.MerchantID)}</td></tr>`;
+  });
+  document.getElementById('medTbl').innerHTML = html;
+}
+
+// ===== MERCHANT =====
+async function registerMerchant() {
+  const docs = [];
+  for (const t of ['GST','DRUG_LICENSE','SHOP_ID','PAN']) {
+    const f = document.getElementById('doc'+t).files[0];
+    if (!f) return show('merchMsg', false, 'Missing document: ' + t);
+    docs.push({ docType:t, fileName:f.name, fileType:f.type, fileBase64: await fileToBase64(f) });
+  }
+  show('merchMsg', true, 'Uploading documents…');
+  const res = await callAPI({
+    action:'register_merchant',
+    email:document.getElementById('mEmail').value.trim(),
+    phone:document.getElementById('mPhone').value.trim(),
+    shopName:document.getElementById('mShop').value.trim(),
+    address:document.getElementById('mAddr').value.trim(),
+    gstNumber:document.getElementById('mGst').value.trim(),
+    drugLicenseNumber:document.getElementById('mDl').value.trim(),
+    documents: docs
+  });
+  show('merchMsg', res.success, res.message + (res.success ? ' Vendor ID: ' + res.data.merchantId : ''));
+  if (res.success) {
+    pendingVerify = { userId: res.data.merchantId, email: document.getElementById('mEmail').value.trim(), purpose:'MVERIFY' };
+    document.getElementById('mvCard').style.display = '';
+    document.getElementById('mvEmail').textContent = pendingVerify.email;
+    document.getElementById('mvId').textContent = pendingVerify.userId;
+    document.querySelectorAll('.motp').forEach(b => b.value='');
+  }
+}
+async function doMerchantVerify() {
+  if (!pendingVerify || pendingVerify.purpose !== 'MVERIFY') return show('mvMsg', false, 'Register first.');
+  const otp = readOtp('.motp');
+  if (otp.length !== 6) return show('mvMsg', false, 'Enter all 6 digits.');
+  const res = await callAPI({ action:'verify_merchant', merchantId: pendingVerify.userId, otp });
+  show('mvMsg', res.success, res.message);
+  if (res.success && confirm('Vendor email verified! Receive a "set password" link by email now?')) {
+    document.getElementById('fId').value = pendingVerify.userId;
+    showView('forgot');
+    doForgot();
+  }
+}
+async function addMedicine(asAdmin) {
+  const g = id => document.getElementById(id);
+  const payload = { action:'add_medicine', name:(asAdmin?g('amName'):g('nmName')).value.trim(),
+    category:(asAdmin?g('amCat'):g('nmCat')).value.trim(), price:Number((asAdmin?g('amPrice'):g('nmPrice')).value),
+    stock:Number((asAdmin?g('amStock'):g('nmStock')).value) };
+  if (asAdmin) {
+    if (!requireAdmin()) return;
+    payload.adminKey = adminKey;
+  } else {
+    if (!session || session.role !== 'MERCHANT') return show('merchMsg', false, 'Log in as a merchant first.');
+    payload.merchantId = session.userId;
+    payload.password = prompt('Merchant password (for server-side verification):') || '';
+  }
+  const res = await callAPI(payload);
+  show(asAdmin ? 'adminMsg' : 'merchMsg', res.success, res.message);
+  if (res.success && !asAdmin) loadMyListings();
+}
+async function loadMyListings() {
+  if (!session || session.role !== 'MERCHANT') return;
+  const res = await callAPI({ action:'get_data', sheetName:'Medicines', merchantId: session.userId });
+  let html = '<tr><th>ID</th><th>Name</th><th>Price</th><th>Stock</th></tr>';
+  (res.data||[]).forEach(m => html += `<tr><td>${esc(m.MedicineID)}</td><td>${esc(m.Name)}</td><td>₹${esc(m.Price)}</td><td>${esc(m.Stock)}</td></tr>`);
+  document.getElementById('myMedTbl').innerHTML = html;
+}
+
+// ===== ADMIN =====
+function requireAdmin(){ if(!adminKey){ show('adminMsg',false,'Enter Admin Key first.'); return false;} return true; }
+function adminAuth(){ adminKey = document.getElementById('adminKey').value.trim(); localStorage.setItem('pharmago_adminkey', adminKey); renderSession(); show('adminMsg', !!adminKey, adminKey?'Admin actions unlocked.':'Enter a key.'); }
+
+async function loadPending() {
+  const res = await callAPI({ action:'get_data', sheetName:'Prescriptions' });
+  if (!res.success) return show('adminMsg', false, res.message);
+  let html = '';
+  res.data.filter(rx => rx.Status === 'PENDING').forEach(rx => {
+    html += `<div class="card"><strong>User:</strong> ${esc(rx.UserID)} | <strong>File:</strong> ${esc(rx.FileName)}
+      | <strong>Uploaded:</strong> ${esc(rx.Timestamp)}
+      <br><button class="btn green" style="padding:6px 12px" onclick="reviewRx('${esc(rx.RxID)}','APPROVED')">Approve → move to Approved drive</button>
+      <button class="btn red" style="padding:6px 12px" onclick="reviewRx('${esc(rx.RxID)}','DECLINED')">Decline</button></div>`;
+  });
+  document.getElementById('pendingRx').innerHTML = html || '<p>No pending prescriptions.</p>';
+}
+async function reviewRx(rxId, status) {
+  if (!requireAdmin()) return;
+  const note = status==='DECLINED' ? (prompt('Reason for decline?')||'') : '';
+  const res = await callAPI({ action:'update_status', adminKey, rxId, status, note });
+  show('adminMsg', res.success, res.message);
+  loadPending();
+}
+async function loadMerchants() {
+  const res = await callAPI({ action:'get_data', sheetName:'Merchants' });
+  let html = '';
+  (res.data||[]).forEach(m => {
+    html += `<div class="card"><strong>${esc(m.ShopName)}</strong> (${esc(m.MerchantID)}) — ${esc(m.OwnerEmail)} / ${esc(m.Phone)}<br>
+      GST: ${esc(m.GSTNumber)} | DL: ${esc(m.DrugLicenseNumber)}<br>Docs: ${esc(m.DocFileIds)}<br>
+      Status: <span class="status-${esc(m.Status)}">${esc(m.Status)}</span>
+      ${m.Status==='PENDING' ? `
+        <button class="btn green" style="padding:6px 12px" onclick="reviewMerchant('${esc(m.MerchantID)}','APPROVED')">Approve</button>
+        <button class="btn red" style="padding:6px 12px" onclick="reviewMerchant('${esc(m.MerchantID)}','DECLINED')">Decline</button>`:''}</div>`;
+  });
+  document.getElementById('merchantList').innerHTML = html || '<p>No vendors yet.</p>';
+}
+async function reviewMerchant(mid, status) {
+  if (!requireAdmin()) return;
+  const res = await callAPI({ action:'review_merchant', adminKey, merchantId: mid, status });
+  show('adminMsg', res.success, res.message);
+  loadMerchants();
+}
+async function loadUsers() {
+  const res = await callAPI({ action:'get_data', sheetName:'Users' });
+  let html = '<tr><th>ID</th><th>Email</th><th>Phone</th><th>Role</th><th>Status</th><th>Created</th></tr>';
+  (res.data||[]).forEach(u => html += `<tr><td>${esc(u.UserID)}</td><td>${esc(u.Email)}</td><td>${esc(u.Phone)}</td><td>${esc(u.Role)}</td><td class="st-${esc(u.Status)}">${esc(u.Status)}</td><td>${esc(u.CreatedAt)}</td></tr>`);
+  document.getElementById('userList').innerHTML = html;
+}
+
+// ===== BOOT: deep links from emailed password-reset URLs =====
+(function init() {
+  wireOtpBoxes('.otp');
+  wireOtpBoxes('.motp');
+  const q = new URLSearchParams(location.search);
+  if ((q.get('page') === 'reset' || q.get('action') === 'pwreset') && q.get('token')) {
+    sessionStorage.setItem('pharmago_token', q.get('token'));
+    showView('reset');
+  }
+  renderSession();
+})();
+</script>
 </body>
 </html>
