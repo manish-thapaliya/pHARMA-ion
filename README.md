@@ -46,6 +46,7 @@ which overrides the constant in `code.gs` — handy for keeping secrets out of G
 | `PENDING_FOLDER_ID` / `APPROVED_FOLDER_ID` / `DECLINED_FOLDER_ID` | *(in file)* | Prescription folders |
 | `MERCHANT_DOCS_FOLDER_ID` | blank → auto-create `PharmaGo — Merchant KYC Docs` | Vendor documents |
 | `ADMIN_KEY` | `changeme-admin-key` | **Change this.** Unlocks admin actions |
+| `ADMIN_GOOGLE_DOMAIN` | blank | Optional hardening: privileged requests must also come from a Google account in this domain (see note below) |
 | `FRONTEND_URL` | blank → Apps-Script-hosted set-password page | Emailed link target |
 
 ---
@@ -70,10 +71,67 @@ Install the UI test dependency first. The backend runs against a mocked Apps Scr
 
 ```bash
 npm install
-npm test              # backend end-to-end + frontend wiring + 64 browser-like UI-state checks
-npm run test:api      # 22 scenarios / 221 checks against code.gs
-npm run test:frontend # index.html wiring + UI-state checks
+npm test              # backend end-to-end + frontend wiring + 77 browser-like UI-state checks
+npm run test:api      # 23 scenarios / 228 checks against code.gs
+npm run test:frontend # index.html wiring, AA-contrast guard + UI-state checks
 ```
+
+Real-pixel verification (optional — needs a browser binary, kept out of git):
+
+```bash
+npx playwright install chromium --with-deps   # one-time, ~150 MB
+npm run test:visual                           # boots the demo, screenshots every workspace
+```
+
+`tests/visual-smoke.js` drives guest → customer → viewer → catalogue → admin in Chromium,
+saves six screenshots to `tests/screenshots/` (git-ignored) and fails on any console or page
+error. It also asserts the focus trap and the `/` catalogue shortcut behave in a real browser.
+
+### Interface
+
+`index.html` ships the **Clinical** UI: a cool-white workspace with a clinical-blue accent
+(`#1668d3`), Inter for prose and IBM Plex Mono for identifiers, prices and counts.
+
+* **Icon rail** — a fixed left sidebar (`.sidebar`) holds the brand, the five `data-show` tabs
+  (`.tabs`), the session chip (`#sessionBar`), sign-out and the connection pill. Below 900 px the
+  rail becomes a bottom tab bar and the session chip docks beside it.
+* **Workspace header** — a sticky topbar names the current space (`Guest / Customer / Pharmacy
+  workspace`, `Admin unlocked`) and the active tab, with quick actions for uploading a prescription
+  and opening the catalogue. `syncTopbar()` keeps it in step with `applyAuthUI()`.
+* **Command bar** — the catalogue search is a single-field filter bar with live results, above a
+  dense table (sticky uppercase headers, mono IDs, hover row highlight).
+* **Cards over tables for state** — prescriptions and orders render as `rx-card` tiles with a status
+  chip and a three-step review track (Uploaded → In review → Approved/Declined); the screen-reader
+  table (`#historyTbl`) stays in sync.
+* **Viewer** — `#rxViewer` is a full modal with sticky header/footer actions, inline image and PDF
+  preview, download, Drive fallback and admin approve/decline.
+* **Accessibility** — every text token meets WCAG AA (4.5:1) against the surface it sits on, and
+  `npm run test:frontend` fails if a future colour edit breaks that. The prescription viewer is a real
+  dialog: `aria-modal`, focus trapped with Tab/Shift+Tab, Escape to close, and focus returned to the
+  control that opened it. Empty and loading states are explicit for every queue.
+* Design tokens live in one `:root` block, so re-theming is a colour edit; motion is disabled under
+  `prefers-reduced-motion` and the rail/topbar are dropped in print.
+
+The same chrome is used by the pages Apps Script serves itself: `pageShell_()` + `clinicalCss_()` in
+`code.gs` render the emailed set-password form, the form-post result and the `FRONTEND_URL` hand-off,
+so a password link never drops the patient into a differently branded page. `demo/server.js` themes
+its hint bar and the `/__mailbox` page with the same tokens.
+
+The markup contract the tests rely on is unchanged: element ids, `data-show` tokens, `.tabs`/`.panel`
+hooks, the six `.otp`/`.motp` boxes and the `text/plain` CORS-safe API calls.
+
+### Emails and admin hardening
+
+Every outgoing mail now carries a branded `htmlBody` (inline styles + tables, plain text kept as
+the fallback): the OTP mail shows the code as a large mono block, the reset mail gets a real CTA
+button with a link fallback, and review/order notifications link back to the app. `emailHtml_()`
+escapes everything and is covered by the API scenarios.
+
+Setting the `ADMIN_GOOGLE_DOMAIN` Script Property adds a second factor to the admin key: the Google
+account serving the request must be in that domain. With the default blank value behaviour is
+unchanged, and `tests/spec.js` has a scenario for both branches. Note that a web app deployed as
+*Execute as: me* always reports the **owner's** account, so the gate only distinguishes callers once
+the deployment is switched to *Execute as: user accessing the web app*.
 
 ### UI states
 
@@ -90,7 +148,8 @@ The admin key can be unlocked and locked separately from customer/pharmacy sign-
 Changing roles automatically moves away from a now-hidden tab. Visibility is **not**
 a security boundary: the Apps Script backend must still verify privileged requests.
 `npm run test:frontend` checks ids, handler wiring, the state vocabulary and all
-five tab rules, then drives 64 UI-state checks with jsdom.
+five tab rules, then drives 77 UI-state checks with jsdom (including the icon rail,
+workspace header and `aria-current` state).
 Customers and admins open the same prescription viewer (`view_rx`): the owner or
 the admin key is required, and the file is shown in the page (images and PDFs)
 with a Drive fallback for older deployments.

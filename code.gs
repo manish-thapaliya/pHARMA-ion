@@ -140,12 +140,13 @@ function doGet(e) {
       const frontend = frontendUrl_();
       if (frontend) {
         // Hand off to the GitHub Pages frontend, which reads ?page=reset&token=
-        return HtmlService.createHtmlOutput(
-          '<meta http-equiv="refresh" content="0;url=' + frontend +
-          '?page=reset&token=' + token + '">' +
-          '<p>Taking you to the set-password page… <a href="' + frontend +
-          '?page=reset&token=' + token + '">continue</a></p>'
-        );
+        const target = frontend + '?page=reset&token=' + token;
+        return HtmlService.createHtmlOutput(pageShell_(
+          'Taking you to PharmaGo',
+          '<div class="msg info">Taking you to the set-password page… ' +
+          '<a href="' + target + '">continue</a></div>',
+          '<meta http-equiv="refresh" content="0;url=' + target + '">'
+        ));
       }
       // No frontend configured yet — serve the form from Apps Script so the
       // emailed link always works (form POSTs need no CORS).
@@ -326,7 +327,21 @@ function sendPasswordResetEmail(data) {
     link + '\n\n' +
     "Didn't request this? Ignore this email.";
   try {
-    MailApp.sendEmail({ to: user[1], subject: 'PharmaGo — set your password', body: body });
+    MailApp.sendEmail({
+      to: user[1],
+      subject: 'PharmaGo — set your password',
+      body: body,
+      htmlBody: emailHtml_({
+        heading: 'Set your PharmaGo password',
+        text: 'Hi ' + (user[5] || 'there') + ',\n' +
+          'Use the button below to choose a new password. The link works once and expires in ' +
+          RESET_LINK_HOURS + ' hours.\n' +
+          "Didn't request this? Ignore this email — nothing changes until the link is opened.",
+        buttonUrl: link,
+        buttonLabel: 'Set my password',
+        linkFallback: link
+      })
+    });
   } catch (err) {
     return fail_('Could not send email: ' + err.message + ' (check Apps Script quota/authorization).');
   }
@@ -459,7 +474,9 @@ function updateRxStatus(data) {
       'PharmaGo — prescription ' + newStatus.toLowerCase(),
       'Your prescription ' + rxId + ' was ' + newStatus.toLowerCase() + '.' +
       (data.note ? '\nNote: ' + data.note : '') +
-      '\n\nSign in to PharmaGo to view it.');
+      '\n\nSign in to PharmaGo to view it.',
+      { heading: 'Prescription ' + newStatus.toLowerCase(),
+        buttonLabel: 'View my prescriptions' });
     return ok_('Status updated to ' + newStatus);
   }
   return fail_('Prescription not found.');
@@ -931,12 +948,25 @@ function pruneOtps_() {
   }
 }
 
-function notifyUser_(userId, subject, body) {
+function notifyUser_(userId, subject, body, options) {
   const user = findUserById_(userId);
   if (!user || !user[1]) return;
+  const opts = options || {};
   const greeting = 'Hi ' + (user[5] || 'there') + ',\n\n';
+  const frontend = frontendUrl_();
   try {
-    MailApp.sendEmail({ to: String(user[1]), subject: subject, body: greeting + body });
+    MailApp.sendEmail({
+      to: String(user[1]),
+      subject: subject,
+      body: greeting + body,
+      htmlBody: emailHtml_({
+        heading: opts.heading || subject,
+        text: greeting + body,
+        buttonUrl: opts.buttonUrl || frontend || '',
+        buttonLabel: opts.buttonLabel || 'Open PharmaGo',
+        linkFallback: ''
+      })
+    });
   } catch (err) { /* review/order must succeed even if mail quota is exhausted */ }
 }
 
@@ -973,8 +1003,9 @@ function placeOrder(data) {
     qty, Number(med[3]), 'PLACED', '', nowIso_(), ''
   ]);
   notifyUser_(med[6], 'PharmaGo — new order ' + orderId,
-    actor.name + ' ordered ' + qty + ' × ' + med[1] + ' against prescription ' + rxId +
-    '.\n\nSign in to accept or decline it.');
+    actor.name + ' ordered ' + qty + ' × ' + med[1] + ' (NPR ' + med[3] + ' each) against prescription ' +
+    rxId + '.\n\nSign in to accept or decline it.',
+    { heading: 'New order ' + orderId, buttonLabel: 'Open my shop' });
   return ok_('Order placed. The pharmacy will confirm it.', { orderId: orderId });
 }
 
@@ -1034,7 +1065,8 @@ function reviewOrder(data) {
       sheet.getRange(i + 1, 12).setValue(nowIso_());
       notifyUser_(rows[i][1], 'PharmaGo — order ' + status.toLowerCase(),
         'Your order ' + rows[i][0] + ' (' + rows[i][6] + ' × ' + rows[i][5] + ') was ' +
-        status.toLowerCase() + '.' + (data.note ? '\nNote: ' + data.note : ''));
+        status.toLowerCase() + '.' + (data.note ? '\nNote: ' + data.note : ''),
+        { heading: 'Order ' + status.toLowerCase(), buttonLabel: 'View my orders' });
       return ok_('Order ' + status.toLowerCase());
     }
     return fail_('Order not found.');
@@ -1073,7 +1105,31 @@ function isPlaceholder_(v) {
 }
 
 function adminKey_() { return cfg_('ADMIN_KEY', ADMIN_KEY); }
-function checkAdminKey_(key) { return String(key || '') === adminKey_(); }
+
+/**
+ * Optional hardening: set the ADMIN_GOOGLE_DOMAIN Script Property and a privileged
+ * request must also come from a Google account in that domain. Blank (the default)
+ * keeps the key-only behaviour. Note that a web app deployed as "Execute as: me"
+ * reports the *owner's* account, so this only distinguishes deployments once the app
+ * is deployed as "Execute as: user accessing the web app".
+ */
+function adminDomain_() { return cfg_('ADMIN_GOOGLE_DOMAIN', ''); }
+function activeCallerEmail_() {
+  try {
+    const email = Session.getActiveUser().getEmail();
+    return email ? String(email).toLowerCase() : '';
+  } catch (err) { return ''; }
+}
+function checkAdminKey_(key) {
+  if (String(key || '') !== adminKey_()) return false;
+  const domain = adminDomain_();
+  if (!domain) return true;
+  const email = activeCallerEmail_();
+  if (email && email.slice(-domain.length - 1) === '@' + domain.toLowerCase()) return true;
+  Logger.log('PharmaGo: admin key rejected for caller "' + (email || 'unknown') +
+             '" — ADMIN_GOOGLE_DOMAIN is set to ' + domain);
+  return false;
+}
 
 function frontendUrl_() {
   const url = cfg_('FRONTEND_URL', FRONTEND_URL);
@@ -1187,7 +1243,18 @@ function issueOtpAndEmail_(email, identifier, purpose) {
     'It expires in ' + OTP_TTL_MINUTES + ' minutes and works once.\n' +
     "Didn't request this? Ignore this email.";
   try {
-    MailApp.sendEmail({ to: email, subject: otp + ' is your PharmaGo verification code', body: body });
+    MailApp.sendEmail({
+      to: email,
+      subject: otp + ' is your PharmaGo verification code',
+      body: body,
+      htmlBody: emailHtml_({
+        heading: what,
+        highlight: otp,
+        highlightLabel: 'Verification code',
+        text: 'Enter this code in the app to continue. It expires in ' + OTP_TTL_MINUTES +
+          ' minutes and works once.\n' + "Didn't request this? Ignore this email."
+      })
+    });
   } catch (err) {
     return { ok: false, message: 'Could not send verification email: ' + err.message +
              ' (authorize MailApp & check quota).' };
@@ -1346,19 +1413,8 @@ function createResponse(success, message, data) {
 // ------------------------------------------------------------
 function passwordPageHtml_(token) {
   const action = API_BASE_URL();
-  return [
-    '<!DOCTYPE html><html><head><meta charset="utf-8">',
-    '<meta name="viewport" content="width=device-width, initial-scale=1">',
-    '<title>PharmaGo — set your password</title>',
-    '<style>body{font-family:Segoe UI,Arial,sans-serif;background:#f2f7f5;color:#22303a;',
-    'display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}',
-    '.card{background:#fff;padding:24px;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.1);',
-    'width:min(420px,92vw)}h1{color:#0a7d5c;font-size:20px;margin:0 0 8px}',
-    'label{display:block;margin-top:12px;font-weight:600;font-size:14px}',
-    'input{width:100%;padding:10px;margin-top:4px;border:1px solid #bbb;border-radius:6px;font-size:15px;box-sizing:border-box}',
-    'button{margin-top:16px;width:100%;padding:11px;border:0;border-radius:6px;background:#0a7d5c;color:#fff;font-size:15px;cursor:pointer}',
-    'button:hover{background:#075e46}small{color:#667}</style></head><body>',
-    '<div class="card"><h1>Set your PharmaGo password</h1>',
+  const body = [
+    '<h1>Set your PharmaGo password</h1>',
     '<p><small>Choose a password of at least 6 characters. This link works once.</small></p>',
     '<form method="post" action="' + action + '">',
     '<input type="hidden" name="action" value="reset_password">',
@@ -1367,7 +1423,69 @@ function passwordPageHtml_(token) {
     '<input id="password" name="password" type="password" minlength="6" required autocomplete="new-password">',
     '<label for="password2">Confirm password</label>',
     '<input id="password2" name="password2" type="password" minlength="6" required autocomplete="new-password">',
-    '<button type="submit">Set password</button></form></div></body></html>'
+    '<button type="submit">Set password</button></form>'
+  ].join('');
+  return pageShell_('PharmaGo — set your password', body);
+}
+
+// ------------------------------------------------------------
+// Shared "Clinical" chrome for every page Apps Script serves itself
+// (set-password form, form-post result, frontend hand-off). Keep in step with
+// the tokens in index.html: clinical blue #1668d3 on cool white #f5f7fb.
+// ------------------------------------------------------------
+function clinicalCss_() {
+  return [
+    ':root{--brand:#1668d3;--brand-dark:#0d4ea6;--tint:#eef5ff;--line:#e4e9f1;--ink:#0f1b2d;--muted:#64748b}',
+    '*{box-sizing:border-box}',
+    'body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;',
+    'font-family:Inter,"Segoe UI",system-ui,-apple-system,Arial,sans-serif;font-size:15px;line-height:1.55;color:var(--ink);',
+    'background-color:#f5f7fb;',
+    'background-image:radial-gradient(760px 380px at 100% -10%,rgba(22,104,211,.12),transparent 62%),',
+    'radial-gradient(620px 340px at -8% 6%,rgba(15,123,82,.08),transparent 58%),',
+    'linear-gradient(rgba(15,27,45,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(15,27,45,.03) 1px,transparent 1px);',
+    'background-size:auto,auto,100% 26px,26px 100%;background-attachment:fixed}',
+    '.card{width:min(440px,94vw);padding:26px;background:#fff;border:1px solid var(--line);border-radius:20px;',
+    'box-shadow:0 20px 50px rgba(11,32,64,.12)}',
+    '.brand{display:flex;align-items:center;gap:11px;margin-bottom:16px}',
+    '.mark{display:grid;place-items:center;width:38px;height:38px;border-radius:11px;color:#fff;',
+    'background:linear-gradient(155deg,#2b83ea,#0d4ea6);box-shadow:0 6px 16px rgba(13,78,166,.3)}',
+    '.name{font-size:17px;font-weight:800;letter-spacing:-.03em}',
+    '.name span{color:var(--brand)}.sub{display:block;font-size:10.5px;font-weight:600;letter-spacing:.1em;',
+    'text-transform:uppercase;color:#94a3b8}',
+    'h1{margin:0 0 6px;font-size:21px;font-weight:700;letter-spacing:-.02em}',
+    'p{margin:6px 0;color:#33465e}small{color:var(--muted);font-size:13px}',
+    'label{display:block;margin-top:14px;font-size:12px;font-weight:700;color:#33465e}',
+    'input{width:100%;padding:11px 12px;margin-top:5px;font:inherit;font-size:14px;color:var(--ink);',
+    'background:#fff;border:1px solid #d5dcea;border-radius:10px;box-shadow:0 1px 2px rgba(15,27,45,.05)}',
+    'input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(22,104,211,.16)}',
+    'button{width:100%;margin-top:18px;padding:11px 16px;border:0;border-radius:10px;background:var(--brand);',
+    'color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 1px 2px rgba(13,78,166,.3)}',
+    'button:hover{background:var(--brand-dark)}button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--brand);outline-offset:2px}',
+    '.msg{margin-top:14px;padding:12px 14px;border-radius:10px;font-size:14px;border:1px solid transparent}',
+    '.msg.ok{background:#e8f7ef;color:#0b5f40;border-color:#b6e3cb}',
+    '.msg.err{background:#fdeeed;color:#96271f;border-color:#f4c9c5}',
+    '.msg.info{background:var(--tint);color:#2b5c96;border-color:#bcd6f7}',
+    'a{color:var(--brand);font-weight:600}'
+  ].join('');
+}
+
+/** Wrap body markup in the shared clinical chrome; returns an HTML string. */
+function pageShell_(title, bodyHtml, headExtra) {
+  return [
+    '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">',
+    '<meta name="viewport" content="width=device-width, initial-scale=1">',
+    '<meta name="theme-color" content="#1668d3">',
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
+    '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">',
+    '<title>' + title + '</title>',
+    '<style>' + clinicalCss_() + '</style>',
+    headExtra || '',
+    '</head><body><main class="card">',
+    '<div class="brand"><span class="mark" aria-hidden="true">',
+    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+    '</span><span><span class="name">pharma<span>go</span></span><span class="sub">Clinical workspace</span></span></div>',
+    bodyHtml,
+    '</main></body></html>'
   ].join('');
 }
 
@@ -1377,24 +1495,67 @@ function htmlResult_(result) {
   const link = frontend
     ? '<p><a href="' + frontend + '">Continue to PharmaGo →</a></p>'
     : '<p><small>You can close this tab and sign in from the PharmaGo app.</small></p>';
-  const css = result.success
-    ? 'background:#e6f6ec;color:#146c2e;border:1px solid #b7e4c7;'
-    : 'background:#fdecec;color:#a11;border:1px solid #f5c2c7;';
-  const html = [
-    '<!DOCTYPE html><html><head><meta charset="utf-8">',
-    '<meta name="viewport" content="width=device-width, initial-scale=1">',
-    '<title>PharmaGo — set your password</title>',
-    '<style>body{font-family:Segoe UI,Arial,sans-serif;background:#f2f7f5;color:#22303a;',
-    'display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}',
-    '.card{background:#fff;padding:24px;border-radius:10px;box-shadow:0 1px 6px rgba(0,0,0,.1);',
-    'width:min(420px,92vw)}h1{color:#0a7d5c;font-size:20px;margin:0 0 12px}',
-    '.msg{padding:12px;border-radius:6px;font-size:15px;' + css + '}</style></head><body>',
-    '<div class="card"><h1>PharmaGo</h1>',
-    '<div class="msg">' + escapeHtml_(result.message) + '</div>',
-    result.success ? link : '<p><small>Request a new link from the app’s “Forgot password?” screen.</small></p>',
-    '</div></body></html>'
+  const body = [
+    '<h1>PharmaGo</h1>',
+    '<div class="msg ' + (result.success ? 'ok' : 'err') + '">' + escapeHtml_(result.message) + '</div>',
+    result.success ? link : '<p><small>Request a new link from the app’s “Forgot password?” screen.</small></p>'
   ].join('');
-  return HtmlService.createHtmlOutput(html);
+  return HtmlService.createHtmlOutput(pageShell_('PharmaGo — set your password', body));
+}
+
+// ------------------------------------------------------------
+// BRANDED EMAIL TEMPLATE
+// Mail clients strip <style> blocks and ignore external CSS, so everything is
+// inline and table-based. Every message keeps its plain-text body as a fallback.
+// ------------------------------------------------------------
+function emailHtml_(opts) {
+  const o = opts || {};
+  const esc = escapeHtml_;
+  const paragraphs = String(o.text == null ? '' : o.text).split('\n').map(function (line) {
+    return line.trim() === ''
+      ? '<div style="height:8px;line-height:8px">&nbsp;</div>'
+      : '<p style="margin:0 0 10px;font-size:14px;line-height:1.6;color:#33465e">' + esc(line) + '</p>';
+  }).join('');
+  const cta = o.buttonUrl
+    ? '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:18px 0 6px">' +
+      '<tr><td style="background:#1668d3;border-radius:10px">' +
+      '<a href="' + esc(o.buttonUrl) + '" style="display:inline-block;padding:11px 18px;' +
+      'font-family:Inter,Segoe UI,system-ui,Arial,sans-serif;font-size:14px;font-weight:700;' +
+      'color:#ffffff;text-decoration:none">' + esc(o.buttonLabel || 'Open PharmaGo') + '</a></td></tr></table>'
+    : '';
+  const highlight = o.highlight
+    ? '<div style="margin:16px 0;padding:14px 16px;border-radius:12px;background:#eef5ff;' +
+      'border:1px solid #bcd6f7;text-align:center">' +
+      '<div style="font-family:IBM Plex Mono,Consolas,monospace;font-size:28px;font-weight:600;' +
+      'letter-spacing:.22em;color:#0d4ea6">' + esc(o.highlight) + '</div>' +
+      '<div style="margin-top:6px;font-size:11.5px;font-weight:600;letter-spacing:.06em;' +
+      'text-transform:uppercase;color:#5c6b7f">' + esc(o.highlightLabel || 'One-time code') + '</div></div>'
+    : '';
+  return [
+    '<div style="background:#f5f7fb;padding:26px 14px">',
+    '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:540px;margin:0 auto">',
+    '<tr><td style="padding-bottom:14px;font-family:Inter,Segoe UI,system-ui,Arial,sans-serif">',
+    '<span style="display:inline-block;width:30px;height:30px;border-radius:9px;background:#1668d3;' +
+    'color:#ffffff;font-size:18px;font-weight:700;line-height:30px;text-align:center">+</span>',
+    '<span style="margin-left:9px;font-size:16px;font-weight:800;letter-spacing:-.03em;color:#0f1b2d">pharma',
+    '<span style="color:#1668d3">go</span></span>',
+    '<span style="margin-left:8px;font-size:10.5px;font-weight:600;letter-spacing:.1em;' +
+    'text-transform:uppercase;color:#94a3b8">clinical workspace</span>',
+    '</td></tr>',
+    '<tr><td style="background:#ffffff;border:1px solid #e4e9f1;border-radius:16px;padding:22px;' +
+    'font-family:Inter,Segoe UI,system-ui,Arial,sans-serif">',
+    o.heading ? '<h1 style="margin:0 0 12px;font-size:18px;font-weight:700;letter-spacing:-.02em;color:#0f1b2d">' +
+      esc(o.heading) + '</h1>' : '',
+    highlight, paragraphs, cta,
+    o.linkFallback ? '<p style="margin:14px 0 0;font-size:12px;line-height:1.6;color:#64748b">' +
+      'Button not working? Open this link:<br>' +
+      '<a href="' + esc(o.linkFallback) + '" style="color:#1668d3;word-break:break-all">' + esc(o.linkFallback) + '</a></p>' : '',
+    '</td></tr>',
+    '<tr><td style="padding:14px 4px 0;font-family:Inter,Segoe UI,system-ui,Arial,sans-serif;' +
+    'font-size:11.5px;line-height:1.6;color:#64748b">',
+    esc(o.footer || 'PharmaGo — prescriptions and medicine delivery. Never share your password or admin key.'),
+    '</td></tr></table></div>'
+  ].join('');
 }
 
 function escapeHtml_(s) {

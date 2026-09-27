@@ -59,7 +59,7 @@ async function run() {
   const { dom, w, d, id, calls, replies } = setup();
   const last = () => calls[calls.length - 1];
   try {
-    // Guest (12).
+    // Guest (13).
     check(/guest/.test(id('sessionBar').textContent), 'guest badge');
     check(!id('tabLogin').hidden, 'guest account tab');
     check(id('tabUser').hidden, 'guest cannot open customer portal');
@@ -72,6 +72,7 @@ async function run() {
     check(id('adminDashboard').hidden, 'admin dashboard hidden');
     check(id('logoutBtn').hidden, 'guest sign-out hidden');
     check(id('login').classList.contains('active'), 'account is landing panel');
+    check(!!id('pendingRx').querySelector('[data-show="admin"]'), 'admin queues start with a loading state');
 
     // Navigation and catalogue (6).
     id('tabShop').click();
@@ -115,6 +116,9 @@ async function run() {
     check(!id('logoutBtn').hidden, 'customer can sign out');
     await w.loadHistory();
     check(/RX1/.test(id('rxHistory').textContent) && !!id('rxHistory').querySelector('[onclick*="openRxViewer"]'), 'customer can view own prescriptions');
+    w.eval('window.__rx = historyCache; historyCache = []; renderHistory();');
+    check(/No prescriptions yet/.test(id('rxHistory').textContent), 'empty history explains itself');
+    w.eval('historyCache = window.__rx; renderHistory(); delete window.__rx;');
 
     // Merchant session (8).
     w.logout();
@@ -158,8 +162,40 @@ async function run() {
     check(id('login').classList.contains('active'), 'sign out returns to account');
     check(!w.localStorage.getItem('pharmago_session'), 'session removed');
     check(id('vendorRegister').hidden === false, 'guest registration restored');
+
+    // Clinical chrome: icon rail, workspace header and a11y state (6).
+    check(id('tabLogin').getAttribute('aria-current') === 'page', 'active rail item exposes aria-current');
+    check(id('crumbRole').textContent === 'Guest workspace', 'workspace header names the guest space');
+    check(/Sign in/.test(id('crumbTitle').textContent), 'workspace header describes the landing tab');
+    const rail = d.querySelector('.sidebar');
+    check(!!rail && rail.querySelectorAll('.tabs button').length === 5 &&
+      !!rail.querySelector('#sessionBar') && !!rail.querySelector('#networkState'),
+      'icon rail holds navigation, session chip and connection pill');
+    id('tabShop').click();
+    check(/catalogue/i.test(id('crumbTitle').textContent), 'workspace header follows the open tab');
+    replies.login = { success:true, data:{userId:'M123',role:'MERCHANT',name:'Green Cross'} }; await w.doLogin();
+    check(id('crumbRole').textContent === 'Pharmacy workspace', 'workspace header follows the role');
+
+    // Empty states plus the prescription viewer dialog (5).
+    w.logout();
+    replies.login = { success:true, data:{userId:'U-2026-0010',role:'USER',name:'Alex'} }; await w.doLogin();
+    id('adminKey').value = 'test-key'; await w.adminAuth();
+    id('rxUserFilter').value = 'U-NONE'; w.renderAdminRx('U-NONE');
+    check(/No prescriptions in this view/.test(id('pendingRx').textContent), 'filtered admin queue shows an empty state');
+    id('rxUserFilter').value = ''; w.renderAdminRx();
+    id('tabUser').click();
+    await w.loadHistory();
+    check(!!id('rxHistory').querySelector('[onclick*="openRxViewer"]'), 'history cards expose the viewer');
+    w.lastFocused = id('tabUser');   // a control that survives the list re-render
+    id('rxViewer').hidden = false; d.body.classList.add('viewer-open');
+    const tabKey = new w.KeyboardEvent('keydown', { key:'Tab', bubbles:true, cancelable:true });
+    d.dispatchEvent(tabKey);
+    check(tabKey.defaultPrevented && d.activeElement === id('rxViewerClose'), 'Tab is trapped inside the dialog');
+    d.dispatchEvent(new w.KeyboardEvent('keydown', { key:'Escape', bubbles:true, cancelable:true }));
+    check(id('rxViewer').hidden && !d.body.classList.contains('viewer-open'), 'Escape closes the dialog');
+    check(d.activeElement !== id('rxViewerClose'), 'focus leaves the dialog once it closes');
   } finally { dom.window.close(); }
-  if (checks !== 64) throw Error('Expected 64 UI-state checks, got ' + checks);
-  console.log('✓ 64 UI-state checks passed');
+  if (checks !== 77) throw Error('Expected 77 UI-state checks, got ' + checks);
+  console.log('✓ 77 UI-state checks passed');
 }
 run().catch(err => { console.error('✗ ' + err.stack); process.exitCode = 1; });
