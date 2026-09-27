@@ -274,6 +274,46 @@ globalThis.runTests = function runTests() {
   });
 
   // =====================================================================
+  scenario('owner and admin can view a prescription file; others cannot', () => {
+    boot();
+    const owner = verifiedCustomer('view@example.com', '9800000041', 'secret123');
+    const other = verifiedCustomer('other@example.com', '9800000042', 'secret123');
+    const content = H.b64('%PDF-1.4 fictional prescription');
+    const up = call({
+      action: 'upload_rx', userId: owner.userId, fileName: 'scan.pdf',
+      fileType: 'application/pdf', fileBase64: content,
+    });
+    ok(up.success, 'upload for view test succeeds', up.message);
+
+    const own = call({ action: 'view_rx', rxId: up.data.rxId, userId: owner.userId });
+    ok(own.success, 'owner can view the prescription', own.message);
+    eq(own.data.fileBase64, content, 'owner receives the original file bytes');
+    eq(own.data.fileType, 'application/pdf', 'pdf content type is returned');
+    eq(own.data.status, 'PENDING', 'viewer includes status');
+    ok(own.data.fileName.indexOf('scan.pdf') !== -1, 'viewer includes the file name', own.data.fileName);
+
+    const stranger = call({ action: 'view_rx', rxId: up.data.rxId, userId: other.userId });
+    ok(!stranger.success, 'another customer cannot view the file');
+    const anon = call({ action: 'view_rx', rxId: up.data.rxId });
+    ok(!anon.success, 'anonymous view is rejected');
+    const badKey = call({ action: 'view_rx', rxId: up.data.rxId, adminKey: 'nope' });
+    ok(!badKey.success, 'wrong admin key cannot view someone else\'s file');
+
+    const admin = call({ action: 'view_rx', rxId: up.data.rxId, adminKey: 'changeme-admin-key' });
+    ok(admin.success, 'admin can view the prescription', admin.message);
+    eq(admin.data.fileBase64, content, 'admin receives the same file bytes');
+
+    ok(call({ action: 'update_status', adminKey: 'changeme-admin-key', rxId: up.data.rxId, status: 'APPROVED' }).success,
+      'approve before a second view');
+    const after = call({ action: 'view_rx', rxId: up.data.rxId, userId: owner.userId });
+    ok(after.success && after.data.fileBase64 === content, 'file remains viewable after approval');
+    eq(after.data.status, 'APPROVED', 'viewer reflects the reviewed status');
+
+    ok(!call({ action: 'view_rx', rxId: 'missing', adminKey: 'changeme-admin-key' }).success,
+      'unknown prescription cannot be viewed');
+  });
+
+  // =====================================================================
   scenario('private data (users / merchants / all Rx) requires the admin key', () => {
     boot();
     verifiedCustomer('s1@example.com', '9800000008', 'secret123');

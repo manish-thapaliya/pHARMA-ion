@@ -75,8 +75,8 @@ function createStub() {
 
   // ------------------------------------------------------------------ Drive
   class File {
-    constructor(id, name, bytes) {
-      this.id = id; this.name = name; this.bytes = bytes || [];
+    constructor(id, name, bytes, type) {
+      this.id = id; this.name = name; this.bytes = bytes || []; this.type = type || '';
       this.parents = []; this.sharing = null;
       state.files.set(id, this);
     }
@@ -84,7 +84,13 @@ function createStub() {
     getName() { return this.name; }
     setName(n) { this.name = n; return this; }
     getUrl() { return 'https://drive.google.com/file/d/' + this.id + '/view'; }
-    getBlob() { return { getName: () => this.name, getBytes: () => this.bytes }; }
+    getBlob() {
+      return {
+        getName: () => this.name,
+        getBytes: () => this.bytes,
+        getContentType: () => this.type || 'application/octet-stream',
+      };
+    }
     setSharing(access, permission) {
       this.sharing = { access, permission };
       return this;
@@ -108,7 +114,8 @@ function createStub() {
     setName(n) { this.name = n; return this; }
     getUrl() { return 'https://drive.google.com/drive/folders/' + this.id; }
     createFile(blob) {
-      const f = new File(nextId('file'), blob.getName(), blob.getBytes().slice());
+      const type = blob.getContentType ? blob.getContentType() : '';
+      const f = new File(nextId('file'), blob.getName(), blob.getBytes().slice(), type);
       this.fileIds.push(f.id);
       f.parents.push(this.id);
       return f;

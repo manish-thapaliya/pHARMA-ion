@@ -96,6 +96,7 @@ function handleRequest_(data) {
 
     // Prescriptions
     if (action === 'upload_rx')         return uploadPrescription(data);
+    if (action === 'view_rx')           return viewPrescription(data); // owner or admin inline preview
     if (action === 'update_status')     return updateRxStatus(data);   // admin approve/decline
 
     // Merchants
@@ -435,6 +436,68 @@ function updateRxStatus(data) {
     return ok_('Status updated to ' + newStatus);
   }
   return fail_('Prescription not found.');
+}
+
+// Owner (userId) or admin can open the stored file. The script reads Drive as
+// itself, so the preview works even when a browser cannot embed Drive.
+function viewPrescription(data) {
+  const rxId = String(data.rxId || '');
+  if (!rxId) return fail_('Missing prescription id.');
+
+  const rows = getSheet_(SHEETS.RX).getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]) !== rxId) continue;
+    const owner = String(rows[i][1]);
+    if (!checkAdminKey_(data.adminKey) && String(data.userId || '') !== owner) {
+      return fail_('You can only view your own prescriptions.');
+    }
+    let file;
+    try {
+      file = DriveApp.getFileById(rows[i][3]);
+    } catch (err) {
+      return fail_('The uploaded file is no longer available in Drive.');
+    }
+    const blob = file.getBlob();
+    const bytes = blob.getBytes() || [];
+    if (bytes.length > MAX_UPLOAD_BYTES) {
+      return fail_('File is too large to preview here.');
+    }
+    const storedName = String(rows[i][2] || file.getName() || 'prescription');
+    return ok_('Prescription ready to view', {
+      rxId: rxId,
+      userId: owner,
+      fileName: storedName,
+      fileId: String(rows[i][3] || ''),
+      fileType: blobType_(blob, storedName),
+      fileBase64: Utilities.base64Encode(bytes),
+      status: String(rows[i][4] || ''),
+      timestamp: String(rows[i][5] || ''),
+      reviewedAt: String(rows[i][6] || ''),
+      reviewNote: String(rows[i][7] || ''),
+      driveUrl: file.getUrl()
+    });
+  }
+  return fail_('Prescription not found.');
+}
+
+function blobType_(blob, fallbackName) {
+  try {
+    if (blob && typeof blob.getContentType === 'function') {
+      const type = String(blob.getContentType() || '');
+      if (type && type !== 'application/octet-stream') return type;
+    }
+  } catch (err) { /* fall back to the file name */ }
+  return mimeFromName_(fallbackName);
+}
+
+function mimeFromName_(name) {
+  const n = String(name || '').toLowerCase();
+  if (/\.png$/.test(n)) return 'image/png';
+  if (/\.jpe?g$/.test(n)) return 'image/jpeg';
+  if (/\.gif$/.test(n)) return 'image/gif';
+  if (/\.webp$/.test(n)) return 'image/webp';
+  if (/\.pdf$/.test(n)) return 'application/pdf';
+  return 'application/octet-stream';
 }
 
 // ============================================================

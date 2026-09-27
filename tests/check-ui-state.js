@@ -113,6 +113,8 @@ async function run() {
     check(/Customer/.test(id('sessionBar').textContent), 'customer badge');
     check(id('vendorRegister').hidden, 'registration hidden for customer');
     check(!id('logoutBtn').hidden, 'customer can sign out');
+    await w.loadHistory();
+    check(/RX1/.test(id('rxHistory').textContent) && !!id('rxHistory').querySelector('[onclick*="openRxViewer"]'), 'customer can view own prescriptions');
 
     // Merchant session (8).
     w.logout();
@@ -142,6 +144,8 @@ async function run() {
     check(/RX1/.test(id('pendingRx').textContent), 'pending prescription identified');
     id('rxFilter').value = 'ALL'; w.renderAdminRx();
     check(/RX2/.test(id('pendingRx').textContent), 'reviewed prescription ID identified');
+    check(!!id('pendingRx').querySelector('[onclick*="openRxViewer"]'), 'admin can view prescription');
+    check(!!id('userList').querySelector('[onclick*="filterRxByUser"]'), 'user row opens that patient prescriptions');
     check(!!id('merchantList').querySelector('a[href="https://drive.google.com/file/d/file456/view"]'), 'KYC document link');
     check(!!id('adminMedicineList').querySelector('[onclick^="setMedicineActive"]'), 'admin catalogue actions');
 
@@ -155,7 +159,7 @@ async function run() {
     check(!w.localStorage.getItem('pharmago_session'), 'session removed');
     check(id('vendorRegister').hidden === false, 'guest registration restored');
   } finally { dom.window.close(); }
-  if (checks !== 61) throw Error('Expected 61 UI-state checks, got ' + checks);
-  console.log('✓ 61 UI-state checks passed');
+  if (checks !== 64) throw Error('Expected 64 UI-state checks, got ' + checks);
+  console.log('✓ 64 UI-state checks passed');
 }
 run().catch(err => { console.error('✗ ' + err.stack); process.exitCode = 1; });

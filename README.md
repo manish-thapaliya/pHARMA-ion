@@ -53,12 +53,13 @@ which overrides the constant in `code.gs` — handy for keeping secrets out of G
 ## Flows at a glance
 
 * **Customer** — register → 6-digit email code → (set password now, or by emailed link) → log in →
-  upload prescription → track status.
+  upload prescription → preview the file and track status.
 * **Vendor** — register with GST + Drug License + Shop ID + PAN → email code → admin reviews the
   documents → approved vendor logs in and lists medicines (own listings only).
-* **Admin** — unlock with the admin key → approve/decline prescriptions (the file is moved between
-  the Pending/Approved/Declined folders and approved files are renamed `UserID__UploadedTime`),
-  approve/decline vendors, list users, add medicines.
+* **Admin** — unlock with the admin key → open each prescription in the same viewer the patient uses,
+  then approve/decline (the file is moved between the Pending/Approved/Declined folders and approved
+  files are renamed `UserID__UploadedTime`), approve/decline vendors, list users, add medicines.
+  From the users table, **Prescriptions** filters the review queue to that person.
 
 ---
 
@@ -68,8 +69,8 @@ Install the UI test dependency first. The backend runs against a mocked Apps Scr
 
 ```bash
 npm install
-npm test              # backend end-to-end + frontend wiring + 61 browser-like UI-state checks
-npm run test:api      # 18 scenarios / 163 checks against code.gs
+npm test              # backend end-to-end + frontend wiring + 64 browser-like UI-state checks
+npm run test:api      # 19 scenarios / 184 checks against code.gs
 npm run test:frontend # index.html wiring + UI-state checks
 ```
 
@@ -80,15 +81,18 @@ npm run test:frontend # index.html wiring + UI-state checks
 | Mode | Navigation | Workspace |
 |---|---|---|
 | Guest | Account, catalogue, pharmacy registration, admin | Sign up / OTP / password reset; browse medicines; register a pharmacy; enter admin key |
-| Customer | Prescriptions, catalogue, admin | Upload and track personal prescriptions |
+| Customer | Prescriptions, catalogue, admin | Upload, view and track personal prescriptions |
 | Pharmacy | Catalogue, My shop, admin | Add, edit, delist and relist own medicines (password confirmed for writes) |
-| Admin unlocked | Admin tab alongside any role | Overview counts, pending/all Rx queue, KYC links, users and catalogue editing |
+| Admin unlocked | Admin tab alongside any role | Overview counts, view/review prescriptions, KYC links, users and catalogue editing |
 
 The admin key can be unlocked and locked separately from customer/pharmacy sign-in.
 Changing roles automatically moves away from a now-hidden tab. Visibility is **not**
 a security boundary: the Apps Script backend must still verify privileged requests.
 `npm run test:frontend` checks ids, handler wiring, the state vocabulary and all
-five tab rules, then drives 61 UI-state checks with jsdom.
+five tab rules, then drives 64 UI-state checks with jsdom.
+Customers and admins open the same prescription viewer (`view_rx`): the owner or
+the admin key is required, and the file is shown in the page (images and PDFs)
+with a Drive fallback for older deployments.
 
 ### Interactive demo
 
@@ -102,8 +106,10 @@ connect to the live spreadsheet, send email or store real patient information.
 Sample customer: `demo@pharmago.test` / `demo123`; sample approved pharmacy:
 `vendor@pharmago.test` / `demo123`; demo admin key: `changeme-admin-key`.
 Newly registered users can use the verification code shown on the page or in
-`/__mailbox`. The seeded customer has a pending sample prescription and a second
-pharmacy (Valley Medicos) is awaiting admin approval. Demo data resets on server restart. The demo serves its API at a same-origin `/api` path;
+`/__mailbox`. The seeded customer has a pending sample prescription and an
+approved follow-up — both can be opened from **My prescriptions** and from the
+admin review queue. A second pharmacy (Valley Medicos) is awaiting admin approval.
+Demo data resets on server restart. The demo serves its API at a same-origin `/api` path;
 the published static `index.html` continues to use the configured Apps Script URL.
 
 Customer IDs now increment within the script's calendar year (`U-2026-0010`,

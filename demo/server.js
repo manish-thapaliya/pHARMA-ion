@@ -38,8 +38,17 @@ if (vendor.success) {
 }
 
 // A pending prescription and pharmacy make the admin review queue interactive.
-call({ action:'upload_rx', userId:customer.data.userId, fileName:'sample-rx.pdf',
-  fileType:'application/pdf', fileBase64:stub.helpers.b64('fictional prescription') });
+// The PNG is a fictional document so both the customer and admin viewers have something to open.
+const sampleRx = fs.readFileSync(path.join(__dirname, 'sample-rx.png')).toString('base64');
+const sampleApproved = fs.readFileSync(path.join(__dirname, 'sample-rx-approved.png')).toString('base64');
+call({ action:'upload_rx', userId:customer.data.userId, fileName:'sample-rx.png',
+  fileType:'image/png', fileBase64:sampleRx });
+const followUp = call({ action:'upload_rx', userId:customer.data.userId, fileName:'follow-up-rx.png',
+  fileType:'image/png', fileBase64:sampleApproved });
+if (followUp.success) {
+  call({ action:'update_status', adminKey:'changeme-admin-key', rxId:followUp.data.rxId,
+    status:'APPROVED', note:'Looks complete. Ready for dispensing.' });
+}
 const pendingVendor = call({ action:'register_merchant', email:'pending@pharmago.test',
   phone:'9800000003', shopName:'Valley Medicos', address:'Demo Street',
   gstNumber:'DEMO-GST-2', drugLicenseNumber:'DEMO-DL-2', documents });
@@ -50,8 +59,8 @@ const escapeHtml = s => String(s).replace(/[&<>"']/g, c =>
   ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[c]);
 
 const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8').replace('</head>',
-  '<meta name="pharmago-demo" content="true"><style>.demo-hint{background:#e0f3e7;padding:12px 18px;border-radius:10px;margin:14px 0;font-size:13px;color:#174e3b}</style></head>')
-  .replace('<div id="configBanner"', `<div class="demo-hint"><b>Interactive demo — fictional data only.</b> Customer: demo@pharmago.test / demo123 · Pharmacy: vendor@pharmago.test / demo123 · Admin key: changeme-admin-key. New verification codes appear on this page or in the <a href="/__mailbox" target="_blank" rel="noopener">demo mailbox</a>; data resets when the server restarts.</div>\n<div id="configBanner"`);
+  '<meta name="pharmago-demo" content="true"><style>.demo-hint{background:#fffdfb;border:1px solid #d7e8dc;padding:14px 18px;border-radius:16px;margin:0 0 16px;font-size:13.5px;color:#174e3b;box-shadow:0 10px 24px #2347380c}</style></head>')
+  .replace('<div id="configBanner"', `<div class="demo-hint"><b>Interactive demo — fictional data only.</b> Customer: demo@pharmago.test / demo123 · Pharmacy: vendor@pharmago.test / demo123 · Admin key: changeme-admin-key. Sign in and open My prescriptions, or unlock Admin, to view the sample prescription. New verification codes appear on this page or in the <a href="/__mailbox" target="_blank" rel="noopener">demo mailbox</a>; data resets when the server restarts.</div>\n<div id="configBanner"`);
 
 function json(res, status, body) {
   res.writeHead(status, { 'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store' });
