@@ -1,6 +1,7 @@
-## PharmaGo — “Aurora” front-end redesign
+## PharmaGo — “Aurora” redesign of every surface
 
-Replaces the clinical-blue workspace with a soft modern product UI: airy white surfaces on a
+Replaces the clinical-blue chrome with a soft modern product UI across the app, the Apps Script
+pages, the transactional emails and the demo: airy white surfaces on a
 `#f7f7fd` page, a pastel gradient wash, an indigo accent (`#4f46e5`), pill controls and generously
 rounded, softly layered cards. `index.html` is still a single dependency-free file — no framework,
 no build step, no CDN — and the state machine (`data-show`, `#tab*`, `#view*`, the 6-box OTP
