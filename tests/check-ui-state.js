@@ -129,6 +129,8 @@ async function run() {
     check(!id('vendorTools').hidden, 'vendor listing tools shown');
     check(id('vendorRegister').hidden, 'vendor registration hidden');
     check(/My shop/.test(id('tabMerchant').textContent), 'vendor navigation relabelled');
+    check(!!id('tabMerchant').querySelector('svg') && id('tabMerchant').getAttribute('aria-label') === 'My shop',
+      'relabelled pharmacy tab keeps its icon and accessible name');
     await w.loadMyListings();
     check(/MED1/.test(id('myMedTbl').textContent), 'own listings displayed');
     check(!!id('myMedTbl').querySelector('[onclick^="editMyMedicine"]'), 'edit action available');
@@ -167,6 +169,9 @@ async function run() {
     check(id('tabLogin').getAttribute('aria-current') === 'page', 'active rail item exposes aria-current');
     check(id('crumbRole').textContent === 'Guest workspace', 'workspace header names the guest space');
     check(/Sign in/.test(id('crumbTitle').textContent), 'workspace header describes the landing tab');
+    check(['Account', 'My prescriptions', 'Browse medicines', 'For pharmacies', 'Admin']
+      .every((name, i) => d.querySelectorAll('.tabs button')[i].getAttribute('aria-label') === name),
+      'every rail tab carries an accessible name for the icon-only small-screen dock');
     const rail = d.querySelector('.sidebar');
     check(!!rail && rail.querySelectorAll('.tabs button').length === 5 &&
       !!rail.querySelector('#sessionBar') && !!rail.querySelector('#networkState'),
@@ -276,7 +281,7 @@ async function run() {
       'session-only sign-in when remember me is off');
     w.logout();
   } finally { dom.window.close(); }
-  if (checks !== 113) throw Error('Expected 113 UI-state checks, got ' + checks);
-  console.log('✓ 113 UI-state checks passed');
+  if (checks !== 115) throw Error('Expected 115 UI-state checks, got ' + checks);
+  console.log('✓ 115 UI-state checks passed');
 }
 run().catch(err => { console.error('✗ ' + err.stack); process.exitCode = 1; });

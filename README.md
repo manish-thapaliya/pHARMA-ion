@@ -84,8 +84,8 @@ Install the UI test dependency first. The backend runs against a mocked Apps Scr
 
 ```bash
 npm install
-npm test              # backend end-to-end + frontend wiring + 113 browser-like UI-state checks
-npm run test:api      # 26 scenarios / 311 checks against code.gs
+npm test              # backend end-to-end + frontend wiring + 115 browser-like UI-state checks
+npm run test:api      # 27 scenarios / 331 checks against code.gs
 npm run test:frontend # index.html wiring, AA-contrast guard + UI-state checks
 ```
 
@@ -102,43 +102,55 @@ error. It also asserts the focus trap and the `/` catalogue shortcut behave in a
 
 ### Interface
 
-`index.html` ships the **Clinical** UI: a cool-white workspace with a clinical-blue accent
-(`#1668d3`), Inter for prose and IBM Plex Mono for identifiers, prices and counts.
+`index.html` ships the **Aurora** UI: airy white surfaces on a `#f7f7fd` page with a pastel gradient
+wash, an indigo accent (`#4f46e5`), pill controls and generously rounded, softly layered cards.
+Inter carries prose and headings; IBM Plex Mono is reserved for identifiers, prices and counters.
 
-* **Icon rail** — a fixed left sidebar (`.sidebar`) holds the brand, the five `data-show` tabs
-  (`.tabs`), the session chip (`#sessionBar`), sign-out and the connection pill. Below 900 px the
-  rail becomes a bottom tab bar and the session chip docks beside it.
-* **Workspace header** — a sticky topbar names the current space (`Guest / Customer / Pharmacy
-  workspace`, `Admin unlocked`) and the active tab, with quick actions for uploading a prescription
-  and opening the catalogue. `syncTopbar()` keeps it in step with `applyAuthUI()`.
-* **Command bar** — the catalogue search is a single-field filter bar with live results, above a
-  dense table (sticky uppercase headers, mono IDs, hover row highlight).
+* **Glass rail** — `.sidebar` is a floating, blurred, fully rounded panel: brand mark, the five
+  `data-show` tabs (`.tabs`), the session chip (`#sessionBar`), sign-out and the connection pill.
+  The open tab is a gradient pill with `aria-current="page"`. Below 1040 px the rail becomes a
+  floating bottom dock; below 640 px it turns icon-only, which is why every tab also carries an
+  `aria-label` (and the pharmacy tab keeps its icon when it is relabelled).
+* **Workspace header** — the sticky topbar is glass as well. It names the current space (`Guest /
+  Customer / Pharmacy workspace`, `Admin unlocked`) and the active tab, with quick actions for
+  uploading a prescription and opening the catalogue. `syncTopbar()` keeps it in step with
+  `applyAuthUI()`.
+* **Ambient aurora** — one `aria-hidden` fixed layer holds three slowly drifting, blurred orbs on top
+  of soft page gradients. It is dropped below 640 px and under `prefers-reduced-motion`, and it never
+  sits above the interface (`.app-shell` owns a higher stacking context).
+* **Command bar** — the catalogue search is a pill filter bar with live results, above a table with
+  sticky uppercase headers, airy rows and right-aligned tabular numerics.
 * **Cards over tables for state** — prescriptions and orders render as `rx-card` tiles with a status
   chip and a three-step review track (Uploaded → In review → Approved/Declined); the screen-reader
-  table (`#historyTbl`) stays in sync.
-* **Viewer** — `#rxViewer` is a full modal with sticky header/footer actions, inline image and PDF
-  preview, download, Drive fallback and admin approve/decline.
-* **Accessibility** — every text token meets WCAG AA (4.5:1) against the surface it sits on, and
-  `npm run test:frontend` fails if a future colour edit breaks that. The prescription viewer is a real
-  dialog: `aria-modal`, focus trapped with Tab/Shift+Tab, Escape to close, and focus returned to the
-  control that opened it. Empty and loading states are explicit for every queue.
-* Design tokens live in one `:root` block, so re-theming is a colour edit; motion is disabled under
-  `prefers-reduced-motion` and the rail/topbar are dropped in print.
+  table (`#historyTbl`) stays in sync. Admin overview tiles carry tinted icon badges and a soft
+  corner glow.
+* **Viewer** — `#rxViewer` is a full modal (34 px radius over a blurred backdrop) with sticky
+  header/footer actions, inline image and PDF preview, download, Drive fallback and admin
+  approve/decline.
+* **Accessibility** — every text token meets WCAG AA (4.5:1) against the surface it is painted on,
+  and `npm run test:frontend` now reads those pairs straight out of the `:root` palette, so a
+  re-theme is checked rather than assumed. The prescription viewer is a real dialog: `aria-modal`,
+  focus trapped with Tab/Shift+Tab, Escape to close, focus returned to the control that opened it.
+  Empty and loading states are explicit for every queue.
+* Design tokens live in one `:root` block (colour, shape, elevation, easing), so re-theming stays a
+  token edit; motion is disabled under `prefers-reduced-motion` and the rail/topbar/hero are dropped
+  in print.
 
-The same chrome is used by the pages Apps Script serves itself: `pageShell_()` + `clinicalCss_()` in
-`code.gs` render the emailed set-password form, the form-post result and the `FRONTEND_URL` hand-off,
-so a password link never drops the patient into a differently branded page. `demo/server.js` themes
-its hint bar and the `/__mailbox` page with the same tokens.
-
-The markup contract the tests rely on is unchanged: element ids, `data-show` tokens, `.tabs`/`.panel`
-hooks, the six `.otp`/`.motp` boxes and the `text/plain` CORS-safe API calls.
+Every surface shares the same palette. The pages Apps Script serves itself
+(`pageShell_()` + `auroraCss_()` in `code.gs`) render the emailed set-password form, the form-post
+result and the `FRONTEND_URL` hand-off in the Aurora chrome — the same glass card, gradient brand
+mark, indigo pill button and drifting aurora layer. `demo/server.js` themes its hint bar and the
+`/__mailbox` page with the same tokens, and `npm run test:api` asserts that no surface falls back to
+clinical blue.
 
 ### Emails and admin hardening
 
 Every outgoing mail now carries a branded `htmlBody` (inline styles + tables, plain text kept as
-the fallback): the OTP mail shows the code as a large mono block, the reset mail gets a real CTA
-button with a link fallback, and review/order notifications link back to the app. `emailHtml_()`
-escapes everything and is covered by the API scenarios.
+the fallback): the OTP mail shows the code as a large mono block on the brand tint, the reset mail
+gets a real indigo pill CTA with a link fallback, and review/order notifications link back to the
+app. Mail clients are conservative, so the template uses solid colours and a table layout — no
+gradients, no external CSS. `emailHtml_()` escapes everything, and a spec scenario asserts the
+palette (and the absence of the old clinical blue) on every branded surface.
 
 Setting the `ADMIN_GOOGLE_DOMAIN` Script Property adds a second factor to the admin key: the Google
 account serving the request must be in that domain. With the default blank value behaviour is
@@ -161,7 +173,7 @@ The admin key can be unlocked and locked separately from customer/pharmacy sign-
 Changing roles automatically moves away from a now-hidden tab. Visibility is **not**
 a security boundary: the Apps Script backend must still verify privileged requests.
 `npm run test:frontend` checks ids, handler wiring, the state vocabulary and all
-five tab rules, then drives 113 UI-state checks with jsdom (including the icon rail,
+five tab rules, then drives 115 UI-state checks with jsdom (including the icon rail,
 workspace header and `aria-current` state).
 Customers and admins open the same prescription viewer (`view_rx`): the owner or
 the admin key is required, and the file is shown in the page (images and PDFs)

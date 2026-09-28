@@ -116,6 +116,8 @@ check(/text\/plain/.test(script),
   'POSTs must use a CORS-safelisted content type (text/plain) so no preflight is sent');
 
 // ---- design tokens: text contrast must stay WCAG AA ---------------------
+// The guard reads the palette straight out of :root, so a re-theme is checked
+// against the surfaces the tokens are actually painted on.
 const styleBlock = (html.match(/<style>([\s\S]*?)<\/style>/) || [, ''])[1];
 const rootBlock = (styleBlock.match(/:root\s*{([^}]*)}/) || [, ''])[1];
 const token = (name) => {
@@ -134,20 +136,25 @@ const contrast = (a, b) => {
   const l1 = luminance(a), l2 = luminance(b);
   return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
 };
-['ink', 'ink-2', 'muted', 'faint', 'brand', 'ok', 'warn', 'danger']
+const resolve = (name) => (name.charAt(0) === '#' ? name : token(name));
+['ink', 'ink-2', 'muted', 'faint', 'brand', 'brand-dark', 'brand-lite', 'ok', 'warn', 'danger', 'info',
+ 'page', 'surface', 'brand-tint', 'ok-tint', 'warn-tint', 'danger-tint', 'info-tint']
   .forEach((name) => check(token(name), 'design token --' + name + ' is missing from :root'));
 [
-  ['ink', '#ffffff'], ['ink-2', '#ffffff'], ['muted', '#ffffff'], ['faint', '#ffffff'],
-  ['muted', '#f5f7fb'], ['faint', '#f5f7fb'], ['brand', '#ffffff'], ['ok', '#e8f7ef'],
-  ['warn', '#fff5e2'], ['danger', '#fdeeed']
-].forEach(([name, bg]) => {
-  const fg = token(name);
-  if (!fg) return;
+  ['ink', 'surface'], ['ink', 'page'], ['ink-2', 'surface'], ['ink-2', 'page'],
+  ['muted', 'surface'], ['muted', 'page'], ['faint', 'surface'], ['faint', 'page'],
+  ['brand', 'surface'], ['brand', 'page'], ['brand-dark', 'brand-tint'], ['brand', 'brand-tint'],
+  ['ok', 'ok-tint'], ['ok', 'surface'], ['warn', 'warn-tint'], ['danger', 'danger-tint'], ['info', 'info-tint'],
+  ['#ffffff', 'brand'], ['#ffffff', 'brand-dark'], ['#ffffff', 'brand-lite'], ['#ffffff', 'ok']
+].forEach(([fgName, bgName]) => {
+  const fg = resolve(fgName), bg = resolve(bgName);
+  if (!fg || !bg) return;
   check(contrast(fg, bg) >= 4.5,
-    '--' + name + ' (' + fg + ') on ' + bg + ' is ' + contrast(fg, bg).toFixed(2) + ':1 — needs 4.5:1 for AA');
+    fgName + ' (' + fg + ') on ' + bgName + ' (' + bg + ') is ' + contrast(fg, bg).toFixed(2) + ':1 — needs 4.5:1 for AA');
 });
 check(/prefers-reduced-motion/.test(styleBlock), 'motion should be disabled for prefers-reduced-motion');
 check(/skip-link/.test(html), 'page should offer a skip link');
+check(/class="aurora" aria-hidden="true"/.test(html), 'the decorative aurora layer must be aria-hidden');
 
 // ---- report ------------------------------------------------------------
 if (problems.length) {

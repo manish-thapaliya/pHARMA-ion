@@ -904,5 +904,56 @@ globalThis.runTests = function runTests() {
     ok(!offline.success, 'provider outage fails closed', offline.message);
   });
 
+  // =====================================================================
+  scenario('every branded surface ships the Aurora theme (no clinical-blue leftovers)', () => {
+    boot();
+    const OLD = /#1668d3|#0d4ea6|#f5f7fb|#2b83ea|clinical workspace/i;
+
+    // 1. the Apps Script set-password page served from the emailed link
+    const u = registerCustomer('theme@example.com', '9800000077');
+    call({ action: 'verify_email', userId: u.userId, otp: u.otp });
+    call({ action: 'forgot_password', loginId: u.email });
+    const token = H.lastResetToken('theme@example.com');
+    const pageOut = get({ action: 'pwreset', token });
+    const page = pageOut && typeof pageOut.getContent === 'function' ? pageOut.getContent() : '';
+    truthy(page.indexOf(token) !== -1, 'served page carries the reset token');
+    truthy(/name="password"/.test(page), 'served page still posts the password form');
+    ok(page.indexOf('#4f46e5') !== -1, 'served page uses the indigo accent');
+    ok(page.indexOf('--page:#f7f7fd') !== -1, 'served page uses the Aurora page token');
+    ok(/class="aurora" aria-hidden="true"/.test(page), 'served page carries the decorative aurora layer');
+    ok(!OLD.test(page), 'served page has no clinical-blue leftovers');
+
+    // 2. the FRONTEND_URL hand-off page and the form-post result page
+    MOCK.state.props.FRONTEND_URL = 'https://pharmago.example/';
+    const handoff = get({ action: 'pwreset', token });
+    const handoffHtml = handoff && typeof handoff.getContent === 'function' ? handoff.getContent() : '';
+    ok(handoffHtml.indexOf('?page=reset&token=' + token) !== -1, 'hand-off still targets the frontend');
+    ok(handoffHtml.indexOf('#4f46e5') !== -1 && !OLD.test(handoffHtml), 'hand-off page is themed');
+
+    const posted = form({ action: 'reset_password', token, password: 'themed1' });
+    const postedHtml = posted && typeof posted.getContent === 'function' ? posted.getContent() : '';
+    ok(/PharmaGo/.test(postedHtml) && postedHtml.indexOf('#4f46e5') !== -1,
+      'form-post result page is themed', postedHtml.slice(0, 80));
+    ok(!OLD.test(postedHtml), 'form-post result page has no clinical-blue leftovers');
+    MOCK.state.props.FRONTEND_URL = '';
+
+    // 3. the branded emails (inline styles, table layout)
+    const u2 = registerCustomer('mail@example.com', '9800000078');
+    const otpMail = H.lastMail('mail@example.com');
+    truthy(otpMail && otpMail.htmlBody, 'OTP mail carries an HTML body');
+    ok(otpMail.htmlBody.indexOf('#4f46e5') !== -1, 'OTP mail uses the indigo accent');
+    ok(otpMail.htmlBody.indexOf('#eef0ff') !== -1, 'OTP mail highlights the code on the brand tint');
+    ok(!OLD.test(otpMail.htmlBody), 'OTP mail has no clinical-blue leftovers');
+    ok(!OLD.test(String(otpMail.body)) && /\b\d{6}\b/.test(String(otpMail.body)),
+      'plain-text fallback still carries the code');
+
+    call({ action: 'verify_email', userId: u2.userId, otp: u2.otp });
+    call({ action: 'forgot_password', loginId: 'mail@example.com' });
+    const resetMail = H.lastMail('mail@example.com');
+    ok(resetMail && resetMail.htmlBody.indexOf('#4f46e5') !== -1, 'reset mail CTA is themed');
+    ok(/border-radius:999px/.test(resetMail.htmlBody), 'reset mail CTA is a pill');
+    ok(!OLD.test(resetMail.htmlBody + String(resetMail.body)), 'reset mail has no clinical-blue leftovers');
+  });
+
   return results;
 };

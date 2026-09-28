@@ -1664,61 +1664,74 @@ function passwordPageHtml_(token) {
 }
 
 // ------------------------------------------------------------
-// Shared "Clinical" chrome for every page Apps Script serves itself
+// Shared "Aurora" chrome for every page Apps Script serves itself
 // (set-password form, form-post result, frontend hand-off). Keep in step with
-// the tokens in index.html: clinical blue #1668d3 on cool white #f5f7fb.
+// the tokens in index.html: indigo #4f46e5 on an airy #f7f7fd page.
 // ------------------------------------------------------------
-function clinicalCss_() {
+function auroraCss_() {
   return [
-    ':root{--brand:#1668d3;--brand-dark:#0d4ea6;--tint:#eef5ff;--line:#e4e9f1;--ink:#0f1b2d;--muted:#64748b}',
+    ':root{--brand:#4f46e5;--brand-dark:#4338ca;--brand-lite:#6d5ef0;--tint:#eef0ff;--tint-line:#d8dafc;',
+    '--line:#e9e8f5;--ink:#171532;--ink-2:#3f3d63;--muted:#5d5b7d;--faint:#6a6889;--page:#f7f7fd;',
+    '--ok:#0b7d5c;--danger:#c0392f}',
     '*{box-sizing:border-box}',
-    'body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;',
-    'font-family:Inter,"Segoe UI",system-ui,-apple-system,Arial,sans-serif;font-size:15px;line-height:1.55;color:var(--ink);',
-    'background-color:#f5f7fb;',
-    'background-image:radial-gradient(760px 380px at 100% -10%,rgba(22,104,211,.12),transparent 62%),',
-    'radial-gradient(620px 340px at -8% 6%,rgba(15,123,82,.08),transparent 58%),',
-    'linear-gradient(rgba(15,27,45,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(15,27,45,.03) 1px,transparent 1px);',
-    'background-size:auto,auto,100% 26px,26px 100%;background-attachment:fixed}',
-    '.card{width:min(440px,94vw);padding:26px;background:#fff;border:1px solid var(--line);border-radius:20px;',
-    'box-shadow:0 20px 50px rgba(11,32,64,.12)}',
-    '.brand{display:flex;align-items:center;gap:11px;margin-bottom:16px}',
-    '.mark{display:grid;place-items:center;width:38px;height:38px;border-radius:11px;color:#fff;',
-    'background:linear-gradient(155deg,#2b83ea,#0d4ea6);box-shadow:0 6px 16px rgba(13,78,166,.3)}',
-    '.name{font-size:17px;font-weight:800;letter-spacing:-.03em}',
-    '.name span{color:var(--brand)}.sub{display:block;font-size:10.5px;font-weight:600;letter-spacing:.1em;',
-    'text-transform:uppercase;color:#94a3b8}',
-    'h1{margin:0 0 6px;font-size:21px;font-weight:700;letter-spacing:-.02em}',
-    'p{margin:6px 0;color:#33465e}small{color:var(--muted);font-size:13px}',
-    'label{display:block;margin-top:14px;font-size:12px;font-weight:700;color:#33465e}',
-    'input{width:100%;padding:11px 12px;margin-top:5px;font:inherit;font-size:14px;color:var(--ink);',
-    'background:#fff;border:1px solid #d5dcea;border-radius:10px;box-shadow:0 1px 2px rgba(15,27,45,.05)}',
-    'input:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px rgba(22,104,211,.16)}',
-    'button{width:100%;margin-top:18px;padding:11px 16px;border:0;border-radius:10px;background:var(--brand);',
-    'color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 1px 2px rgba(13,78,166,.3)}',
-    'button:hover{background:var(--brand-dark)}button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(--brand);outline-offset:2px}',
-    '.msg{margin-top:14px;padding:12px 14px;border-radius:10px;font-size:14px;border:1px solid transparent}',
-    '.msg.ok{background:#e8f7ef;color:#0b5f40;border-color:#b6e3cb}',
-    '.msg.err{background:#fdeeed;color:#96271f;border-color:#f4c9c5}',
-    '.msg.info{background:var(--tint);color:#2b5c96;border-color:#bcd6f7}',
-    'a{color:var(--brand);font-weight:600}'
+    'body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;overflow-x:hidden;',
+    'font-family:Inter,"Segoe UI",system-ui,-apple-system,Arial,sans-serif;font-size:15px;line-height:1.6;color:var(--ink);',
+    'background-color:var(--page);',
+    'background-image:radial-gradient(52rem 30rem at 106% -12%,rgba(99,102,241,.20),transparent 62%),',
+    'radial-gradient(42rem 26rem at -10% 0%,rgba(20,184,166,.16),transparent 64%),',
+    'radial-gradient(46rem 30rem at 52% 116%,rgba(251,113,133,.13),transparent 66%);background-attachment:fixed}',
+    '.aurora{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}',
+    '.aurora span{position:absolute;display:block;border-radius:50%;filter:blur(60px);opacity:.6;',
+    'animation:drift 26s cubic-bezier(.22,1,.36,1) infinite alternate}',
+    '.aurora span:nth-child(1){width:44vw;height:44vw;top:-16vw;right:-8vw;background:radial-gradient(circle at 40% 40%,rgba(109,94,240,.5),rgba(109,94,240,0) 70%)}',
+    '.aurora span:nth-child(2){width:36vw;height:36vw;top:26vh;left:-14vw;background:radial-gradient(circle at 50% 50%,rgba(20,184,166,.42),rgba(20,184,166,0) 70%);animation-delay:-8s}',
+    '.aurora span:nth-child(3){width:34vw;height:34vw;bottom:-14vw;left:38vw;background:radial-gradient(circle at 50% 50%,rgba(251,113,133,.34),rgba(251,113,133,0) 70%);animation-delay:-15s}',
+    '.card{position:relative;z-index:1;width:min(460px,94vw);padding:30px;background:#fff;border:1px solid #fff;border-radius:32px;',
+    'box-shadow:0 40px 90px -50px rgba(48,42,120,.55),0 1px 2px rgba(23,21,50,.04)}',
+    '.brand{display:flex;align-items:center;gap:12px;margin-bottom:18px}',
+    '.mark{display:grid;place-items:center;width:42px;height:42px;border-radius:15px;color:#fff;',
+    'background:linear-gradient(145deg,#6d5ef0,#4f46e5 55%,#4338ca);box-shadow:0 12px 24px -12px rgba(79,70,229,.9)}',
+    '.name{font-size:17px;font-weight:800;letter-spacing:-.035em}',
+    '.name span{color:var(--brand)}.sub{display:block;font-size:10.5px;font-weight:700;letter-spacing:.13em;',
+    'text-transform:uppercase;color:var(--faint);margin-top:2px}',
+    'h1{margin:0 0 8px;font-size:22px;font-weight:800;letter-spacing:-.025em}',
+    'p{margin:8px 0;color:var(--ink-2)}small{color:var(--muted);font-size:13px}',
+    'label{display:block;margin-top:16px;font-size:12px;font-weight:700;color:var(--ink-2)}',
+    'input{width:100%;padding:12px 14px;margin-top:6px;font:inherit;font-size:14px;color:var(--ink);',
+    'background:#fbfbff;border:1px solid #e4e2f3;border-radius:14px;box-shadow:inset 0 1px 2px rgba(23,21,50,.03)}',
+    'input:focus{outline:none;background:#fff;border-color:var(--brand);box-shadow:0 0 0 4px rgba(79,70,229,.15)}',
+    'button{width:100%;margin-top:20px;padding:13px 16px;border:0;border-radius:999px;',
+    'background:linear-gradient(140deg,#5f54ee,#4f46e5 60%,#4a3fd8);',
+    'color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 14px 30px -14px rgba(79,70,229,.72)}',
+    'button:hover{background:linear-gradient(140deg,#544ae0,#4338ca 60%,#3f37bd)}',
+    'button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid rgba(79,70,229,.45);outline-offset:2px}',
+    '.msg{margin-top:16px;padding:13px 16px;border-radius:18px;font-size:14px;border:1px solid transparent}',
+    '.msg.ok{background:#e6f7ef;color:#0a6349;border-color:#bfe9d7}',
+    '.msg.err{background:#ffeceb;color:#9c2c23;border-color:#f7cdc9}',
+    '.msg.info{background:var(--tint);color:#3b3a9e;border-color:var(--tint-line)}',
+    'a{color:var(--brand);font-weight:600}',
+    '@keyframes drift{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(4vw,3vh,0) scale(1.12)}}',
+    '@media (prefers-reduced-motion:reduce){.aurora span{animation:none}}'
   ].join('');
 }
 
-/** Wrap body markup in the shared clinical chrome; returns an HTML string. */
+/** Wrap body markup in the shared Aurora chrome; returns an HTML string. */
 function pageShell_(title, bodyHtml, headExtra) {
   return [
     '<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
-    '<meta name="theme-color" content="#1668d3">',
+    '<meta name="theme-color" content="#4f46e5">',
     '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>',
     '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">',
     '<title>' + title + '</title>',
-    '<style>' + clinicalCss_() + '</style>',
+    '<style>' + auroraCss_() + '</style>',
     headExtra || '',
-    '</head><body><main class="card">',
+    '</head><body>',
+    '<div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>',
+    '<main class="card">',
     '<div class="brand"><span class="mark" aria-hidden="true">',
-    '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
-    '</span><span><span class="name">pharma<span>go</span></span><span class="sub">Clinical workspace</span></span></div>',
+    '<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+    '</span><span><span class="name">pharma<span>go</span></span><span class="sub">Care workspace</span></span></div>',
     bodyHtml,
     '</main></body></html>'
   ].join('');
@@ -1749,45 +1762,45 @@ function emailHtml_(opts) {
   const paragraphs = String(o.text == null ? '' : o.text).split('\n').map(function (line) {
     return line.trim() === ''
       ? '<div style="height:8px;line-height:8px">&nbsp;</div>'
-      : '<p style="margin:0 0 10px;font-size:14px;line-height:1.6;color:#33465e">' + esc(line) + '</p>';
+      : '<p style="margin:0 0 10px;font-size:14px;line-height:1.6;color:#3f3d63">' + esc(line) + '</p>';
   }).join('');
   const cta = o.buttonUrl
     ? '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:18px 0 6px">' +
-      '<tr><td style="background:#1668d3;border-radius:10px">' +
-      '<a href="' + esc(o.buttonUrl) + '" style="display:inline-block;padding:11px 18px;' +
+      '<tr><td style="background:#4f46e5;border-radius:999px">' +
+      '<a href="' + esc(o.buttonUrl) + '" style="display:inline-block;padding:12px 22px;' +
       'font-family:Inter,Segoe UI,system-ui,Arial,sans-serif;font-size:14px;font-weight:700;' +
       'color:#ffffff;text-decoration:none">' + esc(o.buttonLabel || 'Open PharmaGo') + '</a></td></tr></table>'
     : '';
   const highlight = o.highlight
-    ? '<div style="margin:16px 0;padding:14px 16px;border-radius:12px;background:#eef5ff;' +
-      'border:1px solid #bcd6f7;text-align:center">' +
-      '<div style="font-family:IBM Plex Mono,Consolas,monospace;font-size:28px;font-weight:600;' +
-      'letter-spacing:.22em;color:#0d4ea6">' + esc(o.highlight) + '</div>' +
-      '<div style="margin-top:6px;font-size:11.5px;font-weight:600;letter-spacing:.06em;' +
-      'text-transform:uppercase;color:#5c6b7f">' + esc(o.highlightLabel || 'One-time code') + '</div></div>'
+    ? '<div style="margin:16px 0;padding:16px;border-radius:18px;background:#eef0ff;' +
+      'border:1px solid #d8dafc;text-align:center">' +
+      '<div style="font-family:IBM Plex Mono,Consolas,monospace;font-size:30px;font-weight:600;' +
+      'letter-spacing:.22em;color:#4338ca">' + esc(o.highlight) + '</div>' +
+      '<div style="margin-top:6px;font-size:11.5px;font-weight:700;letter-spacing:.1em;' +
+      'text-transform:uppercase;color:#5d5b7d">' + esc(o.highlightLabel || 'One-time code') + '</div></div>'
     : '';
   return [
-    '<div style="background:#f5f7fb;padding:26px 14px">',
+    '<div style="background:#f7f7fd;padding:28px 14px">',
     '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:540px;margin:0 auto">',
     '<tr><td style="padding-bottom:14px;font-family:Inter,Segoe UI,system-ui,Arial,sans-serif">',
-    '<span style="display:inline-block;width:30px;height:30px;border-radius:9px;background:#1668d3;' +
+    '<span style="display:inline-block;width:30px;height:30px;border-radius:10px;background:#4f46e5;' +
     'color:#ffffff;font-size:18px;font-weight:700;line-height:30px;text-align:center">+</span>',
-    '<span style="margin-left:9px;font-size:16px;font-weight:800;letter-spacing:-.03em;color:#0f1b2d">pharma',
-    '<span style="color:#1668d3">go</span></span>',
-    '<span style="margin-left:8px;font-size:10.5px;font-weight:600;letter-spacing:.1em;' +
-    'text-transform:uppercase;color:#94a3b8">clinical workspace</span>',
+    '<span style="margin-left:9px;font-size:16px;font-weight:800;letter-spacing:-.035em;color:#171532">pharma',
+    '<span style="color:#4f46e5">go</span></span>',
+    '<span style="margin-left:8px;font-size:10.5px;font-weight:700;letter-spacing:.13em;' +
+    'text-transform:uppercase;color:#6a6889">care workspace</span>',
     '</td></tr>',
-    '<tr><td style="background:#ffffff;border:1px solid #e4e9f1;border-radius:16px;padding:22px;' +
+    '<tr><td style="background:#ffffff;border:1px solid #e9e8f5;border-radius:20px;padding:24px;' +
     'font-family:Inter,Segoe UI,system-ui,Arial,sans-serif">',
-    o.heading ? '<h1 style="margin:0 0 12px;font-size:18px;font-weight:700;letter-spacing:-.02em;color:#0f1b2d">' +
+    o.heading ? '<h1 style="margin:0 0 12px;font-size:19px;font-weight:800;letter-spacing:-.025em;color:#171532">' +
       esc(o.heading) + '</h1>' : '',
     highlight, paragraphs, cta,
-    o.linkFallback ? '<p style="margin:14px 0 0;font-size:12px;line-height:1.6;color:#64748b">' +
+    o.linkFallback ? '<p style="margin:16px 0 0;font-size:12px;line-height:1.6;color:#5d5b7d">' +
       'Button not working? Open this link:<br>' +
-      '<a href="' + esc(o.linkFallback) + '" style="color:#1668d3;word-break:break-all">' + esc(o.linkFallback) + '</a></p>' : '',
+      '<a href="' + esc(o.linkFallback) + '" style="color:#4f46e5;word-break:break-all">' + esc(o.linkFallback) + '</a></p>' : '',
     '</td></tr>',
-    '<tr><td style="padding:14px 4px 0;font-family:Inter,Segoe UI,system-ui,Arial,sans-serif;' +
-    'font-size:11.5px;line-height:1.6;color:#64748b">',
+    '<tr><td style="padding:16px 4px 0;font-family:Inter,Segoe UI,system-ui,Arial,sans-serif;' +
+    'font-size:11.5px;line-height:1.6;color:#5d5b7d">',
     esc(o.footer || 'PharmaGo — prescriptions and medicine delivery. Never share your password or admin key.'),
     '</td></tr></table></div>'
   ].join('');

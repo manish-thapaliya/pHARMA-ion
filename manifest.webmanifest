@@ -1,13 +1,13 @@
 {
-  "name": "PharmaGo — clinical workspace",
+  "name": "PharmaGo — care workspace",
   "short_name": "PharmaGo",
   "description": "Upload prescriptions, follow pharmacist review and order from verified local pharmacies.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#f5f7fb",
-  "theme_color": "#1668d3",
+  "background_color": "#f7f7fd",
+  "theme_color": "#4f46e5",
   "categories": ["health", "medical", "productivity"],
   "icons": [
     { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
