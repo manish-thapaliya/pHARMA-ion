@@ -59,6 +59,7 @@ async function run() {
   const { dom, w, d, id, calls, replies } = setup();
   const last = () => calls[calls.length - 1];
   try {
+    check(!d.querySelector('.hero').hidden, 'welcome section visible to guests');
     // Guest (13).
     check(/guest/.test(id('sessionBar').textContent), 'guest badge');
     check(!id('tabLogin').hidden, 'guest account tab');
@@ -108,6 +109,7 @@ async function run() {
     check(id('loginMsg').classList.contains('err'), 'failed login message');
     check(!w.localStorage.getItem('pharmago_session'), 'failed login not stored');
     replies.login = { success:true, data:{userId:'U-2026-0010',role:'USER',name:'Alex'} }; await w.doLogin();
+    check(d.querySelector('.hero').hidden, 'welcome section hidden after customer login');
     check(id('tabLogin').hidden, 'account tab hidden for customer');
     check(!id('tabUser').hidden, 'customer portal tab visible');
     check(id('user').classList.contains('active'), 'customer lands in portal');
@@ -122,8 +124,10 @@ async function run() {
 
     // Merchant session (8).
     w.logout();
+    check(!d.querySelector('.hero').hidden, 'welcome section restored after logout');
     check(id('login').classList.contains('active'), 'logout returns to guest account');
     replies.login = { success:true, data:{userId:'M123',role:'MERCHANT',name:'Green Cross'} }; await w.doLogin();
+    check(d.querySelector('.hero').hidden, 'welcome section hidden after pharmacy login');
     check(id('tabUser').hidden, 'vendor cannot open customer portal');
     check(id('merchant').classList.contains('active'), 'vendor lands in shop');
     check(!id('vendorTools').hidden, 'vendor listing tools shown');
@@ -280,8 +284,24 @@ async function run() {
     check(!w.localStorage.getItem('pharmago_session') && !!w.sessionStorage.getItem('pharmago_session'),
       'session-only sign-in when remember me is off');
     w.logout();
+    // Successful actions transition; failures preserve the current form.
+    w.showView('forgot');
+    id('fId').value = 'alex@example.test';
+    replies.forgot_password = { success:false, message:'Try again' };
+    await w.doForgot();
+    check(!id('actionComplete').classList.contains('active'), 'failed action does not navigate');
+    check(id('fId').value === 'alex@example.test', 'failed action keeps input');
+    replies.forgot_password = { success:true, message:'Link sent' };
+    await w.doForgot();
+    check(id('actionComplete').classList.contains('active'), 'successful action opens confirmation page');
+    check(d.querySelectorAll('.panel.active').length === 1, 'only confirmation page is visible');
+    check(d.activeElement === id('actionCompleteTitle'), 'confirmation heading receives focus');
+    check(id('actionCompleteMessage').textContent === 'Link sent', 'confirmation preserves API feedback');
+    id('actionCompleteNext').click();
+    check(id('login').classList.contains('active'), 'continue opens destination page');
+    check(id('viewLogin').style.display !== 'none', 'continue opens sign-in form');
   } finally { dom.window.close(); }
-  if (checks !== 115) throw Error('Expected 115 UI-state checks, got ' + checks);
-  console.log('✓ 115 UI-state checks passed');
+  if (checks !== 127) throw Error('Expected 127 UI-state checks, got ' + checks);
+  console.log('✓ 127 UI-state checks passed');
 }
 run().catch(err => { console.error('✗ ' + err.stack); process.exitCode = 1; });

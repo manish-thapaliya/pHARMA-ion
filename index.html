@@ -875,7 +875,7 @@
   <div class="workspace" id="workspace">
     <div id="configBanner" class="banner" role="alert"></div>
 
-    <section class="hero" aria-label="Welcome to PharmaGo">
+    <section class="hero" data-show="guest" aria-label="Welcome to PharmaGo">
       <div class="hero-copy">
         <span class="eyebrow">Care, delivered</span>
         <h1>Every prescription tracked, every pharmacy verified.</h1>
@@ -1284,6 +1284,14 @@
   <div id="adminMsg" class="msg" role="status" aria-live="polite"></div>
 </div>
 
+<section id="actionComplete" class="panel" aria-labelledby="actionCompleteTitle">
+  <div class="card">
+    <span class="badge">Completed</span>
+    <h2 id="actionCompleteTitle" tabindex="-1">Action completed</h2>
+    <p id="actionCompleteMessage" role="status"></p>
+    <button id="actionCompleteNext" class="btn" onclick="continueAfterAction()">Continue</button>
+  </div>
+</section>
     <footer class="site-footer">
       <span>© PharmaGo · Care made accessible</span>
       <span>Google Sheets &amp; Drive powered · Never share your admin key</span>
@@ -1392,6 +1400,38 @@ function applyAuthUI() {
   }
   syncTopbar();
 }
+// Keep successful submissions on their own page; errors and utility actions
+// (refresh, resend, search) stay in context without discarding form input.
+let nextActionTab = 'Login';
+function transitionPage(el) {
+  if (!el) return;
+  if (el.animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    el.animate([{ opacity: 0, transform: 'translateY(12px)' },
+      { opacity: 1, transform: 'translateY(0)' }], { duration: 220, easing: 'ease-out' });
+  }
+  const heading = el.querySelector('h1, h2, h3');
+  if (heading) { heading.setAttribute('tabindex', '-1'); heading.focus({ preventScroll: true }); }
+  if (el.scrollIntoView) el.scrollIntoView({ block: 'start', behavior: 'instant' });
+}
+function completeAction(title, message, tab, label) {
+  nextActionTab = tab;
+  closeRxViewer();
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tabs button').forEach(b => {
+    b.classList.remove('active'); b.removeAttribute('aria-current');
+  });
+  document.getElementById('actionCompleteTitle').textContent = title;
+  document.getElementById('actionCompleteMessage').textContent = message || 'Your changes have been saved.';
+  document.getElementById('actionCompleteNext').textContent = label || 'Continue';
+  document.getElementById('crumbTitle').textContent = title;
+  const page = document.getElementById('actionComplete');
+  page.classList.add('active');
+  transitionPage(page);
+}
+function continueAfterAction() {
+  if (nextActionTab === 'Login') showView('login');
+  activateTab(nextActionTab);
+}
 function openTab(evt, id) {
   const button = evt.currentTarget;
   if (button.hidden) return;
@@ -1400,6 +1440,7 @@ function openTab(evt, id) {
   document.getElementById(id).classList.add('active');
   button.classList.add('active');
   button.setAttribute('aria-current', 'page');
+  transitionPage(document.getElementById(id));
   applyAuthUI();
   if (id === 'shop') loadMedicines();
   if (id === 'user' && session && session.role === 'USER') { loadHistory(); loadMyOrders(); }
@@ -1491,6 +1532,7 @@ function showView(v) {
     const cap = x[0].toUpperCase() + x.slice(1);
     const el = document.getElementById('view' + cap);
     if (el) el.style.display = (x === v ? '' : 'none');
+    if (el && x === v) transitionPage(el);
   });
 }
 /** Collect an optional password pair, or return null with a message shown. */
@@ -1612,6 +1654,8 @@ async function doForgot() {
     sessionStorage.setItem('pharmago_token', res.data.demoToken);
     showView('reset');
     show('resetMsg', true, 'Demo password link opened. Choose a new password.');
+  } else if (res.success) {
+    completeAction('Check your email', res.message, 'Login', 'Back to sign in');
   }
 }
 async function doReset() {
@@ -1624,7 +1668,8 @@ async function doReset() {
   show('resetMsg', res.success, res.message);
   if (res.success) {
     sessionStorage.removeItem('pharmago_token');
-    setTimeout(() => { history.replaceState(null,'',location.pathname); showView('login'); }, 1500);
+    history.replaceState(null, '', location.pathname);
+    completeAction('Password updated', 'Your new password is ready. Sign in to continue.', 'Login', 'Sign in');
   }
 }
 async function doLogin() {
@@ -1867,6 +1912,8 @@ async function uploadRx() {
       if (box) { box.hidden = true; box.innerHTML = ''; }
       if (rxLocalUrl) { URL.revokeObjectURL(rxLocalUrl); rxLocalUrl = ''; }
       await loadHistory();
+      if (session === uploadSession) completeAction('Prescription submitted',
+        'Your prescription has been sent for review. Track its status in My prescriptions.', 'User', 'Track prescription');
     }
   } catch (err) {
     if (session === uploadSession) show('userMsg', false, 'Could not upload the prescription. Your details are kept here; please try again.');
@@ -2050,7 +2097,9 @@ async function submitOrder() {
   if (!rxId) return show('shopMsg', false, 'An approved prescription is required before you can order.');
   const res = await callAPI({ action:'place_order', medicineId: orderDraft.MedicineID, qty, rxId });
   show('shopMsg', res.success, res.message);
-  if (res.success) { cancelOrder(); loadMedicines(); loadMyOrders(); }
+  if (res.success) { cancelOrder(); loadMedicines(); loadMyOrders();
+    completeAction('Order placed', res.message, 'User', 'View my orders');
+  }
 }
 async function loadMyOrders() {
   if (!session || session.role !== 'USER') return;
@@ -2103,6 +2152,7 @@ async function reviewShopOrder(orderId, status, asAdmin) {
   if (res.success) {
     if (asAdmin) loadAdminOrders();
     else { loadShopOrders(); loadMyListings(); }
+    completeAction('Order ' + status.toLowerCase(), res.message, asAdmin ? 'Admin' : 'Merchant', 'Back to orders');
   }
 }
 
@@ -2151,7 +2201,7 @@ async function doMerchantVerify() {
   if (res.success) {
     stopCountdown('motpCountdown');
     if (res.data && res.data.passwordSet) {
-      show('mvMsg', true, res.message + ' You can log in from the Login tab once an admin approves your documents.');
+      completeAction('Pharmacy email verified', res.message + ' You can sign in once an admin approves your documents.', 'Login', 'Back to sign in');
     } else if (confirm('Vendor email verified! Receive a "set password" link by email now?')) {
       activateTab('Login');                    // the forgot view lives on the Login tab
       document.getElementById('fId').value = pendingMerchant.merchantId;
@@ -2187,6 +2237,7 @@ async function addMedicine(asAdmin) {
   if (res.success) {
     if (asAdmin) loadAdminMedicines();
     else { ['nmName','nmCat','nmPrice','nmStock'].forEach(id => g(id).value=''); loadMyListings(); }
+    completeAction('Medicine added', res.message, asAdmin ? 'Admin' : 'Merchant', 'View medicines');
   }
 }
 async function loadMyListings() {
@@ -2223,14 +2274,18 @@ async function editMyMedicine(medId, asAdmin = false) {
   if (!auth) return;
   const res = await callAPI({ action:'update_medicine', medId, price:Number(price), stock:Number(stock), ...auth });
   show(asAdmin ? 'adminMsg' : 'merchMsg', res.success, res.message);
-  if (res.success) { if (asAdmin) loadAdminMedicines(); else loadMyListings(); }
+  if (res.success) { if (asAdmin) loadAdminMedicines(); else loadMyListings();
+    completeAction('Medicine updated', res.message, asAdmin ? 'Admin' : 'Merchant', 'View medicines');
+  }
 }
 async function setMedicineActive(medId, active, asAdmin = false) {
   const auth = medicineCredentials(asAdmin);
   if (!auth) return;
   const res = await callAPI({ action:'update_medicine', medId, active, ...auth });
   show(asAdmin ? 'adminMsg' : 'merchMsg', res.success, res.message);
-  if (res.success) { if (asAdmin) loadAdminMedicines(); else loadMyListings(); }
+  if (res.success) { if (asAdmin) loadAdminMedicines(); else loadMyListings();
+    completeAction('Medicine updated', res.message, asAdmin ? 'Admin' : 'Merchant', 'View medicines');
+  }
 }
 
 // ===== ADMIN =====
@@ -2309,7 +2364,7 @@ async function reviewRx(rxId, status) {
   const note = status === 'DECLINED' ? (prompt('Reason for decline?') || '') : '';
   const res = await callAPI({ action:'update_status', adminKey, rxId, status, note });
   show('adminMsg', res.success, res.message);
-  if (res.success) await loadPending();
+  if (res.success) { await loadPending(); completeAction('Prescription ' + status.toLowerCase(), res.message, 'Admin', 'Back to review queue'); }
 }
 function closeRxViewer() {
   const overlay = document.getElementById('rxViewer');
@@ -2528,7 +2583,7 @@ async function reviewMerchant(mid, status) {
   if (!requireAdmin()) return;
   const res = await callAPI({ action:'review_merchant', adminKey, merchantId:mid, status });
   show('adminMsg', res.success, res.message);
-  if (res.success) loadMerchants();
+  if (res.success) { loadMerchants(); completeAction('Pharmacy ' + status.toLowerCase(), res.message, 'Admin', 'Back to pharmacies'); }
 }
 async function loadUsers() {
   if (!requireAdmin()) return;
