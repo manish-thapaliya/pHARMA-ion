@@ -48,6 +48,13 @@ which overrides the constant in `code.gs` — handy for keeping secrets out of G
 | `ADMIN_KEY` | `changeme-admin-key` | **Change this.** Unlocks admin actions |
 | `ADMIN_GOOGLE_DOMAIN` | blank | Optional hardening: privileged requests must also come from a Google account in this domain (see note below) |
 | `FRONTEND_URL` | blank → Apps-Script-hosted set-password page | Emailed link target |
+| `GOOGLE_CLIENT_ID` | blank → social buttons explain setup | OAuth client ID (Web) whose audience is checked against Google sign-in tokens |
+| `FACEBOOK_APP_ID` | blank → social buttons explain setup | Facebook app the access tokens must belong to |
+
+Social sign-in also needs the same two values pasted at the top of the `<script>` in `index.html`
+(`GOOGLE_CLIENT_ID` / `FACEBOOK_APP_ID`) so the browser can open the provider popups. Apps Script
+will ask for the `script.external_request` scope on the next deploy (used to verify tokens
+server-side). Leaving both blank keeps every other sign-in method working.
 
 ---
 
@@ -56,6 +63,12 @@ which overrides the constant in `code.gs` — handy for keeping secrets out of G
 * **Customer** — register → 6-digit email code → (set password now, or by emailed link) → log in →
   upload prescription → preview the file and track status. An approved prescription can place an
   order for a catalogue medicine; the pharmacy accepts or declines it and is emailed either way.
+* **Sign-in options** — the account card mirrors the familiar ePharmacy-style layout:
+  password + **Remember me?**, **Login with Facebook**, **Login with Google**, and
+  **“Email me a one-time code instead”** (a 6-digit code lands in the inbox — no password needed;
+  entering it also finishes email verification for a pending customer). Social tokens are verified
+  server-side (`code.gs` calls Google / Facebook directly); first social sign-in creates an ACTIVE
+  customer and later ones reuse the account with that email.
 * **Vendor** — register with GST + Drug License + Shop ID + PAN → email code → admin reviews the
   documents → approved vendor logs in and lists medicines (own listings only).
 * **Admin** — unlock with the admin key → open each prescription in the same viewer the patient uses,
@@ -71,8 +84,8 @@ Install the UI test dependency first. The backend runs against a mocked Apps Scr
 
 ```bash
 npm install
-npm test              # backend end-to-end + frontend wiring + 77 browser-like UI-state checks
-npm run test:api      # 23 scenarios / 228 checks against code.gs
+npm test              # backend end-to-end + frontend wiring + 113 browser-like UI-state checks
+npm run test:api      # 26 scenarios / 311 checks against code.gs
 npm run test:frontend # index.html wiring, AA-contrast guard + UI-state checks
 ```
 
@@ -148,7 +161,7 @@ The admin key can be unlocked and locked separately from customer/pharmacy sign-
 Changing roles automatically moves away from a now-hidden tab. Visibility is **not**
 a security boundary: the Apps Script backend must still verify privileged requests.
 `npm run test:frontend` checks ids, handler wiring, the state vocabulary and all
-five tab rules, then drives 77 UI-state checks with jsdom (including the icon rail,
+five tab rules, then drives 113 UI-state checks with jsdom (including the icon rail,
 workspace header and `aria-current` state).
 Customers and admins open the same prescription viewer (`view_rx`): the owner or
 the admin key is required, and the file is shown in the page (images and PDFs)

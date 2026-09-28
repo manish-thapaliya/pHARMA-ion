@@ -12,11 +12,29 @@ const stub = createStub();
 const ctx = vm.createContext({
   console, ...Object.fromEntries(['SpreadsheetApp', 'DriveApp', 'MailApp', 'Utilities',
     'PropertiesService', 'ScriptApp', 'HtmlService', 'ContentService', 'Session',
-    'LockService', 'Logger'].map(key => [key, stub[key]])),
+    'LockService', 'Logger', 'UrlFetchApp'].map(key => [key, stub[key]])),
 });
 vm.runInContext(fs.readFileSync(path.join(__dirname, '../code.gs'), 'utf8'), ctx, { filename: 'code.gs' });
 const call = data => ctx.handleRequest_(data);
 call({ action:'setup' });
+
+// Mock Google / Facebook token verification so the social buttons on the login
+// card are explorable without real OAuth apps. Tokens are fictional.
+stub.helpers.setFetchResponder(url => {
+  if (url.indexOf('oauth2.googleapis.com/tokeninfo') !== -1) {
+    return url.indexOf('demo-google-token') !== -1
+      ? { aud:'demo-client', email:'google.demo@pharmago.test', email_verified:true, sub:'g-demo-1' }
+      : null;
+  }
+  if (url.indexOf('googleapis.com/oauth2/v3/userinfo') !== -1)
+    return { name:'Google Demo', email:'google.demo@pharmago.test' };
+  if (url.indexOf('graph.facebook.com/me') !== -1) {
+    return url.indexOf('demo-facebook-token') !== -1
+      ? { id:'fb-demo-1', name:'Facebook Demo', email:'facebook.demo@pharmago.test' }
+      : null;
+  }
+  return null;
+});
 
 // Seed safe fictional demo accounts and a medicine so the catalogue is useful on arrival.
 const customer = call({ action:'register', email:'demo@pharmago.test', phone:'9800000001',
@@ -62,7 +80,7 @@ const escapeHtml = s => String(s).replace(/[&<>"']/g, c =>
 
 const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8').replace('</head>',
   '<meta name="pharmago-demo" content="true"><style>.demo-hint{background:#eef5ff;border:1px solid #bcd6f7;border-left:3px solid #1668d3;padding:13px 16px;border-radius:14px;margin:0 0 16px;font-size:13px;line-height:1.6;color:#1d4f8c;box-shadow:0 1px 2px rgba(15,27,45,.05)}.demo-hint b{color:#0d4ea6}.demo-hint a{color:#1668d3;font-weight:600}@media (max-width:900px){.demo-hint{margin-bottom:12px}}</style></head>')
-  .replace('<div id="configBanner"', `<div class="demo-hint"><b>Interactive demo — fictional data only.</b> Customer: demo@pharmago.test / demo123 · Pharmacy: vendor@pharmago.test / demo123 · Admin key: changeme-admin-key. Sign in and open My prescriptions to view the sample file, or order Vitamin C against the approved one. New verification codes appear on this page or in the <a href="/__mailbox" target="_blank" rel="noopener">demo mailbox</a>; data resets when the server restarts.</div>\n<div id="configBanner"`);
+  .replace('<div id="configBanner"', `<div class="demo-hint"><b>Interactive demo — fictional data only.</b> Customer: demo@pharmago.test / demo123 · Pharmacy: vendor@pharmago.test / demo123 · Admin key: changeme-admin-key. The login card also works with a one-time email code (“Email me a one-time code instead”) and with the Google / Facebook buttons (simulated accounts). Sign in and open My prescriptions to view the sample file, or order Vitamin C against the approved one. New verification codes appear on this page or in the <a href="/__mailbox" target="_blank" rel="noopener">demo mailbox</a>; data resets when the server restarts.</div>\n<div id="configBanner"`);
 
 function json(res, status, body) {
   res.writeHead(status, { 'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store' });
@@ -148,6 +166,12 @@ http.createServer((req, res) => {
         const email = payload.email;
         if (['register','register_merchant','resend_otp'].includes(payload.action) && email) {
           result.data.demoOtp = stub.helpers.lastOtp(email);
+        }
+        if (payload.action === 'login_code') {
+          const id = String(payload.loginId || '').toLowerCase();
+          const user = stub.helpers.sheetRows('Users').find(row =>
+            String(row[0]).toLowerCase() === id || String(row[1]).toLowerCase() === id);
+          if (user) result.data.demoOtp = stub.helpers.lastOtp(user[1]);
         }
       }
       if (result.success && payload.action === 'forgot_password') {

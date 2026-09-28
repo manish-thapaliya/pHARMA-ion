@@ -769,5 +769,140 @@ globalThis.runTests = function runTests() {
     void customer;
   });
 
+  // =====================================================================
+  scenario('passwordless sign-in: one-time code requested + verified by email', () => {
+    boot();
+    const u = verifiedCustomer('code@example.com', '9800000031', 'secret123');
+
+    // Neutral replies: unknown accounts are neither confirmed nor denied.
+    const missing = call({ action: 'login_code', loginId: 'ghost@example.com' });
+    ok(missing.success, 'login_code stays neutral for unknown accounts', missing.message);
+    ok(!/not found|no account|unknown|invalid/i.test(missing.message),
+      'unknown account message does not leak existence', missing.message);
+    ok(H.lastMail('ghost@example.com') === null, 'no mail is sent to unknown addresses');
+
+    // Request by email: the code is emailed, the reply does not echo the address.
+    const asked = call({ action: 'login_code', loginId: u.email });
+    ok(asked.success, 'login_code sends mail', asked.message);
+    ok(!/code@example\.com/.test(asked.message), 'reply never echoes back the account email', asked.message);
+    const mail = H.lastMail('code@example.com');
+    truthy(mail, 'a sign-in code was emailed');
+    ok(/sign-in code/i.test(mail.subject + mail.body), 'mail is worded as a sign-in code');
+    const code = H.lastOtp('code@example.com');
+    truthy(code && /^\d{6}$/.test(code), 'a 6-digit code was emailed', code);
+
+    // Wrong code counts attempts; the right one issues a working session.
+    const wrong = call({ action: 'login_code_verify', loginId: u.email, otp: '000000' });
+    ok(!wrong.success, 'wrong code rejected');
+    ok(/1\/5/.test(wrong.message), 'attempts counter is reported', wrong.message);
+    const used = call({ action: 'login_code_verify', loginId: u.email, otp: code });
+    ok(used.success, 'the emailed code signs the user in', used.message);
+    eq(used.data.userId, u.userId, 'session belongs to the account');
+    eq(used.data.role, 'USER', 'role is returned');
+    truthy(used.data.sessionToken, 'session token issued');
+    eq(used.data.passwordSet, true, 'password status is reported');
+    ok(call({ action: 'get_data', sheetName: 'Prescriptions', sessionToken: used.data.sessionToken }).success,
+      'the issued session works for API calls');
+    const reuse = call({ action: 'login_code_verify', loginId: u.email, otp: code });
+    ok(!reuse.success, 'codes are single use');
+
+    // Resend issues a fresh code — also requestable by user ID.
+    const re = call({ action: 'login_code', loginId: u.userId });
+    ok(re.success, 'code can be requested with the user ID too', re.message);
+    const code2 = H.lastOtp('code@example.com');
+    ok(code2 && code2 !== code, 'resend issues a fresh code');
+
+    // An UNVERIFIED customer proves the address by entering the code.
+    const unv = registerCustomer('unv-code@example.com', '9800000032');
+    const nu = call({ action: 'login_code', loginId: 'unv-code@example.com' });
+    ok(nu.success, 'unverified customer request stays neutral', nu.message);
+    const code3 = H.lastOtp('unv-code@example.com');
+    truthy(code3, 'unverified customer receives a sign-in code');
+    const promoted = call({ action: 'login_code_verify', loginId: 'unv-code@example.com', otp: code3 });
+    ok(promoted.success, 'code sign-in proves the address', promoted.message);
+    eq(H.findRow('Users', 0, unv.userId)[6], 'ACTIVE', 'account activated by code sign-in');
+
+    // Verify without a matching request fails safely.
+    ok(!call({ action: 'login_code_verify', loginId: 'ghost@example.com', otp: '123456' }).success,
+      'verifying for an unknown account fails');
+  });
+
+  // =====================================================================
+  scenario('social login: Google / Facebook tokens create and reuse accounts', () => {
+    boot();
+    MOCK.state.props.GOOGLE_CLIENT_ID = 'test-client';
+    MOCK.state.props.FACEBOOK_APP_ID = 'fb-app-1';
+    H.setFetchResponder((url) => {
+      if (url.indexOf('oauth2.googleapis.com/tokeninfo') !== -1) {
+        if (url.indexOf('good-google') === -1) return null;
+        return { aud: 'test-client', email: 'google.user@example.com', email_verified: true, sub: 'g-123' };
+      }
+      if (url.indexOf('oauth2/v3/userinfo') !== -1) return { name: 'Gina Google' };
+      if (url.indexOf('graph.facebook.com/me') !== -1) {
+        return url.indexOf('good-fb') !== -1
+          ? { id: 'fb-456', name: 'Frank Facebook', email: 'fb.user@example.com' } : null;
+      }
+      if (url.indexOf('graph.facebook.com/app') !== -1) return { id: 'fb-app-1', name: 'Test App' };
+      return null;
+    });
+
+    ok(!call({ action: 'social_login', provider: 'yahoo', accessToken: 'x' }).success,
+      'unknown provider rejected');
+    ok(!call({ action: 'social_login', provider: 'google' }).success, 'missing token rejected');
+    const bad = call({ action: 'social_login', provider: 'google', accessToken: 'nonsense' });
+    ok(!bad.success, 'invalid google token rejected', bad.message);
+    ok(!H.findRow('Users', 1, 'google.user@example.com'), 'no account created for a bad token');
+
+    const g = call({ action: 'social_login', provider: 'google', accessToken: 'good-google' });
+    ok(g.success, 'google sign-in works', g.message);
+    eq(g.data.role, 'USER', 'social account is a customer');
+    eq(g.data.name, 'Gina Google', 'pretty name comes from the provider');
+    truthy(g.data.sessionToken, 'social sign-in issues a session');
+    eq(H.findRow('Users', 1, 'google.user@example.com')[6], 'ACTIVE', 'social account starts ACTIVE');
+    ok(call({ action: 'get_data', sheetName: 'Prescriptions', sessionToken: g.data.sessionToken }).success,
+      'social session works for API calls');
+
+    const g2 = call({ action: 'social_login', provider: 'google', accessToken: 'good-google' });
+    ok(g2.success && g2.data.userId === g.data.userId, 'second google sign-in reuses the account');
+
+    const f = call({ action: 'social_login', provider: 'facebook', accessToken: 'good-fb' });
+    ok(f.success, 'facebook sign-in works', f.message);
+    ok(f.data.userId !== g.data.userId, 'facebook creates its own account');
+
+    // A registered email merges into the existing account.
+    const u = verifiedCustomer('merge@example.com', '9800000033', 'secret123');
+    H.setFetchResponder((url) => {
+      if (url.indexOf('oauth2.googleapis.com/tokeninfo') !== -1)
+        return { aud: 'test-client', email: 'merge@example.com', email_verified: true, sub: 'g-999' };
+      if (url.indexOf('oauth2/v3/userinfo') !== -1) return { name: 'Merger' };
+      return null;
+    });
+    const m = call({ action: 'social_login', provider: 'google', accessToken: 'good-google-2' });
+    ok(m.success, 'social login into an existing account', m.message);
+    eq(m.data.userId, u.userId, 'existing account is reused');
+
+    // Audience + verification gates.
+    MOCK.state.props.GOOGLE_CLIENT_ID = 'other-client';
+    const aud = call({ action: 'social_login', provider: 'google', accessToken: 'good-google-2' });
+    ok(!aud.success && /different app/i.test(aud.message), 'audience mismatch rejected', aud.message);
+    MOCK.state.props.GOOGLE_CLIENT_ID = 'test-client';
+
+    H.setFetchResponder((url) => url.indexOf('oauth2.googleapis.com/tokeninfo') !== -1
+      ? { aud: 'test-client', email: 'liar@example.com', email_verified: false, sub: 'g-x' } : null);
+    const liar = call({ action: 'social_login', provider: 'google', accessToken: 'tok-liar' });
+    ok(!liar.success, 'unverified google email rejected', liar.message);
+    ok(!H.findRow('Users', 1, 'liar@example.com'), 'no account created from an unverified email');
+
+    H.setFetchResponder((url) => url.indexOf('graph.facebook.com/me') !== -1
+      ? { id: 'fb-9', name: 'No Mail' } : null);
+    const noEmail = call({ action: 'social_login', provider: 'facebook', accessToken: 'good-fb-2' });
+    ok(!noEmail.success && /email/i.test(noEmail.message),
+      'facebook profile without an email is refused', noEmail.message);
+
+    H.setFetchResponder(() => null);
+    const offline = call({ action: 'social_login', provider: 'google', accessToken: 'good-google' });
+    ok(!offline.success, 'provider outage fails closed', offline.message);
+  });
+
   return results;
 };

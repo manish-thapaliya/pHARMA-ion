@@ -239,8 +239,44 @@ async function run() {
     d.dispatchEvent(new w.KeyboardEvent('keydown', { key:'Escape', bubbles:true, cancelable:true }));
     check(id('rxViewer').hidden && !d.body.classList.contains('viewer-open'), 'Escape closes the dialog');
     check(d.activeElement !== id('rxViewerClose'), 'focus leaves the dialog once it closes');
+
+    // ePharmacy-style sign-in card: social buttons + one-time email code (16).
+    w.logout();
+    check(id('viewLogin').style.display !== 'none', 'logout returns to the password sign-in view');
+    check(/Welcome back/i.test(id('viewLogin').textContent), 'welcome back heading');
+    check(/Returning customer/i.test(id('viewLogin').textContent), 'returning customer kicker');
+    check(/Not a member/i.test(id('viewLogin').textContent), 'sign up prompt');
+    check(!!id('lRemember') && id('lRemember').checked, 'remember me defaults to on');
+    check(!!d.querySelector('#viewLogin .auth-link[onclick*="forgot"]'), 'forgot password link');
+    check(!!d.querySelector('#viewLogin .btn.fb') && !!d.querySelector('#viewLogin .btn.google'),
+      'facebook and google buttons');
+    check(!!d.querySelector('#viewLogin .social-divider'), 'or-divider between provider buttons');
+    w.socialLogin('google');
+    check(/not configured/i.test(id('loginMsg').textContent), 'unconfigured social login explains setup');
+    w.startCodeLogin();
+    check(id('viewCode').style.display !== 'none', 'one-time code view opens');
+    check(id('viewLogin').style.display === 'none', 'password form hidden in code view');
+    id('cId').value = 'code@example.test';
+    replies.login_code = { success:true, message:'Code sent', data:{demoOtp:'654321'} };
+    await w.doCodeRequest();
+    check(last().action === 'login_code', 'code login requested');
+    check(/654321/.test(id('codeMsg').textContent), 'demo one-time code shown');
+    check(id('codeEntry').hidden === false && id('cId').disabled, 'code entry revealed after send');
+    d.querySelectorAll('.cotp').forEach((b, i) => { b.value = String((i + 4) % 10); });
+    replies.login_code_verify = { success:true, message:'Login successful',
+      data:{userId:'U-2026-0010',role:'USER',name:'Alex',passwordSet:true} };
+    await w.doCodeVerify();
+    check(calls.some(c => c.action === 'login_code_verify'), 'one-time code submitted');
+    check(id('user').classList.contains('active'), 'code sign-in lands in the portal');
+    check(!!w.localStorage.getItem('pharmago_session'), 'code sign-in remembered');
+    w.logout();
+    id('lRemember').checked = false;
+    replies.login = { success:true, data:{userId:'U-2026-0010',role:'USER',name:'Alex'} }; await w.doLogin();
+    check(!w.localStorage.getItem('pharmago_session') && !!w.sessionStorage.getItem('pharmago_session'),
+      'session-only sign-in when remember me is off');
+    w.logout();
   } finally { dom.window.close(); }
-  if (checks !== 95) throw Error('Expected 95 UI-state checks, got ' + checks);
-  console.log('✓ 95 UI-state checks passed');
+  if (checks !== 113) throw Error('Expected 113 UI-state checks, got ' + checks);
+  console.log('✓ 113 UI-state checks passed');
 }
 run().catch(err => { console.error('✗ ' + err.stack); process.exitCode = 1; });

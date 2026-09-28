@@ -29,6 +29,7 @@ const sandbox = {
   Session: stub.Session,
   LockService: stub.LockService,
   Logger: stub.Logger,
+  UrlFetchApp: stub.UrlFetchApp,
 };
 sandbox.globalThis = sandbox;
 
