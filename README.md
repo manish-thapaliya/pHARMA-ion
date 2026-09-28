@@ -48,13 +48,14 @@ which overrides the constant in `code.gs` — handy for keeping secrets out of G
 | `ADMIN_KEY` | `changeme-admin-key` | **Change this.** Unlocks admin actions |
 | `ADMIN_GOOGLE_DOMAIN` | blank | Optional hardening: privileged requests must also come from a Google account in this domain (see note below) |
 | `FRONTEND_URL` | blank → Apps-Script-hosted set-password page | Emailed link target |
-| `GOOGLE_CLIENT_ID` | blank → social buttons explain setup | OAuth client ID (Web) whose audience is checked against Google sign-in tokens |
+| `GOOGLE_CLIENT_ID` | `247584661794-q088cqts3qo7lhth9556ql9urro744e8.apps.googleusercontent.com` | OAuth client ID (Web) whose audience is checked against Google sign-in tokens |
 | `FACEBOOK_APP_ID` | blank → social buttons explain setup | Facebook app the access tokens must belong to |
 
-Social sign-in also needs the same two values pasted at the top of the `<script>` in `index.html`
-(`GOOGLE_CLIENT_ID` / `FACEBOOK_APP_ID`) so the browser can open the provider popups. Apps Script
-will ask for the `script.external_request` scope on the next deploy (used to verify tokens
-server-side). Leaving both blank keeps every other sign-in method working.
+Google sign-in is preconfigured in `index.html` and `code.gs`; keep their `GOOGLE_CLIENT_ID`
+values in sync if you change it. A Script Property can override the backend value, but the browser
+still uses the ID in `index.html`. Facebook remains optional and needs `FACEBOOK_APP_ID` configured
+in both places. Apps Script will ask for the `script.external_request` scope on the next deploy
+(used to verify tokens server-side). Clearing both IDs keeps every other sign-in method working.
 
 ---
 

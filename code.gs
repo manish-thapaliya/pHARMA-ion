@@ -28,7 +28,7 @@ const ADMIN_KEY = '2026';
 // audience is checked against Google tokens; FACEBOOK_APP_ID is the Facebook app
 // the access token must belong to. Mirror the Google client ID in index.html.
 // Both can be set as Script Properties instead of editing this file.
-const GOOGLE_CLIENT_ID = '';
+const GOOGLE_CLIENT_ID = '247584661794-q088cqts3qo7lhth9556ql9urro744e8.apps.googleusercontent.com';
 const FACEBOOK_APP_ID = '';
 
 // Your GitHub Pages URL — emailed "set password" links redirect here.
@@ -403,7 +403,7 @@ function verifySocialToken_(provider, token) {
       if (res.getResponseCode() !== 200)
         return { ok: false, message: 'Google sign-in could not be verified — please try again.' };
       const info = JSON.parse(res.getContentText());
-      const audience = cfg_('247584661794-q088cqts3qo7lhth9556ql9urro744e8.apps.googleusercontent.com', GOOGLE_CLIENT_ID);
+      const audience = cfg_('GOOGLE_CLIENT_ID', GOOGLE_CLIENT_ID);
       if (audience && String(info.aud || '') !== audience)
         return { ok: false, message: 'That Google sign-in token was issued for a different app.' };
       if (!info.email || info.email_verified === false || info.email_verified === 'false')
