@@ -49,13 +49,12 @@ which overrides the constant in `code.gs` — handy for keeping secrets out of G
 | `ADMIN_GOOGLE_DOMAIN` | blank | Optional hardening: privileged requests must also come from a Google account in this domain (see note below) |
 | `FRONTEND_URL` | blank → Apps-Script-hosted set-password page | Emailed link target |
 | `GOOGLE_CLIENT_ID` | `247584661794-q088cqts3qo7lhth9556ql9urro744e8.apps.googleusercontent.com` | OAuth client ID (Web) whose audience is checked against Google sign-in tokens |
-| `FACEBOOK_APP_ID` | blank → social buttons explain setup | Facebook app the access tokens must belong to |
 
 Google sign-in is preconfigured in `index.html` and `code.gs`; keep their `GOOGLE_CLIENT_ID`
 values in sync if you change it. A Script Property can override the backend value, but the browser
-still uses the ID in `index.html`. Facebook remains optional and needs `FACEBOOK_APP_ID` configured
-in both places. Apps Script will ask for the `script.external_request` scope on the next deploy
-(used to verify tokens server-side). Clearing both IDs keeps every other sign-in method working.
+still uses the ID in `index.html`. Apps Script will ask for the `script.external_request` scope on
+the next deploy (used to verify tokens server-side). Clearing the ID keeps every other sign-in
+method working.
 
 ---
 
@@ -65,10 +64,10 @@ in both places. Apps Script will ask for the `script.external_request` scope on 
   upload prescription → preview the file and track status. An approved prescription can place an
   order for a catalogue medicine; the pharmacy accepts or declines it and is emailed either way.
 * **Sign-in options** — the account card mirrors the familiar ePharmacy-style layout:
-  password + **Remember me?**, **Login with Facebook**, **Login with Google**, and
+  password + **Remember me?**, **Login with Google**, and
   **“Email me a one-time code instead”** (a 6-digit code lands in the inbox — no password needed;
-  entering it also finishes email verification for a pending customer). Social tokens are verified
-  server-side (`code.gs` calls Google / Facebook directly); first social sign-in creates an ACTIVE
+  entering it also finishes email verification for a pending customer). The Google token is
+  verified server-side (`code.gs` calls Google directly); a first social sign-in creates an ACTIVE
   customer and later ones reuse the account with that email.
 * **Vendor** — register with GST + Drug License + Shop ID + PAN → email code → admin reviews the
   documents → approved vendor logs in and lists medicines (own listings only).

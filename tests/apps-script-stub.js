@@ -283,7 +283,7 @@ function createStub() {
   const Logger = { log: () => {}, clear: () => {} };
 
   // ------------------------------------------------------------- UrlFetchApp
-  // Social sign-in verification (Google tokeninfo / Facebook Graph) happens
+  // Social sign-in verification (Google tokeninfo) happens
   // server-side in code.gs. Tests and the demo install state.fetchResponder to
   // answer those calls; without a responder every request 404s.
   const UrlFetchApp = {
