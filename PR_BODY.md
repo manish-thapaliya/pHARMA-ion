@@ -63,13 +63,23 @@ toasts, skeletons, empty states, skip link and print styles.
 
 ### Verification
 
-`npm test` — 26/26 backend scenarios (311 checks), `index.html` wiring (139 ids, 45 handlers, 100
+`npm test` — 27/27 backend scenarios (331 checks), `index.html` wiring (139 ids, 45 handlers, 100
 functions, AA contrast guard) and **115** UI-state checks (up from 113) all pass. The demo server was
 booted against the new page (`GET /`, `POST /api` login, `/__mailbox` all 200) so the redesign can be
 inspected end to end in a browser.
 
-### Not in scope
+### Backend chrome and shared surfaces
 
-`code.gs`'s `pageShell_()`/`clinicalCss_()` pages, the branded emails and `demo/server.js`'s hint bar
-and mailbox still use the previous clinical-blue tokens. Only the app itself moved to Aurora;
-re-theming those surfaces is a follow-up.
+- `code.gs`: `clinicalCss_()` → **`auroraCss_()`** — the served set-password form, the form-post
+  result and the `FRONTEND_URL` hand-off now use the Aurora tokens, a 32 px glass card, the gradient
+  brand mark, an indigo pill button and the same drifting aurora layer (with a reduced-motion
+  guard). Brand copy is now “Care workspace”.
+- **Emails** (`emailHtml_()`): indigo accent, rounded-white card, pill CTA, the one-time code on the
+  brand tint with a mono block, Aurora ink/body/footer colours. Mail clients are conservative, so
+  this stays solid-colour and table-based with no gradients or external CSS; plain text is still the
+  fallback.
+- `demo/server.js`: the hint bar and `/__mailbox` (including the “Fictional data” chip) now use the
+  same tokens.
+- **New spec scenario** — “every branded surface ships the Aurora theme” walks the served page, the
+  hand-off page, the form-post result page and both transactional emails, asserting the palette is
+  present and the old clinical blue is gone. Verified to fail when a token is reverted.

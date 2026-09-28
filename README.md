@@ -85,7 +85,7 @@ Install the UI test dependency first. The backend runs against a mocked Apps Scr
 ```bash
 npm install
 npm test              # backend end-to-end + frontend wiring + 115 browser-like UI-state checks
-npm run test:api      # 26 scenarios / 311 checks against code.gs
+npm run test:api      # 27 scenarios / 331 checks against code.gs
 npm run test:frontend # index.html wiring, AA-contrast guard + UI-state checks
 ```
 
@@ -136,17 +136,21 @@ Inter carries prose and headings; IBM Plex Mono is reserved for identifiers, pri
   token edit; motion is disabled under `prefers-reduced-motion` and the rail/topbar/hero are dropped
   in print.
 
-Only `index.html` moved to the Aurora tokens in this change: the pages Apps Script serves itself
-(`pageShell_()` + `clinicalCss_()` in `code.gs`), the branded emails and `demo/server.js` still carry
-the earlier clinical-blue chrome, so a password link or the demo mailbox looks slightly older than
-the app until they are re-themed too.
+Every surface shares the same palette. The pages Apps Script serves itself
+(`pageShell_()` + `auroraCss_()` in `code.gs`) render the emailed set-password form, the form-post
+result and the `FRONTEND_URL` hand-off in the Aurora chrome — the same glass card, gradient brand
+mark, indigo pill button and drifting aurora layer. `demo/server.js` themes its hint bar and the
+`/__mailbox` page with the same tokens, and `npm run test:api` asserts that no surface falls back to
+clinical blue.
 
 ### Emails and admin hardening
 
 Every outgoing mail now carries a branded `htmlBody` (inline styles + tables, plain text kept as
-the fallback): the OTP mail shows the code as a large mono block, the reset mail gets a real CTA
-button with a link fallback, and review/order notifications link back to the app. `emailHtml_()`
-escapes everything and is covered by the API scenarios.
+the fallback): the OTP mail shows the code as a large mono block on the brand tint, the reset mail
+gets a real indigo pill CTA with a link fallback, and review/order notifications link back to the
+app. Mail clients are conservative, so the template uses solid colours and a table layout — no
+gradients, no external CSS. `emailHtml_()` escapes everything, and a spec scenario asserts the
+palette (and the absence of the old clinical blue) on every branded surface.
 
 Setting the `ADMIN_GOOGLE_DOMAIN` Script Property adds a second factor to the admin key: the Google
 account serving the request must be in that domain. With the default blank value behaviour is
