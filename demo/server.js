@@ -18,8 +18,8 @@ vm.runInContext(fs.readFileSync(path.join(__dirname, '../code.gs'), 'utf8'), ctx
 const call = data => ctx.handleRequest_(data);
 call({ action:'setup' });
 
-// Mock Google / Facebook token verification so the social buttons on the login
-// card are explorable without real OAuth apps. Tokens are fictional.
+// Mock Google token verification so the social button on the login card is
+// explorable without a real OAuth app. Tokens are fictional.
 stub.helpers.setFetchResponder(url => {
   if (url.indexOf('oauth2.googleapis.com/tokeninfo') !== -1) {
     return url.indexOf('demo-google-token') !== -1
@@ -28,11 +28,6 @@ stub.helpers.setFetchResponder(url => {
   }
   if (url.indexOf('googleapis.com/oauth2/v3/userinfo') !== -1)
     return { name:'Google Demo', email:'google.demo@pharmago.test' };
-  if (url.indexOf('graph.facebook.com/me') !== -1) {
-    return url.indexOf('demo-facebook-token') !== -1
-      ? { id:'fb-demo-1', name:'Facebook Demo', email:'facebook.demo@pharmago.test' }
-      : null;
-  }
   return null;
 });
 
@@ -80,7 +75,7 @@ const escapeHtml = s => String(s).replace(/[&<>"']/g, c =>
 
 const html = fs.readFileSync(path.join(__dirname, '../index.html'), 'utf8').replace('</head>',
   '<meta name="pharmago-demo" content="true"><style>.demo-hint{background:linear-gradient(135deg,#f3f2ff,#eef7f5);border:1px solid #d8dafc;padding:16px 18px;border-radius:24px;margin:0 0 18px;font-size:13px;line-height:1.6;color:#3f3d63;box-shadow:0 22px 50px -40px rgba(48,42,120,.6)}.demo-hint b{color:#4338ca}.demo-hint a{color:#4f46e5;font-weight:700}@media (max-width:640px){.demo-hint{margin-bottom:14px;border-radius:20px;padding:14px}}</style></head>')
-  .replace('<div id="configBanner"', `<div class="demo-hint"><b>Interactive demo — fictional data only.</b> Customer: demo@pharmago.test / demo123 · Pharmacy: vendor@pharmago.test / demo123 · Admin key: changeme-admin-key. The login card also works with a one-time email code (“Email me a one-time code instead”) and with the Google / Facebook buttons (simulated accounts). Sign in and open My prescriptions to view the sample file, or order Vitamin C against the approved one. New verification codes appear on this page or in the <a href="/__mailbox" target="_blank" rel="noopener">demo mailbox</a>; data resets when the server restarts.</div>\n<div id="configBanner"`);
+  .replace('<div id="configBanner"', `<div class="demo-hint"><b>Interactive demo — fictional data only.</b> Customer: demo@pharmago.test / demo123 · Pharmacy: vendor@pharmago.test / demo123 · Admin key: changeme-admin-key. The login card also works with a one-time email code (“Email me a one-time code instead”) and with the Google button (simulated account). Sign in and open My prescriptions to view the sample file, or order Vitamin C against the approved one. New verification codes appear on this page or in the <a href="/__mailbox" target="_blank" rel="noopener">demo mailbox</a>; data resets when the server restarts.</div>\n<div id="configBanner"`);
 
 function json(res, status, body) {
   res.writeHead(status, { 'Content-Type':'application/json; charset=utf-8', 'Cache-Control':'no-store' });

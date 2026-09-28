@@ -257,10 +257,10 @@ async function run() {
     check(/Not a member/i.test(id('viewLogin').textContent), 'sign up prompt');
     check(!!id('lRemember') && id('lRemember').checked, 'remember me defaults to on');
     check(!!d.querySelector('#viewLogin .auth-link[onclick*="forgot"]'), 'forgot password link');
-    check(!!d.querySelector('#viewLogin .btn.fb') && !!d.querySelector('#viewLogin .btn.google'),
-      'facebook and google buttons');
-    check(!!d.querySelector('#viewLogin .social-divider'), 'or-divider between provider buttons');
-    w.socialLogin('google');
+    check(!!d.querySelector('#viewLogin .btn.google'), 'google button');
+    check(!d.querySelector('#viewLogin .btn.fb'), 'no facebook button');
+    check(!!d.querySelector('#viewLogin .social-divider'), 'or-divider above the provider button');
+    w.socialLogin();
     check(/not configured/i.test(id('loginMsg').textContent), 'unconfigured social login explains setup');
     w.startCodeLogin();
     check(id('viewCode').style.display !== 'none', 'one-time code view opens');

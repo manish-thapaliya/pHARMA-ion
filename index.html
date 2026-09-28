@@ -576,8 +576,6 @@
   .social-divider::before, .social-divider::after { content:''; flex:1; height:1px; background:var(--line); }
   .btn.social { width:100%; justify-content:center; margin:10px 0 0; min-height:46px; }
   .btn.social svg { width:18px; height:18px; flex:none; }
-  .btn.fb { background:linear-gradient(140deg,#2f8bf5,#1877f2 60%,#0d64d6); box-shadow:0 14px 30px -16px rgba(24,119,242,.75); }
-  .btn.fb:hover { box-shadow:0 20px 36px -16px rgba(24,119,242,.8); }
   .btn.google { background:#fff; color:#2d3440; border-color:var(--line); box-shadow:var(--shadow-sm); }
   .btn.google:hover { background:#fbfaff; border-color:var(--brand-line); color:var(--ink); box-shadow:0 16px 34px -22px rgba(48,42,120,.6); }
   .auth-switch { margin:18px 0 0; font-size:12.5px; color:var(--ink-2); }
@@ -930,11 +928,7 @@
         </div>
         <button class="btn" onclick="doLogin()">Log in</button>
         <div class="social-divider" role="separator" aria-label="or"><span>- or -</span></div>
-        <button class="btn social fb" type="button" onclick="socialLogin('facebook')">
-          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06C2 17.08 5.66 21.24 10.44 22v-7.03H7.9v-2.91h2.54V9.85c0-2.52 1.49-3.91 3.77-3.91 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.78-1.63 1.57v1.89h2.78l-.44 2.91h-2.34V22C18.34 21.24 22 17.08 22 12.06Z"/></svg>
-          Login with Facebook
-        </button>
-        <button class="btn social google" type="button" onclick="socialLogin('google')">
+        <button class="btn social google" type="button" onclick="socialLogin()">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.5 12.27c0-.85-.08-1.66-.22-2.45H12v4.64h6.45a5.52 5.52 0 0 1-2.39 3.62v3h3.87c2.26-2.09 3.57-5.17 3.57-8.81Z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.08 7.94-2.91l-3.87-3c-1.07.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.72-4.96H1.29v3.09A12 12 0 0 0 12 24Z"/><path fill="#FBBC05" d="M5.28 14.28a7.2 7.2 0 0 1 0-4.56V6.63H1.29a12 12 0 0 0 0 10.74l3.99-3.09Z"/><path fill="#EA4335" d="M12 4.76c1.77 0 3.35.61 4.6 1.8l3.43-3.43C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.29 6.63l3.99 3.09C6.22 6.87 8.87 4.76 12 4.76Z"/></svg>
           Login with Google
         </button>
@@ -1335,10 +1329,9 @@ const API_ENDPOINT = document.querySelector('meta[name="pharmago-demo"]') ? '/ap
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // keep in sync with MAX_UPLOAD_BYTES in code.gs
 
 // Social sign-in (optional). The Google OAuth client ID is configured below;
-// keep it in sync with code.gs. Facebook is optional. Clear a provider's ID to
-// disable it; Google's ID is checked against the token audience in code.gs too.
+// keep it in sync with code.gs. Clear the ID to disable it; it is checked
+// against the token audience in code.gs too.
 const GOOGLE_CLIENT_ID = "247584661794-q088cqts3qo7lhth9556ql9urro744e8.apps.googleusercontent.com";
-const FACEBOOK_APP_ID = "";
 
 let session = JSON.parse(localStorage.getItem('pharmago_session') || sessionStorage.getItem('pharmago_session') || 'null'); // {userId, role, name}
 let adminKey = sessionStorage.getItem('pharmago_adminkey') || '';
@@ -1359,7 +1352,7 @@ window.addEventListener('online', updateNetworkState); window.addEventListener('
 
 // Workspace header copy — purely cosmetic, the tabs stay the source of truth.
 const TOPBAR_TITLES = {
-  login: 'Sign in with a password, one-time code, Google or Facebook',
+  login: 'Sign in with a password, one-time code or Google',
   user: 'Upload a prescription and track its review',
   shop: 'Search the catalogue of verified pharmacies',
   merchant: 'Register a pharmacy and manage your listings',
@@ -1752,28 +1745,22 @@ async function doCodeVerify() {
   }
 }
 
-// ===== SOCIAL LOGIN (Google / Facebook) =====
+// ===== SOCIAL LOGIN (Google) =====
 let socialBusy = false;
-let facebookReady = false;
-function socialLogin(provider) {
+function socialLogin() {
   if (socialBusy) return;
-  const label = provider === 'google' ? 'Google' : 'Facebook';
-  const configured = provider === 'google' ? GOOGLE_CLIENT_ID : FACEBOOK_APP_ID;
   const isDemo = !!document.querySelector('meta[name="pharmago-demo"]');
-  if (!configured && isDemo) return demoSocialLogin(provider);
-  if (!configured) {
-    return show('loginMsg', false, label + ' sign-in is not configured yet. Paste your ' +
-      (provider === 'google'
-        ? 'Google OAuth client ID into GOOGLE_CLIENT_ID at the top of the <script> in index.html (and the same value into code.gs / its Script Properties)'
-        : 'Facebook App ID into FACEBOOK_APP_ID at the top of the <script> in index.html (and into code.gs / its Script Properties)') +
-      '. You can still sign in with your password or a one-time email code.');
+  if (!GOOGLE_CLIENT_ID && isDemo) return demoSocialLogin();
+  if (!GOOGLE_CLIENT_ID) {
+    return show('loginMsg', false, 'Google sign-in is not configured yet. Paste your Google OAuth ' +
+      'client ID into GOOGLE_CLIENT_ID at the top of the <script> in index.html (and the same ' +
+      'value into code.gs / its Script Properties). You can still sign in with your password or a one-time email code.');
   }
-  if (provider === 'google') googleSocialLogin();
-  else facebookSocialLogin();
+  googleSocialLogin();
 }
-function demoSocialLogin(provider) {
-  show('loginMsg', true, 'Demo ' + (provider === 'google' ? 'Google' : 'Facebook') + ' sign-in…');
-  finishSocialRequest(provider, provider === 'google' ? 'demo-google-token' : 'demo-facebook-token');
+function demoSocialLogin() {
+  show('loginMsg', true, 'Demo Google sign-in…');
+  finishSocialRequest('google', 'demo-google-token');
 }
 async function finishSocialRequest(provider, token) {
   socialBusy = true;
@@ -1821,25 +1808,6 @@ async function googleSocialLogin() {
       },
     });
     client.requestAccessToken();
-  } catch (err) {
-    show('loginMsg', false, err.message + '. You can still sign in with your password or a one-time email code.');
-  }
-}
-async function facebookSocialLogin() {
-  try {
-    show('loginMsg', true, 'Opening Facebook sign-in…');
-    await loadScript('https://connect.facebook.net/en_US/sdk.js');
-    if (!window.FB) throw new Error('Facebook SDK is unavailable');
-    if (!facebookReady) {
-      window.FB.init({ appId: FACEBOOK_APP_ID, cookie: true, xfbml: false, version: 'v19.0' });
-      facebookReady = true;
-    }
-    window.FB.login(resp => {
-      if (!resp || !resp.authResponse)
-        return show('loginMsg', false, 'Facebook sign-in was cancelled.');
-      show('loginMsg', true, 'Finishing Facebook sign-in…');
-      finishSocialRequest('facebook', resp.authResponse.accessToken);
-    }, { scope: 'email' });
   } catch (err) {
     show('loginMsg', false, err.message + '. You can still sign in with your password or a one-time email code.');
   }

@@ -828,21 +828,15 @@ globalThis.runTests = function runTests() {
   });
 
   // =====================================================================
-  scenario('social login: Google / Facebook tokens create and reuse accounts', () => {
+  scenario('social login: Google tokens create and reuse accounts', () => {
     boot();
     MOCK.state.props.GOOGLE_CLIENT_ID = 'test-client';
-    MOCK.state.props.FACEBOOK_APP_ID = 'fb-app-1';
     H.setFetchResponder((url) => {
       if (url.indexOf('oauth2.googleapis.com/tokeninfo') !== -1) {
         if (url.indexOf('good-google') === -1) return null;
         return { aud: 'test-client', email: 'google.user@example.com', email_verified: true, sub: 'g-123' };
       }
       if (url.indexOf('oauth2/v3/userinfo') !== -1) return { name: 'Gina Google' };
-      if (url.indexOf('graph.facebook.com/me') !== -1) {
-        return url.indexOf('good-fb') !== -1
-          ? { id: 'fb-456', name: 'Frank Facebook', email: 'fb.user@example.com' } : null;
-      }
-      if (url.indexOf('graph.facebook.com/app') !== -1) return { id: 'fb-app-1', name: 'Test App' };
       return null;
     });
 
@@ -864,10 +858,6 @@ globalThis.runTests = function runTests() {
 
     const g2 = call({ action: 'social_login', provider: 'google', accessToken: 'good-google' });
     ok(g2.success && g2.data.userId === g.data.userId, 'second google sign-in reuses the account');
-
-    const f = call({ action: 'social_login', provider: 'facebook', accessToken: 'good-fb' });
-    ok(f.success, 'facebook sign-in works', f.message);
-    ok(f.data.userId !== g.data.userId, 'facebook creates its own account');
 
     // A registered email merges into the existing account.
     const u = verifiedCustomer('merge@example.com', '9800000033', 'secret123');
@@ -892,12 +882,6 @@ globalThis.runTests = function runTests() {
     const liar = call({ action: 'social_login', provider: 'google', accessToken: 'tok-liar' });
     ok(!liar.success, 'unverified google email rejected', liar.message);
     ok(!H.findRow('Users', 1, 'liar@example.com'), 'no account created from an unverified email');
-
-    H.setFetchResponder((url) => url.indexOf('graph.facebook.com/me') !== -1
-      ? { id: 'fb-9', name: 'No Mail' } : null);
-    const noEmail = call({ action: 'social_login', provider: 'facebook', accessToken: 'good-fb-2' });
-    ok(!noEmail.success && /email/i.test(noEmail.message),
-      'facebook profile without an email is refused', noEmail.message);
 
     H.setFetchResponder(() => null);
     const offline = call({ action: 'social_login', provider: 'google', accessToken: 'good-google' });
